@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 
 class ProductView extends StatelessWidget{
+  String _ProductDoc;
+  ProductView({required this._ProductDoc});
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return ProductWidget();
+    return ProductWidget(productDoc: _ProductDoc,);
   }
 }

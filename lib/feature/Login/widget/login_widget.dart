@@ -1,7 +1,9 @@
+import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:flutter/material.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../ForgetPassword/view/forget_password_view.dart';
+import '../../Signup/view/sigup_view.dart';
 import '../function/auth_function.dart';
 
 class LoginWidget extends StatefulWidget {
@@ -25,18 +27,16 @@ class _LoginWidgetState extends State<LoginWidget> {
     super.dispose();
   }
 
-  void _handleLogin()async {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      if(await LoginFunction(context, _emailController.text, _passwordController.text)){
-       // Navigator.pushReplacementNamed(context, MainScreenView.id);
-      }
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          // Navigator.pushReplacementNamed(context, '/dashboard');
+      bool isSuccess = await LoginFunction(context, _emailController.text, _passwordController.text);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (isSuccess) {
+          Navigator.pushReplacementNamed(context, MainScreenView.id);
         }
-      });
+      }
     }
   }
 
@@ -52,25 +52,22 @@ class _LoginWidgetState extends State<LoginWidget> {
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              height: isDesktop ? 600 : null,
+              constraints: const BoxConstraints(maxWidth: 980),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 25,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: isDesktop
                   ? Row(
                 children: [
-                  // الجانب الأيسر: الهوية والبنفسجي
-                  Expanded(child: _buildBrandingSide(size)),
-                  // الجانب الأيمن: فورم الدخول
+                  Expanded(child: _buildBrandingSide()),
                   Expanded(child: _buildLoginForm(context)),
                 ],
               )
@@ -87,9 +84,9 @@ class _LoginWidgetState extends State<LoginWidget> {
     );
   }
 
-  // الجانب البنفسجي لـ Dashboard الشاشات الكبيرة
-  Widget _buildBrandingSide(Size size) {
+  Widget _buildBrandingSide() {
     return Container(
+      padding: const EdgeInsets.all(40),
       decoration: const BoxDecoration(
         color: AppColors.primaryPurple,
         borderRadius: BorderRadius.only(
@@ -97,42 +94,29 @@ class _LoginWidgetState extends State<LoginWidget> {
           bottomLeft: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            AppImages.appPLogo,
-            width: 240,
-            fit: BoxFit.contain,
-          ),
+          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
           const SizedBox(height: 24),
           const Text(
             "Welcome Back!",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 12),
           const Text(
-            "DesignLand Admin Dashboard\nManage orders, products & customized gifts",
+            "Explore customized gifts, order personalized items, and track your active orders effortlessly.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
           ),
         ],
       ),
     );
   }
 
-  // هيدر بسيط للشاشات الصغيرة (Mobile)
   Widget _buildMobileHeader() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
         color: AppColors.primaryPurple,
@@ -143,84 +127,52 @@ class _LoginWidgetState extends State<LoginWidget> {
       ),
       child: Column(
         children: [
-          Image.asset(
-            AppImages.appPLogo,
-            height: 100,
-          ),
+          Image.asset(AppImages.appPLogo, height: 90),
           const SizedBox(height: 12),
           const Text(
-            "DesignLand Dashboard",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            "DesignLand Store",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ],
       ),
     );
   }
 
-  // الفورم الرئيسي لبيانات الدخول
   Widget _buildLoginForm(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
       child: Form(
         key: _formKey,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               "Sign In",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              "Enter your credentials to access the admin panel",
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textMuted,
-              ),
+              "Sign in to access your orders and saved designs",
+              style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Email Input
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: "Email Address",
-                hintText: "admin@designland.eg",
                 prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primaryPurple,
-                    width: 2,
-                  ),
+                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Please enter your email";
-                }
-                if (!value.contains('@')) {
-                  return "Please enter a valid email";
-                }
-                return null;
-              },
+              validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address" : null,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Password Input
             TextFormField(
               controller: _passwordController,
               obscureText: _isPasswordObscure,
@@ -228,93 +180,55 @@ class _LoginWidgetState extends State<LoginWidget> {
                 labelText: "Password",
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordObscure
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordObscure = !_isPasswordObscure;
-                    });
-                  },
+                  icon: Icon(_isPasswordObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => setState(() => _isPasswordObscure = !_isPasswordObscure),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primaryPurple,
-                    width: 2,
-                  ),
+                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Please enter your password";
-                }
-                if (value.length < 6) {
-                  return "Password must be at least 6 characters";
-                }
-                return null;
-              },
+              validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            // Forgot Password (Optional)
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) =>  ForgetPasswordView()),
-                  );
-                },
-                child: const Text(
-                  "Forgot Password?",
-                  style: TextStyle(
-                    color: AppColors.primaryPurple,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ForgetPasswordView())),
+                child: const Text("Forgot Password?", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Login Button
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 48,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
-                  ),
-                )
-                    : const Text(
-                  "Login to Dashboard",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
+            const SizedBox(height: 20),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Don't have an account?", style: TextStyle(color: AppColors.textMuted)),
+                TextButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>  SigupView())),
+                  child: const Text("Create Account", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            )
           ],
         ),
       ),

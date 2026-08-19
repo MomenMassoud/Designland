@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../Login/view/login_view.dart';
+import '../../MainScreen/view/main_screen_view.dart';
 import 'circular_gradiant_opacity_container.dart';
 import 'gradient_container.dart';
 
@@ -49,16 +50,10 @@ class _SplashViewBodyState extends State<SplashViewBody>
 
     _animationController.forward();
   }
-  final FirebaseAuth _auth=FirebaseAuth.instance;
   void _navigateToNextScreen() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-       if(_auth.currentUser!=null){
-       //  Navigator.pushReplacementNamed(context, MainScreenView.id);
-       }
-       else{
-         Navigator.pushReplacementNamed(context, LoginView.id);
-       }
+        Navigator.pushReplacementNamed(context, MainScreenView.id);
       }
     });
   }

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 
 class BasketView extends StatelessWidget{
+  static const id = 'basket_screen';
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return BasketWidget();
   }
 }
