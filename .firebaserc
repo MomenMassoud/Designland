@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "desginland-5ca7a"
+  },
+  "targets": {
+    "desginland-5ca7a": {
+      "hosting": {
+        "designland-market": [
+          "desginland-5ca7a"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

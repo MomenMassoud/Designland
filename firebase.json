@@ -1,0 +1,23 @@
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "desginland-5ca7a",
+          "configurations": {
+            "web": "1:848711152963:web:4b4c831a8d7853c2a26bf6"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "site": "designland-market",
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
