@@ -4,6 +4,8 @@ import 'package:desginland/feature/Product/view/products_list_view.dart';
 import 'package:desginland/feature/Product/widget/product_widget.dart';
 import 'package:flutter/material.dart';
 
+import '../../../Core/server/analytics_service.dart';
+
 class HomeWidget extends StatefulWidget {
   const HomeWidget({super.key});
 
@@ -526,6 +528,10 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 
                   return GestureDetector(
                     onTap: () {
+                      AnalyticsService.logProductOpen(
+                        productId: doc.id,
+                        productTitle: doc.get('title'),
+                      );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -941,6 +947,10 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
       onTapUp: (_) => setState(() => _isHovered = false),
       onTapCancel: () => setState(() => _isHovered = false),
       onTap: () {
+        AnalyticsService.logProductOpen(
+          productId: widget.productId,
+          productTitle: widget.productData['title'],
+        );
         Navigator.push(
           context,
           MaterialPageRoute(

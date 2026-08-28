@@ -5,6 +5,8 @@ import 'package:desginland/feature/Home/view/home_view.dart';
 import 'package:desginland/feature/Profile/view/profile_view.dart';
 import 'package:flutter/material.dart';
 
+import '../../../Core/server/analytics_service.dart';
+
 class MainScreenWidget extends StatefulWidget {
   const MainScreenWidget({super.key});
 
@@ -12,13 +14,41 @@ class MainScreenWidget extends StatefulWidget {
   State<MainScreenWidget> createState() => _MainScreenWidgetState();
 }
 
-class _MainScreenWidgetState extends State<MainScreenWidget> {
+class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+
   final List<Widget> _screens =  [
     HomeView(),
     ProfileView(),
     AboutView(),
   ];
+
+  final List<String> _tabNames = ['Home', 'Profile', 'About'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // 🚀 بدء الجلسة والـ Heartbeat عند فتح الصفحة
+    AnalyticsService.startSession();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // إيقاف مؤقت الـ Heartbeat بشكل آمن عند تدمير الـ Widget
+    AnalyticsService.endSession();
+    super.dispose();
+  }
+
+  void _onTabSelected(int index) {
+    if (_selectedIndex != index) {
+      setState(() => _selectedIndex = index);
+      // 📊 تسجيل زيارة التبويب
+      AnalyticsService.logTabVisit(_tabNames[index]);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +125,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
           ? null
           : BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: _onTabSelected,
         selectedItemColor: const Color(0xFF6C5CE7),
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
@@ -126,7 +156,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
   Widget _buildNavTextButton(String title, IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
     return TextButton.icon(
-      onPressed: () => setState(() => _selectedIndex = index),
+      onPressed: () => _onTabSelected(index),
       icon: Icon(
         icon,
         size: 18,
