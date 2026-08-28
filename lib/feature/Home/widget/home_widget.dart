@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/products_list_view.dart';
 import 'package:desginland/feature/Product/widget/product_widget.dart';
@@ -220,32 +221,22 @@ class _HomeWidgetState extends State<HomeWidget> {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Header مع Search & Filter
+          // 1. شريط البحث والفلترة
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF6C5CE7).withOpacity(0.05),
-                    Colors.transparent,
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
+              padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
-                      height: 50,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.04),
-                            blurRadius: 12,
+                            blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
                         ],
@@ -267,15 +258,15 @@ class _HomeWidgetState extends State<HomeWidget> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: _openFilterBottomSheet,
                       child: Container(
-                        height: 50,
-                        width: 50,
+                        height: 48,
+                        width: 48,
                         decoration: BoxDecoration(
                           color: const Color(0xFF6C5CE7),
                           borderRadius: BorderRadius.circular(16),
@@ -296,7 +287,15 @@ class _HomeWidgetState extends State<HomeWidget> {
             ),
           ),
 
-          // Stream categories مع Staggered Entrance
+          // 2. بانر العروض والتخفيضات التفاعلي مع العداد التنازلي
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              child: DiscountProductsCarousel(),
+            ),
+          ),
+
+          // 3. الأقسام والمنتجات
           StreamBuilder<QuerySnapshot>(
             stream: _selectedCategoryId != null
                 ? _categoriesRef
@@ -335,7 +334,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                     final categoryData = categoryDoc.data() as Map<String, dynamic>;
                     final categoryTitle = categoryData['nameEn'] ?? 'Category';
 
-                    // تحريك ظهور القسم بحسب الـ index الخاص به
                     return _StaggeredCategoryWrapper(
                       index: index,
                       child: _buildCategorySection(
@@ -389,14 +387,14 @@ class _HomeWidgetState extends State<HomeWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     categoryTitle,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
                       color: Color(0xFF2D3436),
@@ -421,7 +419,7 @@ class _HomeWidgetState extends State<HomeWidget> {
               ),
             ),
             SizedBox(
-              height: 260,
+              height: 250,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
@@ -432,7 +430,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                   final images = productData['images'] as List<dynamic>?;
                   final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
 
-                  // ظهور منتجات كل قسم بالترتيب أفوقياً (Staggered horizontal animation)
                   return _StaggeredProductWrapper(
                     index: index,
                     child: _AnimatedProductCard(
@@ -452,7 +449,347 @@ class _HomeWidgetState extends State<HomeWidget> {
   }
 }
 
-// 1. أنيميشن ظهور القسم بالترتيب (Category Vertical Entrance)
+// ==================== DISCOUNT CAROUSEL BANNER ====================
+class DiscountProductsCarousel extends StatefulWidget {
+  const DiscountProductsCarousel({super.key});
+
+  @override
+  State<DiscountProductsCarousel> createState() => _DiscountProductsCarouselState();
+}
+
+class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
+  final PageController _pageController = PageController(viewportFraction: 0.92);
+  int _activePage = 0;
+  Timer? _autoSlideTimer;
+
+  void _startAutoSlide(int itemCount) {
+    if (_autoSlideTimer != null || itemCount <= 1) return;
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        _activePage = (_activePage + 1) % itemCount;
+        _pageController.animateToPage(
+          _activePage,
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.decelerate,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoSlideTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('products')
+          .where('discountPercentage', isGreaterThan: 0)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final discountDocs = snapshot.data!.docs;
+        _startAutoSlide(discountDocs.length);
+
+        return Column(
+          children: [
+            SizedBox(
+              height: 175,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: discountDocs.length,
+                onPageChanged: (int index) {
+                  setState(() => _activePage = index);
+                },
+                itemBuilder: (context, index) {
+                  final doc = discountDocs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+
+                  final String title = data['title'] ?? 'عرض خاص';
+                  final num originalPrice = data['price'] ?? 0; // السعر الأصلي (مثلاً 300)
+                  final num discountPercentage = data['discountPercentage'] ?? 0; // النسبة (مثلاً 10)
+
+                  // 🎯 الحساب الصحيح: السعر بعد الخصم (300 * 0.9 = 270)
+                  final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
+
+                  final List images = data['images'] ?? [];
+                  final String imageUrl = images.isNotEmpty ? images[0] : '';
+
+                  final Timestamp? discountUntilTimestamp = data['discountUntil'] as Timestamp?;
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProductWidget(productDoc: doc.id),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2D3436), Color(0xFF111111)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: 160,
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.horizontal(right: Radius.circular(22)),
+                              child: Stack(
+                                children: [
+                                  if (imageUrl.isNotEmpty)
+                                    Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    ),
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [Color(0xFF2D3436), Colors.transparent],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF7675),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        "خصم $discountPercentage%",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: 170,
+                                      child: Text(
+                                        title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        // السعر النهائي بعد الخصم (270 ج.م)
+                                        Text(
+                                          "$finalPrice ج.م",
+                                          style: const TextStyle(
+                                            color: Color(0xFF55E6C1),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // السعر الأصلي المشطوب (300 ج.م)
+                                        Text(
+                                          "$originalPrice ج.م",
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                            decoration: TextDecoration.lineThrough,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                DynamicCountdownWidget(untilTimestamp: discountUntilTimestamp),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                discountDocs.length,
+                    (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  height: 5,
+                  width: _activePage == index ? 18 : 5,
+                  decoration: BoxDecoration(
+                    color: _activePage == index ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ==================== DYNAMIC COUNTDOWN WIDGET ====================
+class DynamicCountdownWidget extends StatefulWidget {
+  final Timestamp? untilTimestamp;
+
+  const DynamicCountdownWidget({super.key, required this.untilTimestamp});
+
+  @override
+  State<DynamicCountdownWidget> createState() => _DynamicCountdownWidgetState();
+}
+
+class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateTimeLeft();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _calculateTimeLeft());
+  }
+
+  void _calculateTimeLeft() {
+    if (widget.untilTimestamp == null) return;
+    final targetDate = widget.untilTimestamp!.toDate();
+    final now = DateTime.now();
+    final difference = targetDate.difference(now);
+
+    if (mounted) {
+      setState(() {
+        _timeLeft = difference.isNegative ? Duration.zero : difference;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _twoDigits(int n) => n.toString().padLeft(2, '0');
+
+  @override
+  Widget build(BuildContext context) {
+    if (_timeLeft == Duration.zero) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Text(
+          "انتهى العرض",
+          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
+    final days = _timeLeft.inDays;
+    final hours = _timeLeft.inHours.remainder(24);
+    final minutes = _timeLeft.inMinutes.remainder(60);
+    final seconds = _timeLeft.inSeconds.remainder(60);
+
+    return Row(
+      children: [
+        if (days > 0) ...[
+          _buildTimeBox(_twoDigits(days), "يوم"),
+          const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ],
+        _buildTimeBox(_twoDigits(hours), "ساعة"),
+        const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        _buildTimeBox(_twoDigits(minutes), "دقيقة"),
+        const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        _buildTimeBox(_twoDigits(seconds), "ثانية"),
+      ],
+    );
+  }
+
+  Widget _buildTimeBox(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 7,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== STAGGERED ANIMATIONS & PRODUCT CARD ====================
 class _StaggeredCategoryWrapper extends StatefulWidget {
   final int index;
   final Widget child;
@@ -488,8 +825,7 @@ class _StaggeredCategoryWrapperState extends State<_StaggeredCategoryWrapper>
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
-    // تأخير الظهور بناءً على index القسم
-    Future.delayed(Duration(milliseconds: widget.index * 120), () {
+    Future.delayed(Duration(milliseconds: widget.index * 100), () {
       if (mounted) _controller.forward();
     });
   }
@@ -512,7 +848,6 @@ class _StaggeredCategoryWrapperState extends State<_StaggeredCategoryWrapper>
   }
 }
 
-// 2. أنيميشن ظهور الكروت بالترتيب داخل الأفقي (Product Horizontal Entrance)
 class _StaggeredProductWrapper extends StatefulWidget {
   final int index;
   final Widget child;
@@ -542,14 +877,13 @@ class _StaggeredProductWrapperState extends State<_StaggeredProductWrapper>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.25, 0),
+      begin: const Offset(0.2, 0),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
-    // تأخير ظهور الكروت أفُقياً بالترتيب
-    Future.delayed(Duration(milliseconds: widget.index * 80), () {
+    Future.delayed(Duration(milliseconds: widget.index * 70), () {
       if (mounted) _controller.forward();
     });
   }
@@ -572,7 +906,6 @@ class _StaggeredProductWrapperState extends State<_StaggeredProductWrapper>
   }
 }
 
-// 3. كارت المنتج التفاعلي عند اللمس (Hover Scale Effect)
 class _AnimatedProductCard extends StatefulWidget {
   final Map<String, dynamic> productData;
   final String imageUrl;
@@ -593,6 +926,16 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. استخراج السعر الأصلي من داتا المنتج
+    final num originalPrice = widget.productData['price'] ?? 0; // السعر الأصلي الأصلي (مثلاً 300)
+    final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
+    final bool hasDiscount = discountPercentage > 0;
+
+    // 2. 🎯 الحساب الصحيح للسعر النهائي بعد الخصم (مثلاً 300 * (1 - 0.10) = 270)
+    final num finalPrice = hasDiscount
+        ? (originalPrice * (1 - (discountPercentage / 100))).round()
+        : originalPrice;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isHovered = true),
       onTapUp: (_) => setState(() => _isHovered = false),
@@ -600,7 +943,9 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ProductWidget(productDoc: widget.productId)),
+          MaterialPageRoute(
+            builder: (context) => ProductWidget(productDoc: widget.productId),
+          ),
         );
       },
       child: AnimatedScale(
@@ -608,7 +953,7 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutCubic,
         child: Container(
-          width: 165,
+          width: 160,
           margin: const EdgeInsets.only(right: 14, bottom: 8, top: 4),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -616,14 +961,15 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(_isHovered ? 0.08 : 0.04),
-                blurRadius: _isHovered ? 16 : 10,
-                offset: const Offset(0, 6),
+                blurRadius: _isHovered ? 14 : 8,
+                offset: const Offset(0, 5),
               )
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ===== صورة المنتج + شارة الخصم والمفضلة =====
               Stack(
                 children: [
                   ClipRRect(
@@ -631,29 +977,47 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                     child: widget.imageUrl.isNotEmpty
                         ? Image.network(
                       widget.imageUrl,
-                      height: 140,
+                      height: 130,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 140,
-                          color: Colors.grey.shade100,
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF6C5CE7),
-                            ),
-                          ),
-                        );
-                      },
                     )
                         : Container(
-                      height: 140,
+                      height: 130,
                       color: Colors.grey.shade100,
                       child: const Icon(Icons.image, color: Colors.grey),
                     ),
                   ),
+
+                  // 🏷️ شارة الخصم (Discount Badge)
+                  if (hasDiscount)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF7675),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF7675).withOpacity(0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          "-$discountPercentage%",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // ❤️ زر المفضلة
                   Positioned(
                     top: 8,
                     right: 8,
@@ -663,11 +1027,17 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                         color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.favorite_border_rounded, size: 16, color: Color(0xFF6C5CE7)),
+                      child: const Icon(
+                        Icons.favorite_border_rounded,
+                        size: 16,
+                        color: Color(0xFF6C5CE7),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
+
+              // ===== تفاصيل المنتج والأسعار =====
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
@@ -679,22 +1049,43 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Color(0xFF2D3436),
                       ),
                     ),
                     const SizedBox(height: 6),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          "\$${widget.productData['price'] ?? 0}",
-                          style: const TextStyle(
-                            color: Color(0xFF6C5CE7),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
+                        // عرض السعر النهائي والسعر القديم المشطوب
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // السعر بعد الخصم (مثلاً 270 ج.م)
+                            Text(
+                              "$finalPrice ج.م",
+                              style: const TextStyle(
+                                color: Color(0xFF6C5CE7),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            ),
+                            // السعر الأصلي قبل الخصم (مثلاً 300 ج.م)
+                            if (hasDiscount)
+                              Text(
+                                "$originalPrice ج.م",
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 11,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                          ],
                         ),
+
+                        // زر الإضافة للسلة
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
@@ -706,7 +1097,7 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                             size: 16,
                             color: Color(0xFF6C5CE7),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ],

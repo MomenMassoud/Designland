@@ -14,18 +14,11 @@ class MainScreenWidget extends StatefulWidget {
 
 class _MainScreenWidgetState extends State<MainScreenWidget> {
   int _selectedIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
-  final List<Widget> _screens = [
+  final List<Widget> _screens =  [
     HomeView(),
     ProfileView(),
     AboutView(),
   ];
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,46 +29,30 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        titleSpacing: isDesktop ? 24 : 12,
+        titleSpacing: isDesktop ? 24 : 16,
         title: Row(
           children: [
-            // اللوجو واسم الموقع
-            CircleAvatar(
+            const CircleAvatar(
               backgroundImage: AssetImage(AppImages.appPLogo),
-              radius: 30,
+              radius: 20,
             ),
-            const SizedBox(width: 12),
-
-            // شريط البحث الذكي
-            Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F2F6),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: "Search products...",
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
+            const SizedBox(width: 10),
+            const Text(
+              "DesignLand",
+              style: TextStyle(
+                color: Color(0xFF2D3436),
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
           ],
         ),
         actions: [
-          // أيقونة السلة مع العداد
           Stack(
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined,
-                    color: Color(0xFF2D3436)),
+                icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF2D3436)),
                 onPressed: () {
                   Navigator.pushNamed(context, BasketView.id);
                 },
@@ -101,8 +78,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
               ),
             ],
           ),
-
-          // القائمة العلوية تظهر فقط على الويب (Desktop Navigation)
           if (isDesktop) ...[
             const SizedBox(width: 8),
             _buildNavTextButton("Home", Icons.home_outlined, 0),
@@ -112,15 +87,10 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
           const SizedBox(width: 12),
         ],
       ),
-
-      // ==================== BODY ====================
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
       ),
-
-      // ==================== MOBILE NAVIGATION BAR ====================
-      // يظهر فقط على الهواتف والأجهزة الصغيرة
       bottomNavigationBar: isDesktop
           ? null
           : BottomNavigationBar(
@@ -131,8 +101,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
         backgroundColor: Colors.white,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle:
-        const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -154,7 +123,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> {
     );
   }
 
-  // Helper widget للأزرار العلوية الخاصة بشاشات الويب
   Widget _buildNavTextButton(String title, IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
     return TextButton.icon(
