@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/feature/Login/view/login_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../../Core/server/analytics_service.dart';
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -13,17 +17,319 @@ class ProductWidget extends StatefulWidget {
 class _ProductWidgetState extends State<ProductWidget> {
   final CollectionReference _productsRef =
   FirebaseFirestore.instance.collection('products');
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   int _selectedImageIndex = 0;
   final TextEditingController _commentController = TextEditingController();
   double _userRating = 5.0;
   bool _isSubmitting = false;
+  bool _isAddingToCart = false;
+  bool _hasLoggedAnalytics = false;
 
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
+
+  // ==================== 🛒 CART & CHECKOUT FLOW ====================
+
+  Future<void> _handleAddToCart(
+      Map<String, dynamic> productData, double finalPrice) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      _showLoginDialog();
+      return;
+    }
+
+    setState(() => _isAddingToCart = true);
+
+    try {
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      final userData = userDoc.data() ?? {};
+
+      String? phone = userData['phone'];
+      List<dynamic> addresses = userData['addresses'] ?? [];
+
+      if (phone == null || phone.isEmpty || addresses.isEmpty) {
+        if (!mounted) return;
+        setState(() => _isAddingToCart = false);
+        await _showAddAddressAndPhoneDialog(user.uid, phone, addresses);
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() => _isAddingToCart = false);
+      await _showOrderDetailsBottomSheet(
+          user.uid, productData, finalPrice, addresses);
+    } catch (e) {
+      setState(() => _isAddingToCart = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("حدث خطأ أثناء المعالجة: $e")),
+      );
+    }
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تسجيل الدخول مطلوب"),
+        content: const Text("يرجى تسجيل الدخول أولاً للتمكن من إضافة المنتجات إلى السلة."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("إلغاء"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+            onPressed: () {
+              Navigator.pushNamed(context, LoginView.id);
+            },
+            child: const Text("تسجيل الدخول", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddAddressAndPhoneDialog(
+      String uid, String? existingPhone, List<dynamic> existingAddresses) async {
+    final phoneController = TextEditingController(text: existingPhone ?? '');
+    final addressTitleController = TextEditingController();
+    final addressDetailsController = TextEditingController();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "استكمال بيانات التواصل والعنوان",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (existingPhone == null || existingPhone.isEmpty) ...[
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: "رقم الهاتف للتواصل",
+                      prefixIcon: Icon(Icons.phone),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: addressTitleController,
+                  decoration: const InputDecoration(
+                    labelText: "اسم العنوان (مثال: المنزل، الشغل)",
+                    prefixIcon: Icon(Icons.label_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressDetailsController,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: "تفاصيل العنوان بالكامل",
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () async {
+                      if (phoneController.text.trim().isEmpty ||
+                          addressTitleController.text.trim().isEmpty ||
+                          addressDetailsController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("يرجى ملء جميع البيانات")),
+                        );
+                        return;
+                      }
+
+                      final newAddress = {
+                        'title': addressTitleController.text.trim(),
+                        'details': addressDetailsController.text.trim(),
+                      };
+
+                      await _db.collection('users').doc(uid).set({
+                        'phone': phoneController.text.trim(),
+                        'addresses': FieldValue.arrayUnion([newAddress]),
+                      }, SetOptions(merge: true));
+
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("تم حفظ البيانات بنجاح! اطلب الآن.")),
+                      );
+                    },
+                    child: const Text("حفظ ومتابعة الطلب", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showOrderDetailsBottomSheet(
+      String uid,
+      Map<String, dynamic> productData,
+      double finalPrice,
+      List<dynamic> addresses,
+      ) async {
+    final driveController = TextEditingController();
+    final notesController = TextEditingController();
+    int selectedAddressIndex = 0;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setBottomSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "تفاصيل الطلب والتصميم",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("اختر عنوان التوصيل:", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: selectedAddressIndex,
+                      items: List.generate(addresses.length, (index) {
+                        final addr = addresses[index];
+                        return DropdownMenuItem(
+                          value: index,
+                          child: Text("${addr['title']} - ${addr['details']}"),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setBottomSheetState(() => selectedAddressIndex = val);
+                        }
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: driveController,
+                      decoration: const InputDecoration(
+                        labelText: "رابط صور Google Drive",
+                        hintText: "https://drive.google.com/...",
+                        prefixIcon: Icon(Icons.add_link),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: "ملاحظات إضافية على الطلب",
+                        hintText: "اكتب أي تفاصيل أو تعديلات خاصة تتمنى تنفيذها...",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () async {
+                          if (driveController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("يرجى إضافة رابط ملفات Google Drive")),
+                            );
+                            return;
+                          }
+
+                          await _db.collection('users').doc(uid).collection('cart').add({
+                            'productId': widget.productDoc,
+                            'title': productData['title'] ?? '',
+                            'price': finalPrice, // السعر بعد الخصم
+                            'originalPrice': (productData['price'] ?? 0.0).toDouble(),
+                            'image': (productData['images'] as List?)?.firstOrNull ?? '',
+                            'driveUrl': driveController.text.trim(),
+                            'notes': notesController.text.trim(),
+                            'selectedAddress': addresses[selectedAddressIndex],
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+
+                          if (!context.mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("تمت إضافة المنتج إلى سلتك بنجاح! 🎉"),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                        label: const Text("تأكيد الإضافة إلى السلة",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==================== BUILD UI ====================
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +363,30 @@ class _ProductWidgetState extends State<ProductWidget> {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final List<String> images = List<String>.from(data['images'] ?? []);
-          final double price = (data['price'] ?? 0.0).toDouble();
-          final double avgRate = (data['avgRate'] ?? 0.0).toDouble();
+
+          // 💰 حساب الأسعار والخصم الآمن (Safe Casting)
+          final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
+
+          // قبول الخصم سواء كان اسمه discount أو discountPercentage
+          final double discountPercentage = double.tryParse(
+              (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
+          ) ?? 0.0;
+
+          final double discountedPrice = discountPercentage > 0
+              ? originalPrice - (originalPrice * (discountPercentage / 100))
+              : originalPrice;
+
+          final double avgRate = double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0;
           final String title = data['title'] ?? '';
           final String description = data['description'] ?? '';
+
+          if (!_hasLoggedAnalytics) {
+            _hasLoggedAnalytics = true;
+            AnalyticsService.logProductOpen(
+              productId: widget.productDoc,
+              productTitle: title,
+            );
+          }
 
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
@@ -69,7 +395,6 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
             child: Column(
               children: [
-                // ==================== TOP SECTION: GALLERY + MAIN INFO ====================
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -89,52 +414,44 @@ class _ProductWidgetState extends State<ProductWidget> {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 1. Gallery Section (Left Side)
                             Expanded(
                               flex: 5,
                               child: _buildImageGallery(images),
                             ),
                             const SizedBox(width: 32),
-
-                            // 2. Main Product Info & Cart Action (Right Side)
                             Expanded(
                               flex: 6,
-                              child: _buildMainProductHeader(title, avgRate, price, description),
+                              child: _buildMainProductHeader(
+                                  title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
                             ),
                           ],
                         );
                       } else {
-                        // Mobile Layout Vertical Fallback
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildImageGallery(images),
                             const SizedBox(height: 20),
-                            _buildMainProductHeader(title, avgRate, price, description),
+                            _buildMainProductHeader(
+                                title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
                           ],
                         );
                       }
                     },
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
-                // ==================== BOTTOM SECTION: DETAILS (RIGHT) & REVIEWS (LEFT) ====================
                 LayoutBuilder(
                   builder: (context, constraints) {
                     if (isDesktop) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 1. Product Details Card (Right Panel in RTL)
                           Expanded(
                             flex: 5,
                             child: _buildDetailsCard(description, data),
                           ),
                           const SizedBox(width: 24),
-
-                          // 2. Reviews Section Card (Left Panel in RTL)
                           Expanded(
                             flex: 7,
                             child: _buildReviewsCard(avgRate),
@@ -160,13 +477,11 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Image Gallery Builder ---
   Widget _buildImageGallery(List<String> images) {
     final String currentImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
 
     return Column(
       children: [
-        // Main Display Box
         Container(
           height: 340,
           width: double.infinity,
@@ -185,8 +500,6 @@ class _ProductWidgetState extends State<ProductWidget> {
               : null,
         ),
         const SizedBox(height: 12),
-
-        // Thumbnails List Below Main Image
         if (images.length > 1)
           SizedBox(
             height: 65,
@@ -221,8 +534,17 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Main Product Header (Title, Price, Compact Cart Button) ---
-  Widget _buildMainProductHeader(String title, double avgRate, double price, String description) {
+  // --- Header لعرض السعر والسعر بعد الخصم بشكل احترافي ---
+  Widget _buildMainProductHeader(
+      String title,
+      double avgRate,
+      double originalPrice,
+      double discountedPrice,
+      double discountPercentage,
+      String description,
+      Map<String, dynamic> data) {
+    final bool hasDiscount = discountPercentage > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -235,8 +557,6 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
         ),
         const SizedBox(height: 10),
-
-        // Rating Badge
         Row(
           children: [
             Container(
@@ -264,17 +584,54 @@ class _ProductWidgetState extends State<ProductWidget> {
         ),
         const SizedBox(height: 16),
 
-        // Price Label
-        Text(
-          "\$${price.toStringAsFixed(2)}",
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF10B981),
-          ),
+        // 🏷️ عرض السعر النهائي والسعر الأصلي المشطوب (إن وجد)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            // السعر النهائي المطلوب دفعه (بعد الخصم أو الأصلي إذا لم يوجد خصم)
+            Text(
+              "${discountedPrice.toStringAsFixed(2)} ج.م",
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: hasDiscount ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+              ),
+            ),
+            if (hasDiscount) ...[
+              const SizedBox(width: 12),
+              // السعر الأصلي مشطوب بخط
+              Text(
+                "${originalPrice.toStringAsFixed(2)} ج.م",
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Color(0xFF94A3B8),
+                  decoration: TextDecoration.lineThrough,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // نسبة الخصم
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "-${discountPercentage.toStringAsFixed(0)}%",
+                  style: const TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(height: 16),
 
+        const SizedBox(height: 16),
         Text(
           description,
           maxLines: 3,
@@ -283,7 +640,6 @@ class _ProductWidgetState extends State<ProductWidget> {
         ),
         const SizedBox(height: 24),
 
-        // Compact Add to Cart Button (Does NOT take full width)
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF6366F1),
@@ -294,10 +650,14 @@ class _ProductWidgetState extends State<ProductWidget> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          onPressed: () {
-            // TODO: Cart Handler
-          },
-          icon: const Icon(Icons.shopping_bag_outlined, size: 20),
+          onPressed: _isAddingToCart ? null : () => _handleAddToCart(data, discountedPrice),
+          icon: _isAddingToCart
+              ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          )
+              : const Icon(Icons.shopping_bag_outlined, size: 20),
           label: const Text(
             "إضافة إلى السلة",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -307,7 +667,6 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Product Full Specification Card ---
   Widget _buildDetailsCard(String description, Map<String, dynamic> data) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -343,7 +702,6 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Product Reviews & Rating Card ---
   Widget _buildReviewsCard(double avgRate) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -370,8 +728,6 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Stream Reviews
           StreamBuilder<QuerySnapshot>(
             stream: _productsRef
                 .doc(widget.productDoc)
@@ -387,10 +743,8 @@ class _ProductWidgetState extends State<ProductWidget> {
 
               return Column(
                 children: [
-                  // Submit Review Box
                   _buildAddReviewInput(reviews),
                   const SizedBox(height: 16),
-
                   if (reviews.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
@@ -472,8 +826,9 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Input Box for Adding Review ---
   Widget _buildAddReviewInput(List<QueryDocumentSnapshot> existingReviews) {
+    final currentUser = _auth.currentUser;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -517,12 +872,18 @@ class _ProductWidgetState extends State<ProductWidget> {
               onPressed: _isSubmitting
                   ? null
                   : () async {
+                if (currentUser == null) {
+                  _showLoginDialog();
+                  return;
+                }
+
                 if (_commentController.text.trim().isEmpty) return;
                 setState(() => _isSubmitting = true);
 
                 final ref = _productsRef.doc(widget.productDoc).collection('reviews');
                 await ref.add({
-                  'userName': 'Momen Massoud',
+                  'userName': currentUser.displayName ?? 'عميل',
+                  'userUid': currentUser.uid,
                   'rating': _userRating,
                   'comment': _commentController.text.trim(),
                   'createdAt': FieldValue.serverTimestamp(),

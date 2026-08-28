@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../MainScreen/view/main_screen_view.dart';
+import '../function/signup_function.dart';
 
 class SignUpWidget extends StatefulWidget {
   const SignUpWidget({super.key});
@@ -34,18 +35,19 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // bool isSuccess = await RegisterFunction(
-      //   context,
-      //   _nameController.text,
-      //   _emailController.text,
-      //   _passwordController.text,
-      // );
+      bool isSuccess = await RegisterFunction(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        _confirmPasswordController.text,
+        _nameController.text,
+      );
 
       if (mounted) {
         setState(() => _isLoading = false);
-        // if (isSuccess) {
-        //   Navigator.pushReplacementNamed(context, MainScreenView.id);
-        // }
+        if (isSuccess) {
+          Navigator.pushReplacementNamed(context, MainScreenView.id);
+        }
       }
     }
   }
