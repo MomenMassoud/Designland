@@ -1,10 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/Utils/app.images.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
 import 'package:desginland/feature/Basket/view/basket_view.dart';
 import 'package:desginland/feature/Home/view/home_view.dart';
 import 'package:desginland/feature/Profile/view/profile_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import '../../../Core/server/analytics_service.dart';
 
 class MainScreenWidget extends StatefulWidget {
@@ -22,16 +23,26 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     ProfileView(),
     AboutView(),
   ];
-
+  int _cartCount=0;
   final List<String> _tabNames = ['Home', 'Profile', 'About'];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    // 🚀 بدء الجلسة والـ Heartbeat عند فتح الصفحة
+    GetBasketCount();
     AnalyticsService.startSession();
+  }
+  final FirebaseAuth _auth=FirebaseAuth.instance;
+  final FirebaseFirestore _firestore=FirebaseFirestore.instance;
+  void GetBasketCount()async{
+    if(_auth.currentUser!=null){
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('cart').get().then((value){
+        setState(() {
+          _cartCount=value.size;
+        });
+      });
+    }
   }
 
   @override
@@ -52,8 +63,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
+    GetBasketCount();
     final bool isDesktop = MediaQuery.of(context).size.width >= 850;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -87,7 +98,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                   Navigator.pushNamed(context, BasketView.id);
                 },
               ),
-              Positioned(
+              _cartCount==0?Text(""): Positioned(
                 right: 6,
                 top: 6,
                 child: Container(
@@ -96,8 +107,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     color: Color(0xFFFF7675),
                     shape: BoxShape.circle,
                   ),
-                  child: const Text(
-                    "3",
+                  child:  Text(
+                    "${_cartCount}",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 9,

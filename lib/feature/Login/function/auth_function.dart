@@ -65,25 +65,6 @@ Future<bool> LoginFunction(
     return false;
   }
 }
-//
-// Future<UserModel> GetCurrentUserData(BuildContext context)async{
-//   UserModel userModel=UserModel(uid: "", email: "", Name: "", role: "");
-//   try{
-//     await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
-//       userModel.uid=_auth.currentUser!.uid;
-//       userModel.role=value.get('role');
-//       userModel.Name=value.get('name');
-//       userModel.email=value.get('email');
-//     });
-//     return userModel;
-//   }
-//   catch(e){
-//     showErrorDialog(context, "فشل جلب بيانات المستخدم", e.toString());
-//     return userModel;
-//   }
-// }
-
-
 
 Future<void>LogoutMethod(BuildContext context)async{
   try{
