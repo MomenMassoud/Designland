@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/Utils/app.images.dart';
+import 'package:desginland/Core/widgets/staff_block_widget.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
 import 'package:desginland/feature/Basket/view/basket_view.dart';
 import 'package:desginland/feature/Home/view/home_view.dart';
@@ -7,6 +8,7 @@ import 'package:desginland/feature/Profile/view/profile_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../Core/server/analytics_service.dart';
+import '../../../Core/widgets/black_list_widget.dart';
 
 class MainScreenWidget extends StatefulWidget {
   const MainScreenWidget({super.key});
@@ -17,7 +19,9 @@ class MainScreenWidget extends StatefulWidget {
 
 class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBindingObserver {
   int _selectedIndex = 0;
-
+  bool _isblocked=false;
+  String _UserRole="";
+  bool _isStaff=false;
   final List<Widget> _screens =  [
     HomeView(),
     ProfileView(),
@@ -29,6 +33,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   @override
   void initState() {
     super.initState();
+    check_block();
+    _checkStaff();
     WidgetsBinding.instance.addObserver(this);
     GetBasketCount();
     AnalyticsService.startSession();
@@ -45,10 +51,32 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     }
   }
 
+  void _checkStaff()async{
+    if(_auth.currentUser!=null){
+      await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+        if(value.get('role')=="staff" || value.get('role')=="admin"){
+          setState(() {
+            _isStaff=true;
+            _UserRole=value.get('role');
+          });
+        }
+      });
+    }
+  }
+
+  void check_block()async{
+    if(_auth.currentUser!=null){
+      await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+        setState(() {
+          _isblocked=value.get('isBlocked');
+        });
+      });
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // إيقاف مؤقت الـ Heartbeat بشكل آمن عند تدمير الـ Widget
     AnalyticsService.endSession();
     super.dispose();
   }
@@ -65,7 +93,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   Widget build(BuildContext context) {
     GetBasketCount();
     final bool isDesktop = MediaQuery.of(context).size.width >= 850;
-    return Scaffold(
+    return _isblocked?BlockListScreen(): _isStaff?StaffBlockScreen(userRole: _UserRole): Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,

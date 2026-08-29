@@ -68,6 +68,9 @@ class _BasketWidgetState extends State<BasketWidget> {
           'price': data['price'] ?? 0,
           'quantity': data['quantity'] ?? 1,
           'image': data['image'] ?? '',
+          'driveUrl':doc.get('driveUrl'),
+          'note':doc.get('notes'),
+          'selectedAddress':"${doc.get('selectedAddress')}"
         };
       }).toList();
 

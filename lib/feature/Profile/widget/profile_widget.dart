@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:desginland/feature/Login/view/login_view.dart';
+import 'package:desginland/Core/widgets/auth_not_found.dart';
+import 'package:desginland/feature/Login/function/auth_function.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import 'order_widget.dart';
 
 class ProfileWidget extends StatefulWidget {
   const ProfileWidget({super.key});
@@ -14,122 +17,146 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // 1. تعديل بيانات الحساب (الاسم ورقم الهاتف)
-  Future<void> _showEditProfileModal(String currentName, String currentPhone) async {
+  // 1. تعديل بيانات الحساب (عبر Dialog مخصص للويب والموبايل)
+  Future<void> _showEditProfileDialog(String currentName, String currentPhone) async {
     final nameController = TextEditingController(text: currentName);
     final phoneController = TextEditingController(text: currentPhone);
 
-    await showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("تعديل البيانات الشخصية", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: "الاسم الكامل", prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: "رقم الهاتف", prefixIcon: Icon(Icons.phone_outlined), border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: () async {
-                  final uid = _auth.currentUser!.uid;
-                  await _db.collection('users').doc(uid).set({
-                    'name': nameController.text.trim(),
-                    'phone': phoneController.text.trim(),
-                  }, SetOptions(merge: true));
-
-                  await _auth.currentUser?.updateDisplayName(nameController.text.trim());
-
-                  if (!mounted) return;
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم تحديث البيانات بنجاح")));
-                },
-                child: const Text("حفظ التغيرات", style: TextStyle(color: Colors.white)),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("تعديل البيانات الشخصية", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "الاسم الكامل", prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: "رقم الهاتف", prefixIcon: Icon(Icons.phone_outlined), border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6366F1),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () async {
+                    final uid = _auth.currentUser!.uid;
+                    await _db.collection('users').doc(uid).set({
+                      'name': nameController.text.trim(),
+                      'phone': phoneController.text.trim(),
+                    }, SetOptions(merge: true));
+
+                    await _auth.currentUser?.updateDisplayName(nameController.text.trim());
+
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم تحديث البيانات بنجاح")));
+                  },
+                  child: const Text("حفظ التغييرات", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 2. إدارة وتعديل العناوين
-  Future<void> _showAddressesModal(List<dynamic> addresses) async {
+  // 2. إدارة العناوين عبر Dialog
+  Future<void> _showAddressesDialog(List<dynamic> addresses) async {
     final titleController = TextEditingController();
     final detailsController = TextEditingController();
 
-    await showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("إدارة العناوين", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  ...addresses.map((addr) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.location_on, color: Color(0xFF6366F1)),
-                    title: Text(addr['title'] ?? ''),
-                    subtitle: Text(addr['details'] ?? ''),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () async {
-                        final uid = _auth.currentUser!.uid;
-                        await _db.collection('users').doc(uid).update({
-                          'addresses': FieldValue.arrayRemove([addr])
-                        });
-                        setModalState(() => addresses.remove(addr));
-                      },
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 500,
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("إدارة العناوين", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                      ],
                     ),
-                  )),
-                  const Divider(height: 24),
-                  const Text("إضافة عنوان جديد:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  TextField(controller: titleController, decoration: const InputDecoration(labelText: "اسم العنوان (مثال: المنزل)", border: OutlineInputBorder())),
-                  const SizedBox(height: 8),
-                  TextField(controller: detailsController, decoration: const InputDecoration(labelText: "التفاصيل الكاملة", border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
-                      onPressed: () async {
-                        if (titleController.text.isEmpty || detailsController.text.isEmpty) return;
-                        final newAddr = {'title': titleController.text.trim(), 'details': detailsController.text.trim()};
-                        final uid = _auth.currentUser!.uid;
-                        await _db.collection('users').doc(uid).set({
-                          'addresses': FieldValue.arrayUnion([newAddr])
-                        }, SetOptions(merge: true));
-                        setModalState(() => addresses.add(newAddr));
-                        titleController.clear();
-                        detailsController.clear();
-                      },
-                      child: const Text("إضافة العنوان", style: TextStyle(color: Colors.white)),
-                    ),
-                  )
-                ],
+                    const Divider(),
+                    ...addresses.map((addr) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.location_on, color: Color(0xFF6366F1)),
+                      title: Text(addr['title'] ?? ''),
+                      subtitle: Text(addr['details'] ?? ''),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () async {
+                          final uid = _auth.currentUser!.uid;
+                          await _db.collection('users').doc(uid).update({
+                            'addresses': FieldValue.arrayRemove([addr])
+                          });
+                          setModalState(() => addresses.remove(addr));
+                        },
+                      ),
+                    )),
+                    const Divider(height: 24),
+                    const Text("إضافة عنوان جديد:", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    TextField(controller: titleController, decoration: const InputDecoration(labelText: "اسم العنوان (مثال: المنزل)", border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    TextField(controller: detailsController, decoration: const InputDecoration(labelText: "التفاصيل الكاملة", border: OutlineInputBorder())),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () async {
+                          if (titleController.text.isEmpty || detailsController.text.isEmpty) return;
+                          final newAddr = {'title': titleController.text.trim(), 'details': detailsController.text.trim()};
+                          final uid = _auth.currentUser!.uid;
+                          await _db.collection('users').doc(uid).set({
+                            'addresses': FieldValue.arrayUnion([newAddr])
+                          }, SetOptions(merge: true));
+                          setModalState(() => addresses.add(newAddr));
+                          titleController.clear();
+                          detailsController.clear();
+                        },
+                        child: const Text("إضافة العنوان", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
           );
@@ -146,6 +173,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("تحديث كلمة السر"),
         content: Text("سيتم إرسال رابط إعادة ضبط كلمة السر إلى البريد الإلكتروني:\n$email"),
         actions: [
@@ -165,18 +193,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // 4. تغيير اللغة
-  void _showLanguageSelector() {
-    showModalBottomSheet(
+  // 4. اختيار اللغة عبر Dialog
+  void _showLanguageDialog() {
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("اختر اللغة / Select Language", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("اختر اللغة / Select Language", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
             ListTile(
               leading: const Text("🇪🇬", style: TextStyle(fontSize: 22)),
               title: const Text("العربية"),
@@ -193,106 +219,62 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // 5. عرض الطلبات المكتملة السابقة
-  void _showCompletedOrdersModal() {
+  // 5. سجل البحث عبر Dialog
+  void _showSearchHistoryDialog() {
     final uid = _auth.currentUser?.uid;
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("الطلبات المكتملة السابقة", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Divider(height: 20),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _db.collection('users').doc(uid).collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                  final orders = snapshot.data!.docs;
-                  if (orders.isEmpty) return const Center(child: Text("لا توجد طلبات مكتملة سابقة."));
-
-                  return ListView.builder(
-                    itemCount: orders.length,
-                    itemBuilder: (context, index) {
-                      final data = orders[index].data() as Map<String, dynamic>;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          leading: const Icon(Icons.check_circle, color: Colors.green),
-                          title: Text(data['title'] ?? 'طلب منتج'),
-                          subtitle: Text("السعر: ${data['price']} ج.م"),
-                        ),
-                      );
-                    },
-                  );
-                },
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450,
+          height: 450,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("سجل البحث السابق", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.delete_forever, color: Colors.red),
+                    onPressed: () => _db.collection('users').doc(uid).collection('search_history').get().then((snapshot) {
+                      for (DocumentSnapshot doc in snapshot.docs) {
+                        doc.reference.delete();
+                      }
+                    }),
+                  )
+                ],
               ),
-            ),
-          ],
+              const Divider(),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _db.collection('users').doc(uid).collection('search_history').orderBy('createdAt', descending: true).snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                    final history = snapshot.data!.docs;
+                    if (history.isEmpty) return const Center(child: Text("سجل البحث فارغ."));
+
+                    return ListView.builder(
+                      itemCount: history.length,
+                      itemBuilder: (context, index) {
+                        final item = history[index].data() as Map<String, dynamic>;
+                        return ListTile(
+                          leading: const Icon(Icons.history, color: Colors.grey),
+                          title: Text(item['query'] ?? ''),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
-  // 6. عرض سجل البحث
-  void _showSearchHistoryModal() {
-    final uid = _auth.currentUser?.uid;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("سجل البحث السابق", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.delete_forever, color: Colors.red),
-                  onPressed: () => _db.collection('users').doc(uid).collection('search_history').get().then((snapshot) {
-                    for (DocumentSnapshot doc in snapshot.docs) {
-                      doc.reference.delete();
-                    }
-                  }),
-                )
-              ],
-            ),
-            const Divider(),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _db.collection('users').doc(uid).collection('search_history').orderBy('createdAt', descending: true).snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                  final history = snapshot.data!.docs;
-                  if (history.isEmpty) return const Center(child: Text("سجل البحث فارغ."));
-
-                  return ListView.builder(
-                    itemCount: history.length,
-                    itemBuilder: (context, index) {
-                      final item = history[index].data() as Map<String, dynamic>;
-                      return ListTile(
-                        leading: const Icon(Icons.history, color: Colors.grey),
-                        title: Text(item['query'] ?? ''),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== BUILD UI ====================
 
   @override
   Widget build(BuildContext context) {
@@ -320,7 +302,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // 1. كارت معلومات المستخدم الأساسية
+                // كارت البيانات
                 Material(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -350,7 +332,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, color: Color(0xFF6366F1)),
-                          onPressed: () => _showEditProfileModal(name, phone),
+                          onPressed: () => _showEditProfileDialog(name, phone),
                         )
                       ],
                     ),
@@ -358,7 +340,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 ),
                 const SizedBox(height: 20),
 
-                // 2. قائمة الخيارات والإعدادات (استبدال Container بـ Material وتحديد clipBehavior)
+                // قائمة الخيارات
                 Material(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -367,20 +349,25 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     children: [
                       _buildProfileTile(
                         icon: Icons.shopping_bag_outlined,
-                        title: "طلباتي المكتملة السابقة",
-                        onTap: _showCompletedOrdersModal,
+                        title: "قائمة الطلبات ومتابعتها",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) =>  OrdersScreen()),
+                          );
+                        },
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.history,
                         title: "سجل البحث",
-                        onTap: _showSearchHistoryModal,
+                        onTap: _showSearchHistoryDialog,
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.location_on_outlined,
                         title: "عناويني (${addresses.length})",
-                        onTap: () => _showAddressesModal(addresses),
+                        onTap: () => _showAddressesDialog(addresses),
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(
@@ -392,14 +379,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       _buildProfileTile(
                         icon: Icons.language,
                         title: "تغيير اللغة (Language)",
-                        onTap: _showLanguageSelector,
+                        onTap: _showLanguageDialog,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // 3. زر تسجيل الخروج
+                // زر الخروج
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -411,7 +398,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () async {
-                      await _auth.signOut();
+                      LogoutMethod(context);
                     },
                     icon: const Icon(Icons.logout),
                     label: const Text("تسجيل الخروج", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -422,21 +409,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           );
         },
       )
-          : Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("لم يتم تسجيل الدخول، برجاء تسجيل الدخول أولاً"),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, LoginView.id);
-              },
-              child: const Text("تسجيل الدخول"),
-            )
-          ],
-        ),
-      ),
+          : const AuthNotLoginWidget(),
     );
   }
 

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
+import 'package:desginland/feature/Splash/View/splash_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
 import '../view/login_view.dart'; // تأكد من المسار الخاص بك
 
@@ -20,6 +23,7 @@ Future<bool> LoginFunction(
     );
 
     if (userCredential.user != null) {
+      Get.offAll(MainScreenView(),routeName: MainScreenView.id);
       return true;
     } else {
       if (context.mounted) {
@@ -69,7 +73,7 @@ Future<bool> LoginFunction(
 Future<void>LogoutMethod(BuildContext context)async{
   try{
     await _auth.signOut().then((value){
-      Navigator.pushReplacementNamed(context, LoginView.id);
+      Get.offAll(SplashView(),routeName: SplashView.id);
     });
   }
   catch(e){

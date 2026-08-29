@@ -24,7 +24,7 @@ class _HomeWidgetState extends State<HomeWidget> {
   // Filter States
   String? _selectedCategoryId;
   String? _selectedSubcategoryId;
-  RangeValues _priceRange = const RangeValues(0, 1000);
+  RangeValues _priceRange = const RangeValues(0, 50000);
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -459,7 +459,7 @@ class DiscountProductsCarousel extends StatefulWidget {
   State<DiscountProductsCarousel> createState() => _DiscountProductsCarouselState();
 }
 
-class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
+class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
   final PageController _pageController = PageController(viewportFraction: 0.92);
   int _activePage = 0;
   Timer? _autoSlideTimer;
@@ -562,7 +562,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                             right: 0,
                             top: 0,
                             bottom: 0,
-                            width: 160,
+                            width: 200,
                             child: ClipRRect(
                               borderRadius: const BorderRadius.horizontal(right: Radius.circular(22)),
                               child: Stack(

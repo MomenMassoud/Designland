@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../Core/widgets/error_dailog_custom.dart';
 
@@ -19,9 +21,11 @@ Future<bool>RegisterFunction(BuildContext context,String email,String password,S
           'email':email,
           'name':name,
           'role':'user',
-          'uid':_auth.currentUser!.uid
+          'uid':_auth.currentUser!.uid,
+          'isBlocked':false,
         });
       });
+      Get.offAll(MainScreenView(),routeName: MainScreenView.id);
       return true;
     }
     catch(e){

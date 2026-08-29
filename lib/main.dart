@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'Core/Utils/app_routes.dart';
+import 'Core/widgets/App_localization.dart';
 import 'feature/Splash/View/splash_view.dart';
 import 'firebase_options.dart';
 
@@ -20,15 +22,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "DesignLand",
+    final deviceLocale = Get.deviceLocale ?? const Locale('ar');
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'DesignLand',
+      translations: AppTranslations(),
+      locale: deviceLocale,
+      initialRoute: SplashView.id,
+      routes: appRoutes,
+      fallbackLocale: const Locale('en', 'US'),
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
       ),
-      routes: appRoutes,
-      initialRoute: SplashView.id,
-
     );
   }
 }
