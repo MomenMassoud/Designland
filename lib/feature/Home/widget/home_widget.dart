@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/products_list_view.dart';
 import 'package:desginland/feature/Product/widget/product_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../Core/server/analytics_service.dart';
@@ -20,17 +21,37 @@ class _HomeWidgetState extends State<HomeWidget> {
   FirebaseFirestore.instance.collection('categories');
   final CollectionReference _subcategoriesRef =
   FirebaseFirestore.instance.collection('subcategories');
-
+  Timer? _searchDebounce;
   // Filter States
   String? _selectedCategoryId;
   String? _selectedSubcategoryId;
   RangeValues _priceRange = const RangeValues(0, 50000);
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  Future<void> _saveSearchHistory(String query) async {
+    if (query.trim().isEmpty) return;
 
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('user') // 🎯 تعديل اسم الكولكشن إلى user
+          .doc(userId)
+          .collection('search_history')
+          .add({
+        'query': query.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Error saving search history: $e");
+    }
+  }
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounce?.cancel(); // إلغاء الـ Timer عند إغلاق الشاشة
+    super.dispose();
     super.dispose();
   }
 
@@ -249,6 +270,16 @@ class _HomeWidgetState extends State<HomeWidget> {
                           setState(() {
                             _searchQuery = val.trim().toLowerCase();
                           });
+
+                          // إلغاء أي تايمر سابق أثناء استمرار المستخدم في الكتابة
+                          if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+
+                          // حفظ البحث بعد توقف المستخدم عن الكتابة لمدة 800 ميلي ثانية
+                          if (val.trim().length >= 2) {
+                            _searchDebounce = Timer(const Duration(milliseconds: 800), () {
+                              _saveSearchHistory(val);
+                            });
+                          }
                         },
                         decoration: const InputDecoration(
                           hintText: "Search custom gifts, items...",
@@ -257,7 +288,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(vertical: 14),
                         ),
-                      ),
+                      )
                     ),
                   ),
                   const SizedBox(width: 10),

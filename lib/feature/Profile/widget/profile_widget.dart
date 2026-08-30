@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/widgets/auth_not_found.dart';
 import 'package:desginland/feature/Login/function/auth_function.dart';
+import 'package:desginland/feature/Profile/widget/search_history_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'order_widget.dart';
 
@@ -219,63 +221,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // 5. سجل البحث عبر Dialog
-  void _showSearchHistoryDialog() {
-    final uid = _auth.currentUser?.uid;
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 450,
-          height: 450,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("سجل البحث السابق", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.delete_forever, color: Colors.red),
-                    onPressed: () => _db.collection('users').doc(uid).collection('search_history').get().then((snapshot) {
-                      for (DocumentSnapshot doc in snapshot.docs) {
-                        doc.reference.delete();
-                      }
-                    }),
-                  )
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _db.collection('users').doc(uid).collection('search_history').orderBy('createdAt', descending: true).snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                    final history = snapshot.data!.docs;
-                    if (history.isEmpty) return const Center(child: Text("سجل البحث فارغ."));
-
-                    return ListView.builder(
-                      itemCount: history.length,
-                      itemBuilder: (context, index) {
-                        final item = history[index].data() as Map<String, dynamic>;
-                        return ListTile(
-                          leading: const Icon(Icons.history, color: Colors.grey),
-                          title: Text(item['query'] ?? ''),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
@@ -361,7 +306,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       _buildProfileTile(
                         icon: Icons.history,
                         title: "سجل البحث",
-                        onTap: _showSearchHistoryDialog,
+                        onTap: (){
+                          Get.to(SearchHistoryScreen());
+                        },
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(

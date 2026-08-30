@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/Utils/app.images.dart';
+import 'package:desginland/Core/widgets/error_dailog_custom.dart';
 import 'package:desginland/Core/widgets/staff_block_widget.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
 import 'package:desginland/feature/Basket/view/basket_view.dart';
 import 'package:desginland/feature/Home/view/home_view.dart';
+import 'package:desginland/feature/Notification/view/notification_view.dart';
 import 'package:desginland/feature/Profile/view/profile_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
 import '../../../Core/widgets/black_list_widget.dart';
 
@@ -28,49 +31,78 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     AboutView(),
   ];
   int _cartCount=0;
+  int _notificationCount=0;
   final List<String> _tabNames = ['Home', 'Profile', 'About'];
 
   @override
   void initState() {
     super.initState();
-    check_block();
+    _check_block();
     _checkStaff();
     WidgetsBinding.instance.addObserver(this);
-    GetBasketCount();
+    _GetBasketCount();
     AnalyticsService.startSession();
   }
   final FirebaseAuth _auth=FirebaseAuth.instance;
   final FirebaseFirestore _firestore=FirebaseFirestore.instance;
-  void GetBasketCount()async{
-    if(_auth.currentUser!=null){
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('cart').get().then((value){
-        setState(() {
-          _cartCount=value.size;
+  void _GetNotificationCount()async{
+    try{
+      if(_auth.currentUser!=null){
+        await _firestore.collection('user').doc(_auth.currentUser!.uid).collection('notification').where('isRead',isEqualTo: true).get().then((value){
+          setState(() {
+            _notificationCount=value.size;
+          });
         });
-      });
+      }
+    }
+    catch(e){
+      showErrorDialog(context, "Error", e.toString());
+    }
+  }
+  void _GetBasketCount()async{
+    try{
+      if(_auth.currentUser!=null){
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('cart').get().then((value){
+          setState(() {
+            _cartCount=value.size;
+          });
+        });
+      }
+    }
+    catch(e){
+      showErrorDialog(context, "Error", e.toString());
     }
   }
 
   void _checkStaff()async{
-    if(_auth.currentUser!=null){
-      await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
-        if(value.get('role')=="staff" || value.get('role')=="admin"){
-          setState(() {
-            _isStaff=true;
-            _UserRole=value.get('role');
-          });
-        }
-      });
+    try{
+      if(_auth.currentUser!=null){
+        await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+          if(value.get('role')=="staff" || value.get('role')=="admin"){
+            setState(() {
+              _isStaff=true;
+              _UserRole=value.get('role');
+            });
+          }
+        });
+      }
+    }
+    catch(e){
+      showErrorDialog(context, "Error", e.toString());
     }
   }
 
-  void check_block()async{
-    if(_auth.currentUser!=null){
-      await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
-        setState(() {
-          _isblocked=value.get('isBlocked');
+  void _check_block()async{
+    try{
+      if(_auth.currentUser!=null){
+        await _firestore.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+          setState(() {
+            _isblocked=value.get('isBlocked');
+          });
         });
-      });
+      }
+    }catch(e){
+      showErrorDialog(context, "Error", e.toString());
     }
   }
 
@@ -91,7 +123,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
-    GetBasketCount();
+    _GetBasketCount();
+    _GetNotificationCount();
     final bool isDesktop = MediaQuery.of(context).size.width >= 850;
     return _isblocked?BlockListScreen(): _isStaff?StaffBlockScreen(userRole: _UserRole): Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -117,6 +150,37 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
           ],
         ),
         actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none, color: Color(0xFF2D3436)),
+                onPressed: () {
+                  Get.to(NotificationView());
+                },
+              ),
+              _notificationCount==0?Text(""): Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF7675),
+                    shape: BoxShape.circle,
+                  ),
+                  child:  Text(
+                    "${_notificationCount}",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
           Stack(
             alignment: Alignment.center,
             children: [
