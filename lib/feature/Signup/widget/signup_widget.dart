@@ -18,9 +18,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isPasswordObscure = true;
-  bool _isConfirmPasswordObscure = true;
-  bool _isLoading = false;
+  // استخدام ValueNotifier لمنع Rebuilds الشاشة كاملة
+  final ValueNotifier<bool> _isPasswordObscure = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _isConfirmPasswordObscure = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
 
   @override
   void dispose() {
@@ -28,23 +29,26 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _isPasswordObscure.dispose();
+    _isConfirmPasswordObscure.dispose();
+    _isLoading.dispose();
     super.dispose();
   }
 
   void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+      _isLoading.value = true;
 
       bool isSuccess = await RegisterFunction(
         context,
-        _emailController.text,
-        _passwordController.text,
-        _confirmPasswordController.text,
-        _nameController.text,
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _confirmPasswordController.text.trim(),
+        _nameController.text.trim(),
       );
 
       if (mounted) {
-        setState(() => _isLoading = false);
+        _isLoading.value = false;
         if (isSuccess) {
           Navigator.pushReplacementNamed(context, MainScreenView.id);
         }
@@ -54,9 +58,6 @@ class _SignUpWidgetState extends State<SignUpWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 850;
-
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       body: Center(
@@ -76,18 +77,24 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   ),
                 ],
               ),
-              child: isDesktop
-                  ? Row(
-                children: [
-                  Expanded(child: _buildBrandingSide()),
-                  Expanded(child: _buildSignUpForm(context)),
-                ],
-              )
-                  : Column(
-                children: [
-                  _buildMobileHeader(),
-                  _buildSignUpForm(context),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth > 850;
+                  if (isDesktop) {
+                    return Row(
+                      children: [
+                        const Expanded(child: _SignUpBrandingSide()),
+                        Expanded(child: _buildSignUpForm()),
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      const _SignUpMobileHeader(),
+                      _buildSignUpForm(),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -96,61 +103,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     );
   }
 
-  Widget _buildBrandingSide() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          bottomLeft: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
-          const SizedBox(height: 24),
-          const Text(
-            "Create Account",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            "Join DesignLand today and start creating customized gifts & personalized orders easily.",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        children: [
-          Image.asset(AppImages.appPLogo, height: 90),
-          const SizedBox(height: 12),
-          const Text(
-            "Join DesignLand",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSignUpForm(BuildContext context) {
+  Widget _buildSignUpForm() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
       child: Form(
@@ -200,63 +153,78 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             ),
             const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _isPasswordObscure,
-              decoration: InputDecoration(
-                labelText: "Password",
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_isPasswordObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                  onPressed: () => setState(() => _isPasswordObscure = !_isPasswordObscure),
-                ),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
-                ),
-              ),
-              validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+            ValueListenableBuilder<bool>(
+              valueListenable: _isPasswordObscure,
+              builder: (context, isObscure, child) {
+                return TextFormField(
+                  controller: _passwordController,
+                  obscureText: isObscure,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                    ),
+                  ),
+                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+                );
+              },
             ),
             const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _confirmPasswordController,
-              obscureText: _isConfirmPasswordObscure,
-              decoration: InputDecoration(
-                labelText: "Confirm Password",
-                prefixIcon: const Icon(Icons.lock_reset_outlined),
-                suffixIcon: IconButton(
-                  icon: Icon(_isConfirmPasswordObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                  onPressed: () => setState(() => _isConfirmPasswordObscure = !_isConfirmPasswordObscure),
-                ),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
-                ),
-              ),
-              validator: (val) {
-                if (val != _passwordController.text) return "Passwords do not match";
-                return null;
+            ValueListenableBuilder<bool>(
+              valueListenable: _isConfirmPasswordObscure,
+              builder: (context, isConfirmObscure, child) {
+                return TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: isConfirmObscure,
+                  decoration: InputDecoration(
+                    labelText: "Confirm Password",
+                    prefixIcon: const Icon(Icons.lock_reset_outlined),
+                    suffixIcon: IconButton(
+                      icon: Icon(isConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      onPressed: () => _isConfirmPasswordObscure.value = !_isConfirmPasswordObscure.value,
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val != _passwordController.text) return "Passwords do not match";
+                    return null;
+                  },
+                );
               },
             ),
             const SizedBox(height: 24),
 
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleSignUp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryPurple,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _isLoading,
+              builder: (context, isLoading, child) {
+                return SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _handleSignUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPurple,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: isLoading
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
 
@@ -272,6 +240,70 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             )
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SignUpBrandingSide extends StatelessWidget {
+  const _SignUpBrandingSide();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryPurple,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          bottomLeft: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
+          const SizedBox(height: 24),
+          const Text(
+            "Create Account",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            "Join DesignLand today and start creating customized gifts & personalized orders easily.",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SignUpMobileHeader extends StatelessWidget {
+  const _SignUpMobileHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryPurple,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          Image.asset(AppImages.appPLogo, height: 90),
+          const SizedBox(height: 12),
+          const Text(
+            "Join DesignLand",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        ],
       ),
     );
   }

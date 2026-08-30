@@ -1,7 +1,10 @@
+
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/products_list_view.dart';
 import 'package:desginland/feature/Product/widget/product_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../Core/server/analytics_service.dart';
@@ -14,23 +17,45 @@ class HomeWidget extends StatefulWidget {
 }
 
 class _HomeWidgetState extends State<HomeWidget> {
-  final CollectionReference _productsRef =
-  FirebaseFirestore.instance.collection('products');
-  final CollectionReference _categoriesRef =
-  FirebaseFirestore.instance.collection('categories');
-  final CollectionReference _subcategoriesRef =
-  FirebaseFirestore.instance.collection('subcategories');
+  final CollectionReference _productsRef = FirebaseFirestore.instance.collection('products');
+  final CollectionReference _categoriesRef = FirebaseFirestore.instance.collection('categories');
+  final CollectionReference _subcategoriesRef = FirebaseFirestore.instance.collection('subcategories');
+
+  Timer? _searchDebounce;
+  final TextEditingController _searchController = TextEditingController();
+
+  // تم تغيير الاسم إلى _searchNotifier لمنع أي تضارب مع Getter قديم بنفس الاسم
+  final ValueNotifier<String> _searchNotifier = ValueNotifier<String>('');
 
   // Filter States
   String? _selectedCategoryId;
   String? _selectedSubcategoryId;
   RangeValues _priceRange = const RangeValues(0, 50000);
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
+
+  Future<void> _saveSearchHistory(String query) async {
+    if (query.trim().isEmpty) return;
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('search_history')
+          .add({
+        'query': query.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Error saving search history: $e");
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounce?.cancel();
+    _searchNotifier.dispose();
     super.dispose();
   }
 
@@ -38,9 +63,9 @@ class _HomeWidgetState extends State<HomeWidget> {
     setState(() {
       _selectedCategoryId = null;
       _selectedSubcategoryId = null;
-      _priceRange = const RangeValues(0, 1000);
-      _searchQuery = '';
+      _priceRange = const RangeValues(0, 50000);
       _searchController.clear();
+      _searchNotifier.value = '';
     });
   }
 
@@ -94,9 +119,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                     const Divider(),
                     const SizedBox(height: 12),
 
-                    // Category Selector
-                    const Text("Category",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 8),
                     StreamBuilder<QuerySnapshot>(
                       stream: _categoriesRef.snapshots(),
@@ -129,10 +152,8 @@ class _HomeWidgetState extends State<HomeWidget> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Subcategory Selector
                     if (_selectedCategoryId != null) ...[
-                      const Text("Subcategory",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      const Text("Subcategory", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 8),
                       StreamBuilder<QuerySnapshot>(
                         stream: _subcategoriesRef
@@ -165,7 +186,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Price Range Filter
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -179,10 +199,10 @@ class _HomeWidgetState extends State<HomeWidget> {
                     RangeSlider(
                       values: _priceRange,
                       min: 0,
-                      max: 1000,
+                      max: 50000,
                       activeColor: const Color(0xFF6C5CE7),
                       inactiveColor: const Color(0xFF6C5CE7).withOpacity(0.15),
-                      divisions: 20,
+                      divisions: 50,
                       onChanged: (values) {
                         setModalState(() => _priceRange = values);
                         setState(() {});
@@ -246,9 +266,15 @@ class _HomeWidgetState extends State<HomeWidget> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val.trim().toLowerCase();
-                          });
+                          _searchNotifier.value = val.trim().toLowerCase();
+
+                          if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+
+                          if (val.trim().length >= 2) {
+                            _searchDebounce = Timer(const Duration(milliseconds: 800), () {
+                              _saveSearchHistory(val);
+                            });
+                          }
                         },
                         decoration: const InputDecoration(
                           hintText: "Search custom gifts, items...",
@@ -289,7 +315,7 @@ class _HomeWidgetState extends State<HomeWidget> {
             ),
           ),
 
-          // 2. بانر العروض والتخفيضات التفاعلي مع العداد التنازلي
+          // 2. بانر العروض والتخفيضات التفاعلي
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
@@ -336,12 +362,13 @@ class _HomeWidgetState extends State<HomeWidget> {
                     final categoryData = categoryDoc.data() as Map<String, dynamic>;
                     final categoryTitle = categoryData['nameEn'] ?? 'Category';
 
-                    return _StaggeredCategoryWrapper(
-                      index: index,
-                      child: _buildCategorySection(
-                        categoryId: categoryDoc.id,
-                        categoryTitle: categoryTitle,
-                      ),
+                    return _CategorySectionWidget(
+                      productsRef: _productsRef,
+                      categoryId: categoryDoc.id,
+                      categoryTitle: categoryTitle,
+                      selectedSubcategoryId: _selectedSubcategoryId,
+                      priceRange: _priceRange,
+                      searchQueryNotifier: _searchNotifier, // تم التمرير كـ ValueNotifier صريح
                     );
                   },
                   childCount: categoryDocs.length,
@@ -353,98 +380,120 @@ class _HomeWidgetState extends State<HomeWidget> {
       ),
     );
   }
+}
 
-  Widget _buildCategorySection({
-    required String categoryId,
-    required String categoryTitle,
-  }) {
-    Query query = _productsRef.where('categoryId', isEqualTo: categoryId);
+// ==================== FAST CATEGORY & PRODUCTS SECTION ====================
+class _CategorySectionWidget extends StatelessWidget {
+  final CollectionReference productsRef;
+  final String categoryId;
+  final String categoryTitle;
+  final String? selectedSubcategoryId;
+  final RangeValues priceRange;
+  final ValueNotifier<String> searchQueryNotifier;
 
-    if (_selectedSubcategoryId != null) {
-      query = query.where('subcategoryId', isEqualTo: _selectedSubcategoryId);
+  const _CategorySectionWidget({
+    super.key,
+    required this.productsRef,
+    required this.categoryId,
+    required this.categoryTitle,
+    required this.selectedSubcategoryId,
+    required this.priceRange,
+    required this.searchQueryNotifier,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Query query = productsRef.where('categoryId', isEqualTo: categoryId);
+
+    if (selectedSubcategoryId != null) {
+      query = query.where('subcategoryId', isEqualTo: selectedSubcategoryId);
     }
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox();
+        if (!snapshot.hasData) return const SizedBox.shrink();
 
-        final products = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final double price = (data['price'] ?? 0.0).toDouble();
-          final String title = (data['title'] ?? '').toString().toLowerCase();
-          final String desc = (data['description'] ?? '').toString().toLowerCase();
+        return ValueListenableBuilder<String>(
+          valueListenable: searchQueryNotifier,
+          builder: (context, searchQuery, child) {
+            final products = snapshot.data!.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final double price = (data['price'] ?? 0.0).toDouble();
+              final String title = (data['title'] ?? '').toString().toLowerCase();
+              final String desc = (data['description'] ?? '').toString().toLowerCase();
 
-          final bool matchesPrice = price >= _priceRange.start && price <= _priceRange.end;
-          final bool matchesSearch = _searchQuery.isEmpty ||
-              title.contains(_searchQuery) ||
-              desc.contains(_searchQuery);
+              final bool matchesPrice = price >= priceRange.start && price <= priceRange.end;
+              final bool matchesSearch = searchQuery.isEmpty ||
+                  title.contains(searchQuery) ||
+                  desc.contains(searchQuery);
 
-          return matchesPrice && matchesSearch;
-        }).toList();
+              return matchesPrice && matchesSearch;
+            }).toList();
 
-        if (products.isEmpty) return const SizedBox();
+            if (products.isEmpty) return const SizedBox.shrink();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    categoryTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                      color: Color(0xFF2D3436),
-                    ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        categoryTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: Color(0xFF2D3436),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductsListView(CategoryDoc: categoryId),
+                            ),
+                          );
+                        },
+                        child: const Row(
+                          children: [
+                            Text("See All", style: TextStyle(color: Color(0xFF6C5CE7), fontWeight: FontWeight.bold)),
+                            SizedBox(width: 4),
+                            Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF6C5CE7)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ProductsListView(CategoryDoc: categoryId)),
+                ),
+                SizedBox(
+                  height: 250,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final productData = products[index].data() as Map<String, dynamic>;
+                      final images = productData['images'] as List<dynamic>?;
+                      final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
+
+                      return _AnimatedProductCard(
+                        productData: productData,
+                        imageUrl: imageUrl,
+                        productId: products[index].id,
                       );
                     },
-                    child: const Row(
-                      children: [
-                        Text("See All", style: TextStyle(color: Color(0xFF6C5CE7), fontWeight: FontWeight.bold)),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF6C5CE7)),
-                      ],
-                    ),
                   ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 250,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final productData = products[index].data() as Map<String, dynamic>;
-                  final images = productData['images'] as List<dynamic>?;
-                  final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
-
-                  return _StaggeredProductWrapper(
-                    index: index,
-                    child: _AnimatedProductCard(
-                      productData: productData,
-                      imageUrl: imageUrl,
-                      productId: products[index].id,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
+                ),
+                const SizedBox(height: 12),
+              ],
+            );
+          },
         );
       },
     );
@@ -459,13 +508,14 @@ class DiscountProductsCarousel extends StatefulWidget {
   State<DiscountProductsCarousel> createState() => _DiscountProductsCarouselState();
 }
 
-class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
+class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
   final PageController _pageController = PageController(viewportFraction: 0.92);
   int _activePage = 0;
   Timer? _autoSlideTimer;
 
   void _startAutoSlide(int itemCount) {
-    if (_autoSlideTimer != null || itemCount <= 1) return;
+    _autoSlideTimer?.cancel();
+    if (itemCount <= 1) return;
     _autoSlideTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_pageController.hasClients) {
         _activePage = (_activePage + 1) % itemCount;
@@ -497,8 +547,30 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
           return const SizedBox.shrink();
         }
 
-        final discountDocs = snapshot.data!.docs;
-        _startAutoSlide(discountDocs.length);
+        final now = DateTime.now();
+
+        final validDiscountDocs = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final Timestamp? discountUntil = data['discountUntil'] as Timestamp?;
+
+          if (discountUntil != null) {
+            final isExpired = discountUntil.toDate().isBefore(now);
+            if (isExpired) {
+              doc.reference.update({
+                'discountPercentage': 0,
+                'discountUntil': FieldValue.delete(),
+              });
+              return false;
+            }
+          }
+          return true;
+        }).toList();
+
+        if (validDiscountDocs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        _startAutoSlide(validDiscountDocs.length);
 
         return Column(
           children: [
@@ -506,24 +578,21 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
               height: 175,
               child: PageView.builder(
                 controller: _pageController,
-                itemCount: discountDocs.length,
+                itemCount: validDiscountDocs.length,
                 onPageChanged: (int index) {
                   setState(() => _activePage = index);
                 },
                 itemBuilder: (context, index) {
-                  final doc = discountDocs[index];
+                  final doc = validDiscountDocs[index];
                   final data = doc.data() as Map<String, dynamic>;
 
                   final String title = data['title'] ?? 'عرض خاص';
-                  final num originalPrice = data['price'] ?? 0; // السعر الأصلي (مثلاً 300)
-                  final num discountPercentage = data['discountPercentage'] ?? 0; // النسبة (مثلاً 10)
-
-                  // 🎯 الحساب الصحيح: السعر بعد الخصم (300 * 0.9 = 270)
+                  final num originalPrice = data['price'] ?? 0;
+                  final num discountPercentage = data['discountPercentage'] ?? 0;
                   final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
 
                   final List images = data['images'] ?? [];
                   final String imageUrl = images.isNotEmpty ? images[0] : '';
-
                   final Timestamp? discountUntilTimestamp = data['discountUntil'] as Timestamp?;
 
                   return GestureDetector(
@@ -628,7 +697,6 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        // السعر النهائي بعد الخصم (270 ج.م)
                                         Text(
                                           "$finalPrice ج.م",
                                           style: const TextStyle(
@@ -638,7 +706,6 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        // السعر الأصلي المشطوب (300 ج.م)
                                         Text(
                                           "$originalPrice ج.م",
                                           style: const TextStyle(
@@ -651,7 +718,15 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                     ),
                                   ],
                                 ),
-                                DynamicCountdownWidget(untilTimestamp: discountUntilTimestamp),
+                                DynamicCountdownWidget(
+                                  untilTimestamp: discountUntilTimestamp,
+                                  onTimerExpired: () {
+                                    doc.reference.update({
+                                      'discountPercentage': 0,
+                                      'discountUntil': FieldValue.delete(),
+                                    });
+                                  },
+                                ),
                               ],
                             ),
                           ),
@@ -666,7 +741,7 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                discountDocs.length,
+                validDiscountDocs.length,
                     (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -689,8 +764,13 @@ class  _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 // ==================== DYNAMIC COUNTDOWN WIDGET ====================
 class DynamicCountdownWidget extends StatefulWidget {
   final Timestamp? untilTimestamp;
+  final VoidCallback? onTimerExpired;
 
-  const DynamicCountdownWidget({super.key, required this.untilTimestamp});
+  const DynamicCountdownWidget({
+    super.key,
+    required this.untilTimestamp,
+    this.onTimerExpired,
+  });
 
   @override
   State<DynamicCountdownWidget> createState() => _DynamicCountdownWidgetState();
@@ -713,10 +793,16 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
     final now = DateTime.now();
     final difference = targetDate.difference(now);
 
-    if (mounted) {
-      setState(() {
-        _timeLeft = difference.isNegative ? Duration.zero : difference;
-      });
+    if (difference.isNegative || difference == Duration.zero) {
+      _timer?.cancel();
+      if (mounted) {
+        setState(() => _timeLeft = Duration.zero);
+      }
+      widget.onTimerExpired?.call();
+    } else {
+      if (mounted) {
+        setState(() => _timeLeft = difference);
+      }
     }
   }
 
@@ -795,129 +881,14 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
   }
 }
 
-// ==================== STAGGERED ANIMATIONS & PRODUCT CARD ====================
-class _StaggeredCategoryWrapper extends StatefulWidget {
-  final int index;
-  final Widget child;
-
-  const _StaggeredCategoryWrapper({required this.index, required this.child});
-
-  @override
-  State<_StaggeredCategoryWrapper> createState() => _StaggeredCategoryWrapperState();
-}
-
-class _StaggeredCategoryWrapperState extends State<_StaggeredCategoryWrapper>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-
-    Future.delayed(Duration(milliseconds: widget.index * 100), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-class _StaggeredProductWrapper extends StatefulWidget {
-  final int index;
-  final Widget child;
-
-  const _StaggeredProductWrapper({required this.index, required this.child});
-
-  @override
-  State<_StaggeredProductWrapper> createState() => _StaggeredProductWrapperState();
-}
-
-class _StaggeredProductWrapperState extends State<_StaggeredProductWrapper>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.2, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-
-    Future.delayed(Duration(milliseconds: widget.index * 70), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
-    );
-  }
-}
-
+// ==================== PRODUCT CARD ====================
 class _AnimatedProductCard extends StatefulWidget {
   final Map<String, dynamic> productData;
   final String imageUrl;
   final String productId;
 
   const _AnimatedProductCard({
+    super.key,
     required this.productData,
     required this.imageUrl,
     required this.productId,
@@ -932,12 +903,13 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. استخراج السعر الأصلي من داتا المنتج
-    final num originalPrice = widget.productData['price'] ?? 0; // السعر الأصلي الأصلي (مثلاً 300)
+    final num originalPrice = widget.productData['price'] ?? 0;
     final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
-    final bool hasDiscount = discountPercentage > 0;
 
-    // 2. 🎯 الحساب الصحيح للسعر النهائي بعد الخصم (مثلاً 300 * (1 - 0.10) = 270)
+    final Timestamp? discountUntil = widget.productData['discountUntil'] as Timestamp?;
+    final bool isExpired = discountUntil != null && discountUntil.toDate().isBefore(DateTime.now());
+    final bool hasDiscount = discountPercentage > 0 && !isExpired;
+
     final num finalPrice = hasDiscount
         ? (originalPrice * (1 - (discountPercentage / 100))).round()
         : originalPrice;
@@ -979,7 +951,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ===== صورة المنتج + شارة الخصم والمفضلة =====
               Stack(
                 children: [
                   ClipRRect(
@@ -997,8 +968,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                       child: const Icon(Icons.image, color: Colors.grey),
                     ),
                   ),
-
-                  // 🏷️ شارة الخصم (Discount Badge)
                   if (hasDiscount)
                     Positioned(
                       top: 8,
@@ -1026,8 +995,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                         ),
                       ),
                     ),
-
-                  // ❤️ زر المفضلة
                   Positioned(
                     top: 8,
                     right: 8,
@@ -1046,8 +1013,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                   ),
                 ],
               ),
-
-              // ===== تفاصيل المنتج والأسعار =====
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
@@ -1064,16 +1029,13 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                       ),
                     ),
                     const SizedBox(height: 6),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // عرض السعر النهائي والسعر القديم المشطوب
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // السعر بعد الخصم (مثلاً 270 ج.م)
                             Text(
                               "$finalPrice ج.م",
                               style: const TextStyle(
@@ -1082,7 +1044,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                                 fontSize: 14,
                               ),
                             ),
-                            // السعر الأصلي قبل الخصم (مثلاً 300 ج.م)
                             if (hasDiscount)
                               Text(
                                 "$originalPrice ج.م",
@@ -1094,8 +1055,6 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                               ),
                           ],
                         ),
-
-                        // زر الإضافة للسلة
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class ProductListWidget extends StatefulWidget {
   final String categoryDoc;
 
-   ProductListWidget({super.key, required this.categoryDoc});
+  const ProductListWidget({super.key, required this.categoryDoc});
 
   @override
   State<ProductListWidget> createState() => _ProductListWidgetState();
@@ -32,7 +32,6 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    // تحديد عدد الأعمدة حسب عرض الشاشة (Mobile vs Web/Tablet)
     final int crossAxisCount = screenWidth >= 1100
         ? 5
         : screenWidth >= 800
@@ -62,7 +61,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
             }
             final data = snapshot.data!.data() as Map<String, dynamic>;
             return Text(
-              data['nameEn'] ?? "Category Products",
+              data['nameEn'] ?? data['name'] ?? "Category Products",
               style: const TextStyle(
                 color: Color(0xFF2D3436),
                 fontWeight: FontWeight.bold,
@@ -207,7 +206,6 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                   (data['title'] ?? '').toString().toLowerCase();
                   final String desc =
                   (data['description'] ?? '').toString().toLowerCase();
-                  final String id=(data['title'] ?? '').toString();
                   return _searchQuery.isEmpty ||
                       title.contains(_searchQuery) ||
                       desc.contains(_searchQuery);
@@ -233,7 +231,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.68,
+                    childAspectRatio: 0.62, // تعديل الارتفاع لاستيعاب عرض السعرين
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -244,13 +242,24 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                     final images = productData['images'] as List<dynamic>?;
                     final imageUrl =
                     images != null && images.isNotEmpty ? images[0] : '';
-                    final price = (productData['price'] ?? 0.0).toDouble();
+
+                    // 1. حسابات السعر والخصم
+                    final num originalPrice = productData['price'] ?? 0;
+                    final num discountPercentage = productData['discountPercentage'] ?? 0;
+                    final bool hasDiscount = discountPercentage > 0;
+                    final num finalPrice = hasDiscount
+                        ? (originalPrice * (1 - (discountPercentage / 100))).round()
+                        : originalPrice;
 
                     return InkWell(
-                      onTap: (){
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) =>  ProductView(ProductDoc:products[index].id ,)),
+                          MaterialPageRoute(
+                              builder: (context) => ProductView(
+                                ProductDoc: products[index].id,
+                              )),
                         );
                       },
                       child: Container(
@@ -268,25 +277,51 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Image Container
+                            // Image Container + Discount Badge
                             Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16)),
-                                child: imageUrl.isNotEmpty
-                                    ? Image.network(
-                                  imageUrl,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                                    : Container(
-                                  color: Colors.grey.shade100,
-                                  child: const Center(
-                                    child: Icon(
-                                        Icons.image_not_supported_outlined,
-                                        color: Colors.grey),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16)),
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                      imageUrl,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                        : Container(
+                                      color: Colors.grey.shade100,
+                                      child: const Center(
+                                        child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: Colors.grey),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  if (hasDiscount)
+                                    Positioned(
+                                      top: 8,
+                                      left: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFF7675),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          "-$discountPercentage%",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
 
@@ -306,17 +341,37 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                       color: Color(0xFF2D3436),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 6),
                                   Row(
                                     mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      Text(
-                                        "\$${price.toStringAsFixed(2)}",
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                      // عرض السعر بعد وقبل الخصم
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "$finalPrice ج.م",
+                                              style: const TextStyle(
+                                                color: Color(0xFF6C5CE7),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            if (hasDiscount)
+                                              Text(
+                                                "$originalPrice ج.م",
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 10,
+                                                  decoration:
+                                                  TextDecoration.lineThrough,
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                       InkWell(

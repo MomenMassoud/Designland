@@ -2,38 +2,53 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../Core/Utils/app.colors.dart';
+
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppColors.bgLight,
         appBar: AppBar(
-          title: const Text("طلباتي", style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          elevation: 0,
           backgroundColor: Colors.white,
-          elevation: 0.5,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 18),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            "طلباتي",
+            style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           bottom: const TabBar(
             isScrollable: true,
-            labelColor: Color(0xFF6366F1),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFF6366F1),
+            physics: BouncingScrollPhysics(),
+            labelColor: AppColors.primaryPurple,
+            unselectedLabelColor: AppColors.textMuted,
+            indicatorColor: AppColors.primaryPurple,
+            indicatorWeight: 3,
             tabs: [
               Tab(text: "الكل"),
               Tab(text: "تحت الانتظار"),
               Tab(text: "جاري التوصيل"),
               Tab(text: "المكتملة"),
+              Tab(text: "الملغية"),
             ],
           ),
         ),
         body: const TabBarView(
+          physics: BouncingScrollPhysics(),
           children: [
             OrdersListWidget(statusFilter: null),
             OrdersListWidget(statusFilter: 'pending'),
             OrdersListWidget(statusFilter: 'shipping'),
             OrdersListWidget(statusFilter: 'completed'),
+            OrdersListWidget(statusFilter: 'cancelled'),
           ],
         ),
       ),
@@ -47,58 +62,163 @@ class OrdersListWidget extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'completed': return Colors.green;
-      case 'shipping': return Colors.orange;
-      case 'pending': return Colors.blue;
-      default: return Colors.grey;
+      case 'completed':
+        return const Color(0xFF2ECC71);
+      case 'shipping':
+        return const Color(0xFFE67E22);
+      case 'pending':
+        return AppColors.primaryPurple;
+      case 'cancelled':
+        return const Color(0xFFE74C3C);
+      default:
+        return Colors.grey;
     }
   }
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'completed': return "مكتمل";
-      case 'shipping': return "جاري التوصيل / الشحن";
-      case 'pending': return "تحت الانتظار / التجهيز";
-      default: return status;
+      case 'completed':
+        return "مكتمل";
+      case 'shipping':
+        return "جاري التوصيل";
+      case 'pending':
+        return "تحت الانتظار";
+      case 'cancelled':
+        return "ملغي";
+      default:
+        return status;
+    }
+  }
+
+  Future<void> _cancelOrder(BuildContext context, String orderId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          "إلغاء الطلب",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textDark),
+        ),
+        content: const Text(
+          "هل أنت تأكد من أنك تريد إلغاء هذا الطلب؟",
+          style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("تراجع", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE74C3C),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("تأكيد الإلغاء", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('orders')
+            .doc(orderId)
+            .update({'status': 'cancelled'});
+
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("تم إلغاء الطلب بنجاح"),
+            backgroundColor: AppColors.primaryPurple,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("حدث خطأ أثناء إلغاء الطلب"),
+            backgroundColor: const Color(0xFFE74C3C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    Query query = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('orders');
-
-    if (statusFilter != null) {
-      query = query.where('status', isEqualTo: statusFilter);
+    if (uid == null) {
+      return const Center(child: Text("يرجى تسجيل الدخول لعرض الطلبات"));
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: query.snapshots(),
+      // تم إزالة orderBy من الاستعلام المباشر لتفادي مشكلة الـ Composite Index في الفايربيز
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('orders')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("لا توجد طلبات متوفرة."));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryPurple, strokeWidth: 2),
+          );
         }
 
-        final orders = snapshot.data!.docs;
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // تصفية وترتيب الطلبات محلياً لمنع مشاكل Firestore Index
+        List<QueryDocumentSnapshot> orders = snapshot.data!.docs;
+        if (statusFilter != null) {
+          orders = orders.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['status'] == statusFilter;
+          }).toList();
+        }
+
+        if (orders.isEmpty) {
+          return _buildEmptyState();
+        }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          physics: const BouncingScrollPhysics(),
           itemCount: orders.length,
           itemBuilder: (context, index) {
-            final orderData = orders[index].data() as Map<String, dynamic>;
+            final doc = orders[index];
+            final orderData = doc.data() as Map<String, dynamic>;
             final status = orderData['status'] ?? 'pending';
             final totalPrice = orderData['totalPrice'] ?? orderData['price'] ?? 0;
             final items = List<dynamic>.from(orderData['items'] ?? []);
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.025),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -107,42 +227,102 @@ class OrdersListWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("طلب #${orders[index].id.substring(0, 6)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          "طلب #${doc.id.substring(0, doc.id.length > 6 ? 6 : doc.id.length)}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: AppColors.textDark,
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(status).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            color: _getStatusColor(status).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             _getStatusText(status),
-                            style: TextStyle(color: _getStatusColor(status), fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: _getStatusColor(status),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const Divider(height: 20),
+                    const Divider(height: 24, thickness: 0.8),
                     if (items.isNotEmpty)
-                      ...items.map((item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("${item['title']} (x${item['quantity'] ?? 1})"),
-                            Text("${item['price']} ج.م"),
-                          ],
+                      ...items.map(
+                            (item) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "${item['title']} (x${item['quantity'] ?? 1})",
+                                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                              ),
+                              Text(
+                                "${item['price']} ج.م",
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                              ),
+                            ],
+                          ),
                         ),
-                      ))
+                      )
                     else
-                      Text(orderData['title'] ?? 'طلب منتجات'),
-                    const Divider(height: 20),
+                      Text(
+                        orderData['title'] ?? 'طلب منتجات مخصصة',
+                        style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                    const Divider(height: 24, thickness: 0.8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("الإجمالي:", style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text("$totalPrice ج.م", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1))),
+                        const Text(
+                          "الإجمالي:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDark),
+                        ),
+                        Text(
+                          "$totalPrice ج.م",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.primaryPurple,
+                          ),
+                        ),
                       ],
                     ),
+                    if (status == 'pending') ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE74C3C),
+                            side: BorderSide(color: const Color(0xFFE74C3C).withOpacity(0.4)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          onPressed: () => _cancelOrder(context, doc.id),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFE74C3C)),
+                              SizedBox(width: 6),
+                              Text(
+                                "إلغاء الطلب",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -150,6 +330,37 @@ class OrdersListWidget extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primaryPurple.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              size: 48,
+              color: AppColors.primaryPurple.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "لا توجد طلبات متوفرة حالياً",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textDark,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

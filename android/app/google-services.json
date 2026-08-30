@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "848711152963",
+    "project_id": "desginland-5ca7a",
+    "storage_bucket": "desginland-5ca7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848711152963:android:83b39a2dda6c3b56a26bf6",
+        "android_client_info": {
+          "package_name": "com.example.dashboard_desginland"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3v_IRtKilgRHGZGwNGEqMSTSm6o5saAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848711152963:android:34e06ee1ba2e58a5a26bf6",
+        "android_client_info": {
+          "package_name": "com.example.desginland"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3v_IRtKilgRHGZGwNGEqMSTSm6o5saAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

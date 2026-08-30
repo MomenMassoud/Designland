@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../Login/view/login_view.dart';
@@ -24,6 +25,14 @@ class _SplashViewBodyState extends State<SplashViewBody>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // جعل خلفية الشريط شفافة تماماً
+        statusBarIconBrightness: Brightness.light, // أيقونات بيضاء للأندرويد
+        statusBarBrightness: Brightness.dark, // أيقونات بيضاء للـ iOS
+      ),
+    );
     _setupAnimations();
     _navigateToNextScreen();
   }
@@ -69,83 +78,90 @@ class _SplashViewBodyState extends State<SplashViewBody>
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 600;
 
-    return Scaffold(
-      body: GradientContainer(
-        // خلفية بنفسجية فخمة مستوحاة من الشنطة
-        colorOne: AppColors.primaryPurple,
-        colorTwo: AppColors.secondaryPurple,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // هالة ضوئية ناعمة خلف اللوجو
-            CircularGradientOpacityContainer(
-              size: isWeb ? 450 : size.width * 0.85,
-              colorOne: AppColors.lightPurpleGlow,
-              colorTwo: Colors.transparent,
-              colorOneOpacity: 0.35,
-            ),
-
-            // المحتوى الرئيسي: اللوجو
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          backgroundImage: AssetImage(
-                            AppImages.appPLogo
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, // أيقونات بيضاء
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        body: GradientContainer(
+          // خلفية بنفسجية فخمة مستوحاة من الشنطة
+          colorOne: AppColors.primaryPurple,
+          colorTwo: AppColors.secondaryPurple,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // هالة ضوئية ناعمة خلف اللوجو
+              CircularGradientOpacityContainer(
+                size: isWeb ? 450 : size.width * 0.85,
+                colorOne: AppColors.lightPurpleGlow,
+                colorTwo: Colors.transparent,
+                colorOneOpacity: 0.35,
+              ),
+      
+              // المحتوى الرئيسي: اللوجو
+              AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(
+                              AppImages.appPLogo
+                            ),
+                            radius: 90,
                           ),
-                          radius: 90,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "Customized Gifts & Memories",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: 1.5,
-                            color: Colors.white70,
+                          const SizedBox(height: 16),
+                          const Text(
+                            "Customized Gifts & Memories",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 1.5,
+                              color: Colors.white70,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // يوزر إنستغرام في أسفل الشاشة زي الشنطة
-            Positioned(
-              bottom: 30,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white60,
-                      size: 16,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      "@Designland.eg",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white60,
-                        letterSpacing: 1.1,
+                        ],
                       ),
                     ),
-                  ],
+                  );
+                },
+              ),
+      
+              // يوزر إنستغرام في أسفل الشاشة زي الشنطة
+              Positioned(
+                bottom: 30,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.camera_alt_outlined,
+                        color: Colors.white60,
+                        size: 16,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        "@Designland.eg",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white60,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

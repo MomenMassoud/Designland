@@ -17,22 +17,30 @@ class _LoginWidgetState extends State<LoginWidget> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isPasswordObscure = true;
-  bool _isLoading = false;
+
+  // استخدام ValueNotifier للحد من إعادة رسم الشاشة بالكامل عند تغيير حالة بسيطة
+  final ValueNotifier<bool> _isPasswordObscure = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _isPasswordObscure.dispose();
+    _isLoading.dispose();
     super.dispose();
   }
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      bool isSuccess = await LoginFunction(context, _emailController.text, _passwordController.text);
+      _isLoading.value = true;
+      bool isSuccess = await LoginFunction(
+        context,
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
       if (mounted) {
-        setState(() => _isLoading = false);
+        _isLoading.value = false;
         if (isSuccess) {
           Navigator.pushReplacementNamed(context, MainScreenView.id);
         }
@@ -42,9 +50,7 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 850;
-
+    // استخدام LayoutBuilder يمنع إعادة الرسم عند فتح وإغلاق الكيبورد
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       body: Center(
@@ -64,18 +70,24 @@ class _LoginWidgetState extends State<LoginWidget> {
                   ),
                 ],
               ),
-              child: isDesktop
-                  ? Row(
-                children: [
-                  Expanded(child: _buildBrandingSide()),
-                  Expanded(child: _buildLoginForm(context)),
-                ],
-              )
-                  : Column(
-                children: [
-                  _buildMobileHeader(),
-                  _buildLoginForm(context),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth > 850;
+                  if (isDesktop) {
+                    return Row(
+                      children: [
+                        const Expanded(child: _BrandingSide()),
+                        Expanded(child: _buildLoginForm()),
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      const _MobileHeader(),
+                      _buildLoginForm(),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -84,61 +96,7 @@ class _LoginWidgetState extends State<LoginWidget> {
     );
   }
 
-  Widget _buildBrandingSide() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          bottomLeft: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
-          const SizedBox(height: 24),
-          const Text(
-            "Welcome Back!",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            "Explore customized gifts, order personalized items, and track your active orders effortlessly.",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        children: [
-          Image.asset(AppImages.appPLogo, height: 90),
-          const SizedBox(height: 12),
-          const Text(
-            "DesignLand Store",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoginForm(BuildContext context) {
+  Widget _buildLoginForm() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
       child: Form(
@@ -173,23 +131,29 @@ class _LoginWidgetState extends State<LoginWidget> {
             ),
             const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _isPasswordObscure,
-              decoration: InputDecoration(
-                labelText: "Password",
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_isPasswordObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                  onPressed: () => setState(() => _isPasswordObscure = !_isPasswordObscure),
-                ),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
-                ),
-              ),
-              validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+            // إعادة رسم زري إخفاء/إظهار كلمة السر فقط دون بقية الشاشة
+            ValueListenableBuilder<bool>(
+              valueListenable: _isPasswordObscure,
+              builder: (context, isObscure, child) {
+                return TextFormField(
+                  controller: _passwordController,
+                  obscureText: isObscure,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                    ),
+                  ),
+                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+                );
+              },
             ),
             const SizedBox(height: 8),
 
@@ -202,20 +166,26 @@ class _LoginWidgetState extends State<LoginWidget> {
             ),
             const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryPurple,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
+            // إعادة رسم زر التحميل فقط أثناء عملية التسجيل
+            ValueListenableBuilder<bool>(
+              valueListenable: _isLoading,
+              builder: (context, isLoading, child) {
+                return SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPurple,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: isLoading
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -224,13 +194,79 @@ class _LoginWidgetState extends State<LoginWidget> {
               children: [
                 const Text("Don't have an account?", style: TextStyle(color: AppColors.textMuted)),
                 TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>  SigupView())),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SigupView())),
                   child: const Text("Create Account", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
                 ),
               ],
             )
           ],
         ),
+      ),
+    );
+  }
+}
+
+// فصل الـ Branding Side إلى Widget مستقلة وثابتة
+class _BrandingSide extends StatelessWidget {
+  const _BrandingSide();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryPurple,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          bottomLeft: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
+          const SizedBox(height: 24),
+          const Text(
+            "Welcome Back!",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            "Explore customized gifts, order personalized items, and track your active orders effortlessly.",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// فصل Header الموبايل إلى Widget مستقلة وثابتة
+class _MobileHeader extends StatelessWidget {
+  const _MobileHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryPurple,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          Image.asset(AppImages.appPLogo, height: 90),
+          const SizedBox(height: 12),
+          const Text(
+            "DesignLand Store",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        ],
       ),
     );
   }

@@ -21,17 +21,8 @@ class _ProductWidgetState extends State<ProductWidget> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   int _selectedImageIndex = 0;
-  final TextEditingController _commentController = TextEditingController();
-  double _userRating = 5.0;
-  bool _isSubmitting = false;
   bool _isAddingToCart = false;
   bool _hasLoggedAnalytics = false;
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
 
   // ==================== 🛒 CART & CHECKOUT FLOW ====================
 
@@ -296,7 +287,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                           await _db.collection('users').doc(uid).collection('cart').add({
                             'productId': widget.productDoc,
                             'title': productData['title'] ?? '',
-                            'price': finalPrice, // السعر بعد الخصم
+                            'price': finalPrice,
                             'originalPrice': (productData['price'] ?? 0.0).toDouble(),
                             'image': (productData['images'] as List?)?.firstOrNull ?? '',
                             'driveUrl': driveController.text.trim(),
@@ -333,10 +324,8 @@ class _ProductWidgetState extends State<ProductWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isDesktop = screenWidth >= 900;
-
     return Scaffold(
+      resizeToAvoidBottomInset: false, // يمنع تغيير حجم الـ Scaffold وإلغاء تركيز الكيبورد
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -350,127 +339,120 @@ class _ProductWidgetState extends State<ProductWidget> {
           style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _productsRef.doc(widget.productDoc).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
-          }
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isDesktop = constraints.maxWidth >= 900;
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("المنتج غير موجود."));
-          }
+          return StreamBuilder<DocumentSnapshot>(
+            stream: _productsRef.doc(widget.productDoc).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+              }
 
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          final List<String> images = List<String>.from(data['images'] ?? []);
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const Center(child: Text("المنتج غير موجود."));
+              }
 
-          // 💰 حساب الأسعار والخصم الآمن (Safe Casting)
-          final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
+              final data = snapshot.data!.data() as Map<String, dynamic>;
+              final List<String> images = List<String>.from(data['images'] ?? []);
 
-          // قبول الخصم سواء كان اسمه discount أو discountPercentage
-          final double discountPercentage = double.tryParse(
-              (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
-          ) ?? 0.0;
+              final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
 
-          final double discountedPrice = discountPercentage > 0
-              ? originalPrice - (originalPrice * (discountPercentage / 100))
-              : originalPrice;
+              final double discountPercentage = double.tryParse(
+                  (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
+              ) ?? 0.0;
 
-          final double avgRate = double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0;
-          final String title = data['title'] ?? '';
-          final String description = data['description'] ?? '';
+              final double discountedPrice = discountPercentage > 0
+                  ? originalPrice - (originalPrice * (discountPercentage / 100))
+                  : originalPrice;
 
-          if (!_hasLoggedAnalytics) {
-            _hasLoggedAnalytics = true;
-            AnalyticsService.logProductOpen(
-              productId: widget.productDoc,
-              productTitle: title,
-            );
-          }
+              final double avgRate = double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0;
+              final String title = data['title'] ?? '';
+              final String description = data['description'] ?? '';
 
-          return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? screenWidth * 0.08 : 16,
-              vertical: 24,
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (isDesktop) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: _buildImageGallery(images),
-                            ),
-                            const SizedBox(width: 32),
-                            Expanded(
-                              flex: 6,
-                              child: _buildMainProductHeader(
-                                  title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
-                            ),
-                          ],
-                        );
-                      } else {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildImageGallery(images),
-                            const SizedBox(height: 20),
-                            _buildMainProductHeader(
-                                title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
-                          ],
-                        );
-                      }
-                    },
-                  ),
+              if (!_hasLoggedAnalytics) {
+                _hasLoggedAnalytics = true;
+                AnalyticsService.logProductOpen(
+                  productId: widget.productDoc,
+                  productTitle: title,
+                );
+              }
+
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(), // منع التمرير السلس المسبب لإغلاق الـ IME
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? constraints.maxWidth * 0.08 : 16,
+                  vertical: 24,
                 ),
-                const SizedBox(height: 24),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (isDesktop) {
-                      return Row(
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: isDesktop
+                          ? Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: 5,
-                            child: _buildDetailsCard(description, data),
+                            child: _buildImageGallery(images),
                           ),
-                          const SizedBox(width: 24),
+                          const SizedBox(width: 32),
                           Expanded(
-                            flex: 7,
-                            child: _buildReviewsCard(avgRate),
+                            flex: 6,
+                            child: _buildMainProductHeader(
+                                title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
                           ),
                         ],
-                      );
-                    } else {
-                      return Column(
+                      )
+                          : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDetailsCard(description, data),
+                          _buildImageGallery(images),
                           const SizedBox(height: 20),
-                          _buildReviewsCard(avgRate),
+                          _buildMainProductHeader(
+                              title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
                         ],
-                      );
-                    }
-                  },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    isDesktop
+                        ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: _buildDetailsCard(description, data),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 7,
+                          child: _buildReviewsCard(avgRate),
+                        ),
+                      ],
+                    )
+                        : Column(
+                      children: [
+                        _buildDetailsCard(description, data),
+                        const SizedBox(height: 20),
+                        _buildReviewsCard(avgRate),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -534,7 +516,6 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // --- Header لعرض السعر والسعر بعد الخصم بشكل احترافي ---
   Widget _buildMainProductHeader(
       String title,
       double avgRate,
@@ -583,13 +564,10 @@ class _ProductWidgetState extends State<ProductWidget> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // 🏷️ عرض السعر النهائي والسعر الأصلي المشطوب (إن وجد)
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            // السعر النهائي المطلوب دفعه (بعد الخصم أو الأصلي إذا لم يوجد خصم)
             Text(
               "${discountedPrice.toStringAsFixed(2)} ج.م",
               style: TextStyle(
@@ -600,7 +578,6 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
             if (hasDiscount) ...[
               const SizedBox(width: 12),
-              // السعر الأصلي مشطوب بخط
               Text(
                 "${originalPrice.toStringAsFixed(2)} ج.م",
                 style: const TextStyle(
@@ -611,7 +588,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                 ),
               ),
               const SizedBox(width: 10),
-              // نسبة الخصم
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -630,7 +606,6 @@ class _ProductWidgetState extends State<ProductWidget> {
             ],
           ],
         ),
-
         const SizedBox(height: 16),
         Text(
           description,
@@ -639,7 +614,6 @@ class _ProductWidgetState extends State<ProductWidget> {
           style: const TextStyle(color: Color(0xFF64748B), height: 1.5, fontSize: 14),
         ),
         const SizedBox(height: 24),
-
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF6366F1),
@@ -728,6 +702,13 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
           ),
           const SizedBox(height: 16),
+          AddReviewSection(
+            key: const PageStorageKey('add_review_section_key'), // ثبات الـ State
+            productDoc: widget.productDoc,
+            productsRef: _productsRef,
+            showLoginDialog: _showLoginDialog,
+          ),
+          const SizedBox(height: 16),
           StreamBuilder<QuerySnapshot>(
             stream: _productsRef
                 .doc(widget.productDoc)
@@ -741,83 +722,80 @@ class _ProductWidgetState extends State<ProductWidget> {
 
               final reviews = snapshot.data!.docs;
 
-              return Column(
-                children: [
-                  _buildAddReviewInput(reviews),
-                  const SizedBox(height: 16),
-                  if (reviews.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Text(
-                        "لا توجد تقييمات حالية. كن أول من يقيّم هذا المنتج!",
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
+              if (reviews.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      "لا توجد تقييمات حالية. كن أول من يقيّم هذا المنتج!",
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: reviews.length,
+                separatorBuilder: (_, __) => const Divider(height: 20),
+                itemBuilder: (context, index) {
+                  final rev = reviews[index].data() as Map<String, dynamic>;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                        child: Text(
+                          (rev['userName'] ?? 'U')[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Color(0xFF6366F1),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    )
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: reviews.length,
-                      separatorBuilder: (_, __) => const Divider(height: 20),
-                      itemBuilder: (context, index) {
-                        final rev = reviews[index].data() as Map<String, dynamic>;
-                        return Row(
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CircleAvatar(
-                              backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
-                              child: Text(
-                                (rev['userName'] ?? 'U')[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: Color(0xFF6366F1),
-                                  fontWeight: FontWeight.bold,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  rev['userName'] ?? 'عميل',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
+                                Row(
+                                  children: List.generate(5, (starIdx) {
+                                    return Icon(
+                                      Icons.star_rounded,
+                                      size: 14,
+                                      color: starIdx < (rev['rating'] ?? 0)
+                                          ? Colors.amber
+                                          : Colors.grey.shade300,
+                                    );
+                                  }),
+                                )
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        rev['userName'] ?? 'عميل',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: List.generate(5, (starIdx) {
-                                          return Icon(
-                                            Icons.star_rounded,
-                                            size: 14,
-                                            color: starIdx < (rev['rating'] ?? 0)
-                                                ? Colors.amber
-                                                : Colors.grey.shade300,
-                                          );
-                                        }),
-                                      )
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    rev['comment'] ?? '',
-                                    style: const TextStyle(
-                                      color: Color(0xFF64748B),
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 4),
+                            Text(
+                              rev['comment'] ?? '',
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 13,
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -825,9 +803,41 @@ class _ProductWidgetState extends State<ProductWidget> {
       ),
     );
   }
+}
 
-  Widget _buildAddReviewInput(List<QueryDocumentSnapshot> existingReviews) {
-    final currentUser = _auth.currentUser;
+// Component حماية التركيز (Focus) مع منع التأثر بالتسلسل الهيكلي
+class AddReviewSection extends StatefulWidget {
+  final String productDoc;
+  final CollectionReference productsRef;
+  final VoidCallback showLoginDialog;
+
+  const AddReviewSection({
+    super.key,
+    required this.productDoc,
+    required this.productsRef,
+    required this.showLoginDialog,
+  });
+
+  @override
+  State<AddReviewSection> createState() => _AddReviewSectionState();
+}
+
+class _AddReviewSectionState extends State<AddReviewSection> {
+  final TextEditingController _commentController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  double _userRating = 5.0;
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -858,12 +868,19 @@ class _ProductWidgetState extends State<ProductWidget> {
               ),
             ],
           ),
-          TextField(
-            controller: _commentController,
-            decoration: const InputDecoration(
-              hintText: "اكتب رأيك عن المنتج هنا...",
-              hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
-              border: InputBorder.none,
+          TapRegion(
+            onTapOutside: (_) {}, // منع إلغاء التركيز عشوائياً عند الضغط خارج المكون
+            child: TextField(
+              key: const PageStorageKey('review_input_field'),
+              controller: _commentController,
+              focusNode: _focusNode,
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: "اكتب رأيك عن المنتج هنا...",
+                hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                border: InputBorder.none,
+              ),
             ),
           ),
           Align(
@@ -873,14 +890,14 @@ class _ProductWidgetState extends State<ProductWidget> {
                   ? null
                   : () async {
                 if (currentUser == null) {
-                  _showLoginDialog();
+                  widget.showLoginDialog();
                   return;
                 }
 
                 if (_commentController.text.trim().isEmpty) return;
                 setState(() => _isSubmitting = true);
 
-                final ref = _productsRef.doc(widget.productDoc).collection('reviews');
+                final ref = widget.productsRef.doc(widget.productDoc).collection('reviews');
                 await ref.add({
                   'userName': currentUser.displayName ?? 'عميل',
                   'userUid': currentUser.uid,
@@ -890,7 +907,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                 });
 
                 _commentController.clear();
-                setState(() => _isSubmitting = false);
+                if (mounted) {
+                  setState(() => _isSubmitting = false);
+                  _focusNode.unfocus();
+                }
               },
               child: _isSubmitting
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
