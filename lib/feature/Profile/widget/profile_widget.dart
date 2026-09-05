@@ -5,7 +5,7 @@ import 'package:desginland/feature/Profile/widget/search_history_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:intl/intl.dart';
 import 'order_widget.dart';
 
 class ProfileWidget extends StatefulWidget {
@@ -38,20 +38,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("تعديل البيانات الشخصية", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text("Edit personal information".tr, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                 ],
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: "الاسم الكامل", prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: "full name".tr, prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder()),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: "رقم الهاتف", prefixIcon: Icon(Icons.phone_outlined), border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: "phone number".tr, prefixIcon: Icon(Icons.phone_outlined), border: OutlineInputBorder()),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -73,9 +73,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
                     if (!mounted) return;
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم تحديث البيانات بنجاح")));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("The data has been successfully updated.".tr)));
                   },
-                  child: const Text("حفظ التغييرات", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child:  Text("Save changes".tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -107,7 +107,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("إدارة العناوين", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text("Address Management".tr , style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                       ],
                     ),
@@ -129,11 +129,13 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       ),
                     )),
                     const Divider(height: 24),
-                    const Text("إضافة عنوان جديد:", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text("Add a new address:".tr, style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    TextField(controller: titleController, decoration: const InputDecoration(labelText: "اسم العنوان (مثال: المنزل)", border: OutlineInputBorder())),
+                    TextField(controller: titleController,
+                        decoration:  InputDecoration(labelText: "Address Name (e.g., Home)".tr, border: OutlineInputBorder())),
                     const SizedBox(height: 8),
-                    TextField(controller: detailsController, decoration: const InputDecoration(labelText: "التفاصيل الكاملة", border: OutlineInputBorder())),
+                    TextField(controller: detailsController, decoration:
+                    InputDecoration(labelText: "Full details".tr, border: OutlineInputBorder())),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -154,7 +156,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           titleController.clear();
                           detailsController.clear();
                         },
-                        child: const Text("إضافة العنوان", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text("Add Address".tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     )
                   ],
@@ -176,19 +178,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("تحديث كلمة السر"),
-        content: Text("سيتم إرسال رابط إعادة ضبط كلمة السر إلى البريد الإلكتروني:\n$email"),
+        title: Text("Update password".tr),
+        content: Text("${"A password reset link will be sent to the email address:".tr}\n$email"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
+          TextButton(onPressed: () => Navigator.pop(context), child:  Text("cancellation".tr)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
             onPressed: () async {
               await _auth.sendPasswordResetEmail(email: email);
               if (!mounted) return;
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم إرسال رابط إعادة الضبط لبريدك الإلكتروني")));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("A reset link has been sent to your email.".tr)));
             },
-            child: const Text("إرسال الرابط", style: TextStyle(color: Colors.white)),
+            child:  Text("Send the link".tr, style: TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -208,12 +211,34 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ListTile(
               leading: const Text("🇪🇬", style: TextStyle(fontSize: 22)),
               title: const Text("العربية"),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Locale locale;
+                try{
+                  locale =  Locale("ar");
+                  Intl.defaultLocale = locale.languageCode;
+                  Get.updateLocale(locale);
+
+                }
+                catch(e){
+                 print(e);
+                }
+              },
             ),
             ListTile(
               leading: const Text("🇺🇸", style: TextStyle(fontSize: 22)),
               title: const Text("English"),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Locale locale;
+                try{
+                  locale =  Locale("en");
+                  Intl.defaultLocale = locale.languageCode;
+                  Get.updateLocale(locale);
+
+                }
+                catch(e){
+                  print(e);
+                }
+              },
             ),
           ],
         ),
@@ -266,7 +291,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
                               Text(user.email ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                              Text("الهاتف: $phone", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text("${"phone number".tr} $phone", style: const TextStyle(color: Colors.grey, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -289,7 +314,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     children: [
                       _buildProfileTile(
                         icon: Icons.shopping_bag_outlined,
-                        title: "قائمة الطلبات ومتابعتها",
+                        title: "Order List and Tracking".tr,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -297,10 +322,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           );
                         },
                       ),
-                      const Divider(height: 1),
+                       Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.history,
-                        title: "سجل البحث",
+                        title: "Search history".tr,
                         onTap: (){
                           Get.to(SearchHistoryScreen());
                         },
@@ -308,19 +333,19 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       const Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.location_on_outlined,
-                        title: "عناويني (${addresses.length})",
+                        title: "${"My addresses (".tr}${addresses.length})",
                         onTap: () => _showAddressesDialog(addresses),
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.lock_outline,
-                        title: "تحديث كلمة السر",
+                        title: "Update password".tr,
                         onTap: _showChangePasswordDialog,
                       ),
                       const Divider(height: 1),
                       _buildProfileTile(
                         icon: Icons.language,
-                        title: "تغيير اللغة (Language)",
+                        title: "Change Language".tr,
                         onTap: _showLanguageDialog,
                       ),
                     ],
@@ -343,7 +368,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       LogoutMethod(context);
                     },
                     icon: const Icon(Icons.logout),
-                    label: const Text("تسجيل الخروج", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label:  Text("Log out".tr, style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

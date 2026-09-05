@@ -1,5 +1,6 @@
 import 'package:desginland/feature/Login/function/auth_function.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class BlockListScreen extends StatelessWidget {
   final String? blockReason;
@@ -61,7 +62,7 @@ class BlockListScreen extends StatelessWidget {
 
                     // 2. عنوان الشاشة
                     Text(
-                      "تم تعليق الحساب",
+                      "The account has been suspended.".tr,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -73,7 +74,7 @@ class BlockListScreen extends StatelessWidget {
 
                     // 3. رسالة التوضيح والسبب
                     Text(
-                      "تم إيقاف حسابك مؤقتاً أو إدراجه في قائمة الحظر لتجاوز شروط الاستخدام والأحكام الخاصة بالموقع.",
+                      "Your account has been temporarily suspended or blacklisted for violating the site's terms and conditions of use.".tr,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -101,7 +102,7 @@ class BlockListScreen extends StatelessWidget {
                                 Icon(Icons.info_outline, size: 18, color: errorColor),
                                 const SizedBox(width: 8),
                                 Text(
-                                  "سبب الحظر:",
+                                  "Reason for the ban:".tr,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: errorColor,
@@ -134,8 +135,8 @@ class BlockListScreen extends StatelessWidget {
                         onPressed: () {
                           // يمكنك فتح رابط WhatsApp أو فتح Dialog للتواصل مع الدعم
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("يرجى التواصل مع الدعم عبر البريد: support@designland.com"),
+                             SnackBar(
+                              content: Text("Please contact support via email: support@designland.com".tr),
                             ),
                           );
                         },
@@ -148,8 +149,8 @@ class BlockListScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.support_agent_rounded, size: 20),
-                        label: const Text(
-                          "التواصل مع الدعم الفني",
+                        label:  Text(
+                          "Contacting Technical Support".tr,
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -170,8 +171,8 @@ class BlockListScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.logout_rounded, size: 18),
-                        label: const Text(
-                          "تسجيل الخروج",
+                        label:  Text(
+                          "Log out".tr,
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),

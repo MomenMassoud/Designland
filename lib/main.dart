@@ -6,7 +6,6 @@ import 'Core/Utils/app_routes.dart';
 import 'Core/widgets/App_localization.dart';
 import 'feature/Splash/View/splash_view.dart';
 import 'firebase_options.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 
 Future<void> main()async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,5 +1,6 @@
 import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../ForgetPassword/view/forget_password_view.dart';
@@ -104,13 +105,13 @@ class _LoginWidgetState extends State<LoginWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Sign In",
+             Text(
+              "Sign In".tr,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
             const SizedBox(height: 6),
-            const Text(
-              "Sign in to access your orders and saved designs",
+             Text(
+              "Sign in to access your orders and saved designs".tr,
               style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
             const SizedBox(height: 28),
@@ -119,7 +120,7 @@ class _LoginWidgetState extends State<LoginWidget> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: "Email Address",
+                labelText: "Email Address".tr,
                 prefixIcon: const Icon(Icons.email_outlined),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
@@ -127,7 +128,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                   borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                 ),
               ),
-              validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address" : null,
+              validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address".tr : null,
             ),
             const SizedBox(height: 16),
 
@@ -139,7 +140,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                   controller: _passwordController,
                   obscureText: isObscure,
                   decoration: InputDecoration(
-                    labelText: "Password",
+                    labelText: "Password".tr,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -151,7 +152,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                       borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                     ),
                   ),
-                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters".tr : null,
                 );
               },
             ),
@@ -161,7 +162,7 @@ class _LoginWidgetState extends State<LoginWidget> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ForgetPasswordView())),
-                child: const Text("Forgot Password?", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
+                child:  Text("Forgot Password?".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 20),
@@ -182,7 +183,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                     ),
                     child: isLoading
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        :  Text("Sign In".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 );
               },
@@ -226,13 +227,13 @@ class _BrandingSide extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
           const SizedBox(height: 24),
-          const Text(
-            "Welcome Back!",
+           Text(
+            "Welcome Back!".tr,
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 12),
-          const Text(
-            "Explore customized gifts, order personalized items, and track your active orders effortlessly.",
+           Text(
+            "Explore customized gifts, order personalized items, and track your active orders effortlessly.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
           ),

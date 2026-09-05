@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../MainScreen/view/main_screen_view.dart';
@@ -111,13 +112,13 @@ class _SignUpWidgetState extends State<SignUpWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Sign Up",
+             Text(
+              "Sign Up".tr,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
             const SizedBox(height: 6),
-            const Text(
-              "Please fill in your information to register",
+             Text(
+              "Please fill in your information to register".tr,
               style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
             const SizedBox(height: 24),
@@ -125,7 +126,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             TextFormField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: "Full Name",
+                labelText: "Full Name".tr,
                 prefixIcon: const Icon(Icons.person_outline),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
@@ -133,7 +134,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                 ),
               ),
-              validator: (val) => (val == null || val.trim().isEmpty) ? "Please enter your full name" : null,
+              validator: (val) => (val == null || val.trim().isEmpty) ? "Please enter your full name".tr : null,
             ),
             const SizedBox(height: 16),
 
@@ -141,7 +142,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: "Email Address",
+                labelText: "Email Address".tr,
                 prefixIcon: const Icon(Icons.email_outlined),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
@@ -149,7 +150,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                 ),
               ),
-              validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address" : null,
+              validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address".tr : null,
             ),
             const SizedBox(height: 16),
 
@@ -160,7 +161,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   controller: _passwordController,
                   obscureText: isObscure,
                   decoration: InputDecoration(
-                    labelText: "Password",
+                    labelText: "Password".tr,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -172,7 +173,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                       borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
                     ),
                   ),
-                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters" : null,
+                  validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters".tr : null,
                 );
               },
             ),
@@ -185,7 +186,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   controller: _confirmPasswordController,
                   obscureText: isConfirmObscure,
                   decoration: InputDecoration(
-                    labelText: "Confirm Password",
+                    labelText: "Confirm Password".tr,
                     prefixIcon: const Icon(Icons.lock_reset_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(isConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -198,7 +199,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     ),
                   ),
                   validator: (val) {
-                    if (val != _passwordController.text) return "Passwords do not match";
+                    if (val != _passwordController.text) return "Passwords do not match".tr;
                     return null;
                   },
                 );
@@ -221,7 +222,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     ),
                     child: isLoading
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        :  Text("Create Account".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 );
               },
@@ -231,10 +232,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Already have an account?", style: TextStyle(color: AppColors.textMuted)),
+                 Text("Already have an account?".tr, style: TextStyle(color: AppColors.textMuted)),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Sign In", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                  child:  Text("Sign In".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
                 ),
               ],
             )
@@ -264,13 +265,13 @@ class _SignUpBrandingSide extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
           const SizedBox(height: 24),
-          const Text(
-            "Create Account",
+           Text(
+            "Create Account".tr,
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 12),
-          const Text(
-            "Join DesignLand today and start creating customized gifts & personalized orders easily.",
+           Text(
+            "Join DesignLand today and start creating customized gifts & personalized orders easily.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
           ),
@@ -299,7 +300,7 @@ class _SignUpMobileHeader extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, height: 90),
           const SizedBox(height: 12),
-          const Text(
+           Text(
             "Join DesignLand",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),

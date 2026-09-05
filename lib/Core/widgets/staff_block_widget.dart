@@ -1,5 +1,6 @@
 import 'package:desginland/feature/Login/function/auth_function.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart'; // في حال كانت لوحة التحكم على رابط مختلف/خارجي للويب
 
 class StaffBlockScreen extends StatelessWidget {
@@ -66,7 +67,7 @@ class StaffBlockScreen extends StatelessWidget {
 
                     // 2. العنوان الرئيسي
                     Text(
-                      "مرحباً بك، $roleTitle",
+                      "${"Welcome,".tr}$roleTitle",
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -78,9 +79,9 @@ class StaffBlockScreen extends StatelessWidget {
 
                     // 3. النص التوضيحي
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding:  EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        "هذه الواجهة مخصصة لعملاء المتجر فقط. نظراً لأن حسابك مسجل كـ ($roleTitle)، يرجى للانتقال إلى لوحة التحكم الخاصة بإدارة المنتجات والطلبات.",
+                        "${"This interface is for store customers only. Since your account is registered as (".tr}$roleTitle${"), please proceed to the product and order management dashboard.".tr}",
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -107,7 +108,7 @@ class StaffBlockScreen extends StatelessWidget {
                             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("جاري التوجيه إلى لوحة التحكم...")),
+                               SnackBar(content: Text("Redirecting to the dashboard...".tr)),
                             );
                           }
                         },
@@ -120,8 +121,8 @@ class StaffBlockScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.dashboard_customize_rounded, size: 20),
-                        label: const Text(
-                          "الانتقال إلى لوحة التحكم",
+                        label:  Text(
+                          "Go to the control panel".tr,
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -142,8 +143,8 @@ class StaffBlockScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.logout_rounded, size: 18),
-                        label: const Text(
-                          "تسجيل الخروج",
+                        label:  Text(
+                          "Log out".tr,
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),

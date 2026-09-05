@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../Core/Utils/app.colors.dart'; //[cite: 5, 6]
 
@@ -40,22 +41,22 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
         backgroundColor: Colors.white,
         elevation: 10,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: const Text(
-          "مسح سجل البحث",
+        title:  Text(
+          "Clear search history".tr,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
             color: AppColors.textDark, //[cite: 5]
           ),
         ),
-        content: const Text(
-          "هل ترغب في مسح كل عمليات البحث المسجلة؟",
+        content:  Text(
+          "Do you want to clear all recorded searches?".tr,
           style: TextStyle(color: AppColors.textMuted, fontSize: 14), //[cite: 5]
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("إلغاء", style: TextStyle(color: Colors.grey)),
+            child:  Text("cancellation".tr, style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -66,7 +67,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               ),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("مسح", style: TextStyle(color: Colors.white)),
+            child:  Text("Delete".tr, style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -133,7 +134,6 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
         leading: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: Center(
@@ -162,8 +162,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
             ),
           ),
         ),
-        title: const Text(
-          "سجل البحث",
+        title: Text(
+          "Search history".tr,
           style: TextStyle(
             color: AppColors.textDark, //[cite: 5]
             fontWeight: FontWeight.bold,
@@ -201,7 +201,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
         ],
       ),
       body: uid == null
-          ? const Center(child: Text("يرجى تسجيل الدخول لمشاهدة السجل"))
+          ?  Center(child: Text("Please log in to view the history.".tr))
           : StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('user')
@@ -325,8 +325,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              "سجل البحث فارغ",
+             Text(
+              "Search history is empty.".tr,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -334,8 +334,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              "لم تقم بإجراء أي عمليات بحث مؤخراً.",
+             Text(
+              "You haven't performed any searches recently.".tr,
               style: TextStyle(fontSize: 13, color: AppColors.textMuted), //[cite: 5]
             ),
           ],

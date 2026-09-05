@@ -3,7 +3,6 @@ import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../../Core/widgets/error_dailog_custom.dart';
 
 
@@ -12,7 +11,7 @@ final FirebaseFirestore _firestore=FirebaseFirestore.instance;
 
 Future<bool>RegisterFunction(BuildContext context,String email,String password,String conPassword,String name)async{
   if(password!=conPassword){
-    showErrorDialog(context, "فشل في انشاء الحساب", "كلمتا السر غير متطابقتين");
+    showErrorDialog(context, "Failed to create the account.".tr, "The passwords do not match.".tr);
   }
   else{
     try{
@@ -29,7 +28,7 @@ Future<bool>RegisterFunction(BuildContext context,String email,String password,S
       return true;
     }
     catch(e){
-      showErrorDialog(context, "فشل في انشاء الحساب", e.toString());
+      showErrorDialog(context, "Failed to create the account.".tr, e.toString());
       return false;
     }
   }

@@ -51,7 +51,7 @@ class AuthNotLoginWidget extends StatelessWidget {
 
               // 2. Headline
               Text(
-                "تسجيل الدخول مطلوب".tr,
+                "Login required".tr,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -65,7 +65,7 @@ class AuthNotLoginWidget extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  "يرجى تسجيل الدخول للوصول إلى كافة المميزات، متابعة طلباتك، وإدارة حسابك الشخصي بكل سهولة.".tr,
+                  "Please log in to access all features, track your orders, and easily manage your personal account.".tr,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -99,7 +99,7 @@ class AuthNotLoginWidget extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.login_rounded, size: 20),
                   label: Text(
-                    "تسجيل الدخول الآن".tr,
+                    "Log in now".tr,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

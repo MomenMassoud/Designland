@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../Core/Utils/app.colors.dart';
 
@@ -14,18 +15,17 @@ class OrdersScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
         appBar: AppBar(
-          centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 18),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            "طلباتي",
+          title:  Text(
+            "My Orders".tr,
             style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
           ),
-          bottom: const TabBar(
+          bottom:  TabBar(
             isScrollable: true,
             physics: BouncingScrollPhysics(),
             labelColor: AppColors.primaryPurple,
@@ -33,22 +33,22 @@ class OrdersScreen extends StatelessWidget {
             indicatorColor: AppColors.primaryPurple,
             indicatorWeight: 3,
             tabs: [
-              Tab(text: "الكل"),
-              Tab(text: "تحت الانتظار"),
-              Tab(text: "جاري التوصيل"),
-              Tab(text: "المكتملة"),
-              Tab(text: "الملغية"),
+              Tab(text: "all".tr),
+              Tab(text: "Pending".tr),
+              Tab(text: "Delivery in progress".tr),
+              Tab(text: "The Completed".tr),
+              Tab(text: "Cancelled".tr),
             ],
           ),
         ),
-        body: const TabBarView(
+        body:  TabBarView(
           physics: BouncingScrollPhysics(),
           children: [
             OrdersListWidget(statusFilter: null),
-            OrdersListWidget(statusFilter: 'pending'),
-            OrdersListWidget(statusFilter: 'shipping'),
-            OrdersListWidget(statusFilter: 'completed'),
-            OrdersListWidget(statusFilter: 'cancelled'),
+            OrdersListWidget(statusFilter: 'pending'.tr),
+            OrdersListWidget(statusFilter: 'shipping'.tr),
+            OrdersListWidget(statusFilter: 'completed'.tr),
+            OrdersListWidget(statusFilter: 'cancelled'.tr),
           ],
         ),
       ),
@@ -78,11 +78,11 @@ class OrdersListWidget extends StatelessWidget {
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
-        return "مكتمل";
+        return "completed".tr;
       case 'shipping':
-        return "جاري التوصيل";
+        return "shipping".tr;
       case 'pending':
-        return "تحت الانتظار";
+        return "pending".tr;
       case 'cancelled':
         return "ملغي";
       default:
@@ -99,18 +99,18 @@ class OrdersListWidget extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          "إلغاء الطلب",
+        title:  Text(
+          "Cancel Order".tr,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textDark),
         ),
-        content: const Text(
-          "هل أنت تأكد من أنك تريد إلغاء هذا الطلب؟",
+        content:  Text(
+          "Are you sure you want to cancel this request?".tr,
           style: TextStyle(color: AppColors.textMuted, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("تراجع", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child:  Text("to retreat".tr, style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -119,7 +119,7 @@ class OrdersListWidget extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("تأكيد الإلغاء", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child:  Text("Confirm Cancellation".tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -137,7 +137,7 @@ class OrdersListWidget extends StatelessWidget {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("تم إلغاء الطلب بنجاح"),
+            content:  Text("The order has been successfully cancelled.".tr),
             backgroundColor: AppColors.primaryPurple,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -147,7 +147,7 @@ class OrdersListWidget extends StatelessWidget {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("حدث خطأ أثناء إلغاء الطلب"),
+            content:  Text("An error occurred while cancelling the order.".tr),
             backgroundColor: const Color(0xFFE74C3C),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -161,7 +161,7 @@ class OrdersListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      return const Center(child: Text("يرجى تسجيل الدخول لعرض الطلبات"));
+      return  Center(child: Text("Please log in to view orders.".tr));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -228,7 +228,7 @@ class OrdersListWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "طلب #${doc.id.substring(0, doc.id.length > 6 ? 6 : doc.id.length)}",
+                          "${"Order no".tr} #${doc.id.substring(0, doc.id.length > 6 ? 6 : doc.id.length)}",
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -265,7 +265,7 @@ class OrdersListWidget extends StatelessWidget {
                                 style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                               ),
                               Text(
-                                "${item['price']} ج.م",
+                                "${item['price']}${"EGP".tr}",
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
                               ),
                             ],
@@ -281,12 +281,12 @@ class OrdersListWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "الإجمالي:",
+                         Text(
+                          "Total:".tr,
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDark),
                         ),
                         Text(
-                          "$totalPrice ج.م",
+                          "$totalPrice${"EGP".tr}",
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -309,13 +309,13 @@ class OrdersListWidget extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                           onPressed: () => _cancelOrder(context, doc.id),
-                          child: const Row(
+                          child:  Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFE74C3C)),
                               SizedBox(width: 6),
                               Text(
-                                "إلغاء الطلب",
+                                "Cancel Order".tr,
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                             ],
@@ -351,8 +351,8 @@ class OrdersListWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "لا توجد طلبات متوفرة حالياً",
+           Text(
+            "There are no requests available at the moment.".tr,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,

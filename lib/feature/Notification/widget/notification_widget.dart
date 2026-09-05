@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class NotificationWidget extends StatefulWidget {
   const NotificationWidget({super.key});
@@ -39,21 +40,20 @@ class _NotificationWidgetState extends State<NotificationWidget> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         title: Text(
-          "الإشعارات",
+          "Notifications".tr,
           style: TextStyle(
             color: darkText,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
-        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: darkText, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: currentUserId == null
-          ? const Center(child: Text("يرجى تسجيل الدخول لمشاهدة الإشعارات"))
+          ?  Center(child: Text("Please log in to view notifications.".tr))
           : StreamBuilder<QuerySnapshot>(
         // جلب الإشعارات الخاصة بالعميل الحالي أو الإشعارات العامة لكل المستخدمين
         stream: FirebaseFirestore.instance.collection('user').doc(_auth.currentUser!.uid)
@@ -80,7 +80,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "لا توجد إشعارات حالياً",
+                    "There are currently no notifications.".tr,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade600,
@@ -102,7 +102,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
               final doc = notifications[index];
               final data = doc.data() as Map<String, dynamic>;
 
-              final String title = data['title'] ?? 'إشعار جديد';
+              final String title = data['title'] ?? 'New notification'.tr;
               final String body = data['body'] ?? data['message'] ?? '';
               final bool isRead = data['isRead'] ?? false;
               final Timestamp? createdAt = data['createdAt'] as Timestamp?;
@@ -218,9 +218,9 @@ class _NotificationWidgetState extends State<NotificationWidget> {
     final DateTime date = timestamp.toDate();
     final Duration diff = DateTime.now().difference(date);
 
-    if (diff.inMinutes < 1) return "الآن";
-    if (diff.inMinutes < 60) return "منذ ${diff.inMinutes} دقيقة";
-    if (diff.inHours < 24) return "منذ ${diff.inHours} ساعة";
+    if (diff.inMinutes < 1) return "now".tr;
+    if (diff.inMinutes < 60) return "${"since".tr} ${diff.inMinutes} ${"minute".tr}";
+    if (diff.inHours < 24) return "${"since".tr} ${diff.inHours} ${"hour".tr}";
     return "${date.day}/${date.month}/${date.year}";
   }
 }

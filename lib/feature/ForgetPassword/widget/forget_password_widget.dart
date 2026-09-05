@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../Core/Utils/app.colors.dart';
 
@@ -41,16 +42,16 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
       });
 
       _showSnackBar(
-        "Password reset link sent to your email!",
+        "Password reset link sent to your email!".tr,
         isError: false,
       );
     } on FirebaseAuthException catch (e) {
       _showSnackBar(
-        e.message ?? "An error occurred while sending reset link",
+        e.message ?? "An error occurred while sending reset link".tr,
         isError: true,
       );
     } catch (e) {
-      _showSnackBar("An unexpected error occurred", isError: true);
+      _showSnackBar("An unexpected error occurred".tr, isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -123,8 +124,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           const SizedBox(height: 24),
 
           // Title & Description
-          const Text(
-            "Forgot Password?",
+           Text(
+            "Forgot Password?".tr,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -132,8 +133,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "No worries, enter your registered email and we'll send you a link to reset your password.",
+           Text(
+            "No worries, enter your registered email and we'll send you a link to reset your password.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -148,7 +149,7 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              labelText: "Email Address",
+              labelText: "Email Address".tr,
               hintText: "example@domain.com",
               prefixIcon: const Icon(Icons.email_outlined,
                   color: AppColors.primaryPurple),
@@ -167,11 +168,11 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return "Please enter your email";
+                return "Please enter your email".tr;
               }
               final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
               if (!emailRegExp.hasMatch(value.trim())) {
-                return "Enter a valid email address";
+                return "Enter a valid email address".tr;
               }
               return null;
             },
@@ -200,8 +201,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
                   strokeWidth: 2,
                 ),
               )
-                  : const Text(
-                "Send Reset Link",
+                  :  Text(
+                "Send Reset Link".tr,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -219,8 +220,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             },
             icon: const Icon(Icons.arrow_back_rounded,
                 size: 18, color: AppColors.textMuted),
-            label: const Text(
-              "Back to Login",
+            label:  Text(
+              "Back to Login".tr,
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
@@ -251,8 +252,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          "Check Your Email",
+         Text(
+          "Check Your Email".tr,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -261,7 +262,7 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
         ),
         const SizedBox(height: 8),
         Text(
-          "We sent a password reset link to:\n${_emailController.text.trim()}",
+          "${"We sent a password reset link to:".tr}\n${_emailController.text.trim()}",
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 14,
@@ -283,8 +284,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text(
-              "Return to Login",
+            child:  Text(
+              "Return to Login".tr,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -300,8 +301,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
               _emailSent = false;
             });
           },
-          child: const Text(
-            "Didn't receive the email? Try again",
+          child:  Text(
+            "Didn't receive the email? Try again".tr,
             style: TextStyle(
               color: AppColors.primaryPurple,
               fontWeight: FontWeight.w600,

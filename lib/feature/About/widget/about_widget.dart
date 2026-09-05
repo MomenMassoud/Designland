@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../Core/Utils/app.colors.dart'; //[cite: 5, 6]
@@ -21,10 +22,10 @@ class _AboutWidgetState extends State<AboutWidget> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        _showSnackBar("تعذر فتح الرابط");
+        _showSnackBar("Unable to open the link.".tr);
       }
     } catch (e) {
-      _showSnackBar("حدث خطأ أثناء محاولة الاتصال");
+      _showSnackBar("An error occurred while attempting to connect.".tr);
     }
   }
 
@@ -110,45 +111,45 @@ class _AboutWidgetState extends State<AboutWidget> {
             const SizedBox(height: 24),
 
             // -------------------- 1. من نحن (Firebase Dynamic) --------------------
-            _buildSectionTitle("من نحن"),
+            _buildSectionTitle("About Us".tr),
             const SizedBox(height: 10),
             _buildAboutUsStream(),
 
             const SizedBox(height: 24),
 
             // -------------------- 2. بيانات التواصل (Firebase Dynamic Actions) --------------------
-            _buildSectionTitle("تواصل معنا"),
+            _buildSectionTitle("Contact us".tr),
             const SizedBox(height: 10),
             _buildContactInfoStream(),
 
             const SizedBox(height: 24),
 
             // -------------------- 3. الأسئلة الشائعة (Firebase Dynamic FAQs) --------------------
-            _buildSectionTitle("الأسئلة الشائعة"),
+            _buildSectionTitle("Frequently Asked Questions".tr),
             const SizedBox(height: 10),
             _buildFaqStream(),
 
             const SizedBox(height: 24),
 
             // -------------------- 4. السياسات والشروط (Static Local) --------------------
-            _buildSectionTitle("الشروط والسياسات"),
+            _buildSectionTitle("Terms and Policies".tr),
             const SizedBox(height: 10),
             _buildLegalCard(
-              title: "شروط الاستخدام",
+              title: "terms of use".tr,
               icon: Icons.gavel_rounded,
-              onTap: () => _showPolicyBottomSheet("شروط الاستخدام", _termsOfUseText),
+              onTap: () => _showPolicyBottomSheet("terms of use".tr, _termsOfUseText),
             ),
             const SizedBox(height: 8),
             _buildLegalCard(
-              title: "سياسة الخصوصية",
+              title: "privacy policy".tr,
               icon: Icons.security_rounded,
-              onTap: () => _showPolicyBottomSheet("سياسة الخصوصية", _privacyPolicyText),
+              onTap: () => _showPolicyBottomSheet("privacy policy".tr, _privacyPolicyText),
             ),
 
             const SizedBox(height: 30),
             Center(
               child: Text(
-                "الإصدار 1.0.0",
+                "Version 1.0.0".tr,
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade400, fontWeight: FontWeight.w500),
               ),
             ),
@@ -197,8 +198,8 @@ class _AboutWidgetState extends State<AboutWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            "مرحباً بك في منصتنا",
+           Text(
+            "Welcome to our platform.".tr,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -207,7 +208,7 @@ class _AboutWidgetState extends State<AboutWidget> {
           ),
           const SizedBox(height: 4),
           Text(
-            "صُممت خصيصاً لتوفير أفضل تجربة تصاميم وهدايا مخصصة",
+            "Specially designed to provide the best experience for custom designs and gifts.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -242,7 +243,7 @@ class _AboutWidgetState extends State<AboutWidget> {
         }
 
         final data = snapshot.data?.data() as Map<String, dynamic>?;
-        final String text = data?['description'] ?? "يسعدنا تقديم أفضل الخدمات والتصاميم المخصصة بأعلى جودة.";
+        final String text = data?['description'] ?? "We are pleased to provide the best services and custom designs of the highest quality.".tr;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -288,7 +289,7 @@ class _AboutWidgetState extends State<AboutWidget> {
           children: [
             _buildContactItem(
               icon: Icons.wechat_outlined,
-              title: "واتساب",
+              title: "WhatsApp".tr,
               subtitle: whatsapp,
               iconBgColor: const Color(0xFF25D366).withOpacity(0.1),
               iconColor: const Color(0xFF25D366),
@@ -300,7 +301,7 @@ class _AboutWidgetState extends State<AboutWidget> {
             const SizedBox(height: 8),
             _buildContactItem(
               icon: Icons.phone_in_talk_rounded,
-              title: "رقم التواصل",
+              title: "Contact number".tr,
               subtitle: phone,
               iconBgColor: AppColors.primaryPurple.withOpacity(0.08), //[cite: 5]
               iconColor: AppColors.primaryPurple, //[cite: 5]
@@ -309,7 +310,7 @@ class _AboutWidgetState extends State<AboutWidget> {
             const SizedBox(height: 8),
             _buildContactItem(
               icon: Icons.alternate_email_rounded,
-              title: "البريد الإلكتروني",
+              title: "e-mail".tr,
               subtitle: email,
               iconBgColor: const Color(0xFF0984E3).withOpacity(0.1),
               iconColor: const Color(0xFF0984E3),
@@ -385,9 +386,9 @@ class _AboutWidgetState extends State<AboutWidget> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Center(
+            child:  Center(
               child: Text(
-                "لا توجد أسئلة شائعة حالياً",
+                "There are currently no frequently asked questions.".tr,
                 style: TextStyle(fontSize: 13, color: AppColors.textMuted), //[cite: 5]
               ),
             ),
@@ -507,7 +508,7 @@ class _AboutWidgetState extends State<AboutWidget> {
       "2. الحسابات والطلبات: المستخدم مسؤول عن صحة البيانات المدخلة في طلبات التصاميم والهدايا.\n"
       "3. التعديلات: يحق للقيمين على التطبيق تعديل الخدمات أو الأسعار في أي وقت دون إشعار مسبق.";
 
-  static const String _privacyPolicyText =
+  static  String _privacyPolicyText =
       "نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية:\n\n"
       "1. جمع البيانات: نجمع البيانات الأساسية مثل الاسم، رقم الهاتف، والبريد الإلكتروني لإتمام طلباتك بنجاح.\n"
       "2. حماية البيانات: نستخدم تقنيات تشفير عالية الجودة لضمان عدم تسريب أي من بياناتك أو مشاركتها مع أطراف ثالثة.\n"

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../Utils/app.colors.dart';
 
@@ -53,8 +54,8 @@ void showErrorDialog(BuildContext context, String title, String message) {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
-          child: const Text(
-            "حسناً",
+          child:  Text(
+            "Good".tr,
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,

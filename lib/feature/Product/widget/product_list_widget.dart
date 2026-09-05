@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/product_view.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class ProductListWidget extends StatefulWidget {
   final String categoryDoc;
@@ -12,6 +13,7 @@ class ProductListWidget extends StatefulWidget {
 }
 
 class _ProductListWidgetState extends State<ProductListWidget> {
+  String lang = Get.locale?.languageCode ?? "ar";
   final CollectionReference _productsRef =
   FirebaseFirestore.instance.collection('products');
   final CollectionReference _categoriesRef =
@@ -54,14 +56,14 @@ class _ProductListWidgetState extends State<ProductListWidget> {
           stream: _categoriesRef.doc(widget.categoryDoc).snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Text(
-                "Category Products",
+              return  Text(
+                "Category Products".tr,
                 style: TextStyle(color: Color(0xFF2D3436), fontSize: 18),
               );
             }
             final data = snapshot.data!.data() as Map<String, dynamic>;
             return Text(
-              data['nameEn'] ?? data['name'] ?? "Category Products",
+             lang=="en"? data['nameEn'] ?? data['name'] ?? "Category Products".tr:data['nameAr'],
               style: const TextStyle(
                 color: Color(0xFF2D3436),
                 fontWeight: FontWeight.bold,
@@ -93,8 +95,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         _searchQuery = val.trim().toLowerCase();
                       });
                     },
-                    decoration: const InputDecoration(
-                      hintText: "Search in this category...",
+                    decoration:  InputDecoration(
+                      hintText: "Search in this category...".tr,
                       hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
                       prefixIcon:
                       Icon(Icons.search, color: Colors.grey, size: 20),
@@ -127,7 +129,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: ChoiceChip(
-                                label: const Text("All"),
+                                label:  Text("All".tr),
                                 selected: isSelected,
                                 selectedColor: const Color(0xFF6C5CE7),
                                 labelStyle: TextStyle(
@@ -154,7 +156,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: ChoiceChip(
-                              label: Text(subData['nameEn'] ?? 'Subcategory'),
+                              label: Text(lang=="en"?subData['nameEn'] ?? 'Subcategory'.tr:subData['nameAr']),
                               selected: isSelected,
                               selectedColor: const Color(0xFF6C5CE7),
                               labelStyle: TextStyle(
@@ -212,7 +214,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                 }).toList();
 
                 if (products.isEmpty) {
-                  return const Center(
+                  return  Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -220,7 +222,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             size: 50, color: Colors.grey),
                         SizedBox(height: 12),
                         Text(
-                          "No products found in this category.",
+                          "No products found in this category.".tr,
                           style: TextStyle(color: Colors.grey, fontSize: 14),
                         ),
                       ],
@@ -332,7 +334,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    productData['title'] ?? 'Product Title',
+                                    productData['title'] ?? 'Product Title'.tr,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -354,7 +356,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                           CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              "$finalPrice ج.م",
+                                              "$finalPrice${"EGP".tr}",
                                               style: const TextStyle(
                                                 color: Color(0xFF6C5CE7),
                                                 fontWeight: FontWeight.bold,
@@ -363,7 +365,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                             ),
                                             if (hasDiscount)
                                               Text(
-                                                "$originalPrice ج.م",
+                                                "$originalPrice${"EGP".tr}",
                                                 style: const TextStyle(
                                                   color: Colors.grey,
                                                   fontSize: 10,

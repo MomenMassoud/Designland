@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class BasketWidget extends StatefulWidget {
   const BasketWidget({super.key});
@@ -45,8 +46,8 @@ class _BasketWidgetState extends State<BasketWidget> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("تم إزالة المنتج من السلة"),
+       SnackBar(
+        content: Text("The product has been removed from the cart.".tr),
         duration: Duration(seconds: 2),
       ),
     );
@@ -95,22 +96,22 @@ class _BasketWidgetState extends State<BasketWidget> {
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Icon(Icons.check_circle, color: Colors.green, size: 50),
-          content: const Text(
-            "تم تأكيد طلبك بنجاح وهو الآن تحت التنفيذ!",
+          content:  Text(
+            "Your order has been successfully confirmed and is now being processed!".tr,
             textAlign: TextAlign.center,
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("حسناً"),
+              child:  Text("Good".tr),
             ),
           ],
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("حدث خطأ أثناء تأكيد الطلب: $e")),
+        SnackBar(content: Text("${"An error occurred while confirming the order:".tr}$e")),
       );
     }
   }
@@ -121,9 +122,9 @@ class _BasketWidgetState extends State<BasketWidget> {
 
     if (uid == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("سلة التسوق")),
-        body: const Center(
-          child: Text("برجاء تسجيل الدخول لعرض سلة التسوق"),
+        appBar: AppBar(title:  Text("Shopping Cart".tr)),
+        body:  Center(
+          child: Text("Please log in to view the shopping cart.".tr),
         ),
       );
     }
@@ -131,8 +132,8 @@ class _BasketWidgetState extends State<BasketWidget> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          "سلة التسوق",
+        title:  Text(
+          "Shopping Cart".tr,
           style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -146,14 +147,14 @@ class _BasketWidgetState extends State<BasketWidget> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            return  Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
-                    "السلة فارغة حالياً",
+                    "The cart is currently empty.".tr,
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ],
@@ -274,7 +275,7 @@ class _BasketWidgetState extends State<BasketWidget> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("الإجمالي:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                         Text("Total:".tr, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         Text(
                           "${totalPrice.toStringAsFixed(2)} ج.م",
                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
@@ -291,8 +292,8 @@ class _BasketWidgetState extends State<BasketWidget> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => _confirmOrder(cartDocs, totalPrice),
-                        child: const Text(
-                          "تأكيد الطلب (تحت التنفيذ)",
+                        child:  Text(
+                          "Order Confirmation (In Progress)".tr,
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),

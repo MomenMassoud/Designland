@@ -38,7 +38,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   // استخدام ValueNotifier لتقليل Rebuilds العدادات
   final ValueNotifier<int> _cartCount = ValueNotifier<int>(0);
   final ValueNotifier<int> _notificationCount = ValueNotifier<int>(0);
-  static const List<String> _tabNames = ['Home', 'Profile', 'About'];
+  static  List<String> _tabNames = ['Home'.tr, 'Profile'.tr, 'About'.tr];
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -77,7 +77,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         }
       }
     } catch (e) {
-      if (mounted) showErrorDialog(context, "Error", e.toString());
+      if (mounted) showErrorDialog(context, "Error".tr, e.toString());
     }
   }
 
@@ -90,7 +90,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         .snapshots()
         .listen((snapshot) {
       _notificationCount.value = snapshot.size;
-    }, onError: (e) => showErrorDialog(context, "Error", e.toString()));
+    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
   }
 
   void _listenToCartCount(String uid) {
@@ -101,7 +101,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         .snapshots()
         .listen((snapshot) {
       _cartCount.value = snapshot.size;
-    }, onError: (e) => showErrorDialog(context, "Error", e.toString()));
+    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
   }
 
   @override
@@ -149,7 +149,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     radius: 20,
                   ),
                   SizedBox(width: 10),
-                  Text(
+                 const Text(
                     "DesignLand",
                     style: TextStyle(
                       color: Color(0xFF2D3436),
@@ -204,9 +204,9 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                 ),
                 if (isDesktop) ...[
                   const SizedBox(width: 8),
-                  _buildNavTextButton("Home", Icons.home_outlined, 0),
-                  _buildNavTextButton("Profile", Icons.person_outline, 1),
-                  _buildNavTextButton("About", Icons.info_outline, 2),
+                  _buildNavTextButton("Home".tr, Icons.home_outlined, 0),
+                  _buildNavTextButton("Profile".tr, Icons.person_outline, 1),
+                  _buildNavTextButton("About".tr, Icons.info_outline, 2),
                 ],
                 const SizedBox(width: 12),
               ],
@@ -258,9 +258,9 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home_outlined, Icons.home, "Home", 0),
-                _buildNavItem(Icons.person_outline, Icons.person, "Profile", 1),
-                _buildNavItem(Icons.info_outline, Icons.info, "About", 2),
+                _buildNavItem(Icons.home_outlined, Icons.home, "Home".tr, 0),
+                _buildNavItem(Icons.person_outline, Icons.person, "Profile".tr, 1),
+                _buildNavItem(Icons.info_outline, Icons.info, "About".tr, 2),
               ],
             ),
           ),

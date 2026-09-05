@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Login/view/login_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
 
 class ProductWidget extends StatefulWidget {
@@ -58,7 +58,7 @@ class _ProductWidgetState extends State<ProductWidget> {
     } catch (e) {
       setState(() => _isAddingToCart = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("حدث خطأ أثناء المعالجة: $e")),
+        SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
       );
     }
   }
@@ -67,19 +67,19 @@ class _ProductWidgetState extends State<ProductWidget> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("تسجيل الدخول مطلوب"),
-        content: const Text("يرجى تسجيل الدخول أولاً للتمكن من إضافة المنتجات إلى السلة."),
+        title:  Text("Login required".tr),
+        content:  Text("Please log in first to add products to the cart.".tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
+            child:  Text("cancellation".tr),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
             onPressed: () {
               Navigator.pushNamed(context, LoginView.id);
             },
-            child: const Text("تسجيل الدخول", style: TextStyle(color: Colors.white)),
+            child:  Text("Log in".tr, style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -111,8 +111,8 @@ class _ProductWidgetState extends State<ProductWidget> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "استكمال بيانات التواصل والعنوان",
+                 Text(
+                  "Complete contact and address details".tr,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
@@ -120,8 +120,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: "رقم الهاتف للتواصل",
+                    decoration:  InputDecoration(
+                      labelText: "Contact phone number".tr,
                       prefixIcon: Icon(Icons.phone),
                       border: OutlineInputBorder(),
                     ),
@@ -130,8 +130,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                 ],
                 TextField(
                   controller: addressTitleController,
-                  decoration: const InputDecoration(
-                    labelText: "اسم العنوان (مثال: المنزل، الشغل)",
+                  decoration:  InputDecoration(
+                    labelText: "Address name (e.g., Home, Work)".tr,
                     prefixIcon: Icon(Icons.label_outline),
                     border: OutlineInputBorder(),
                   ),
@@ -140,8 +140,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                 TextField(
                   controller: addressDetailsController,
                   maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: "تفاصيل العنوان بالكامل",
+                  decoration:  InputDecoration(
+                    labelText: "Full address details".tr,
                     prefixIcon: Icon(Icons.location_on_outlined),
                     border: OutlineInputBorder(),
                   ),
@@ -159,7 +159,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                           addressTitleController.text.trim().isEmpty ||
                           addressDetailsController.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("يرجى ملء جميع البيانات")),
+                           SnackBar(content: Text("Please fill in all the details.".tr)),
                         );
                         return;
                       }
@@ -177,10 +177,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                       if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("تم حفظ البيانات بنجاح! اطلب الآن.")),
+                         SnackBar(content: Text("Data saved successfully! Order now.".tr)),
                       );
                     },
-                    child: const Text("حفظ ومتابعة الطلب", style: TextStyle(color: Colors.white)),
+                    child:  Text("Save and track the order".tr, style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],
@@ -222,12 +222,12 @@ class _ProductWidgetState extends State<ProductWidget> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "تفاصيل الطلب والتصميم",
+                     Text(
+                      "Order and Design Details".tr,
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    const Text("اختر عنوان التوصيل:", style: TextStyle(fontWeight: FontWeight.bold)),
+                     Text("Select a delivery address:".tr, style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
                       value: selectedAddressIndex,
@@ -251,8 +251,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: driveController,
-                      decoration: const InputDecoration(
-                        labelText: "رابط صور Google Drive",
+                      decoration:  InputDecoration(
+                        labelText: "Google Drive image link".tr,
                         hintText: "https://drive.google.com/...",
                         prefixIcon: Icon(Icons.add_link),
                         border: OutlineInputBorder(),
@@ -262,9 +262,9 @@ class _ProductWidgetState extends State<ProductWidget> {
                     TextField(
                       controller: notesController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: "ملاحظات إضافية على الطلب",
-                        hintText: "اكتب أي تفاصيل أو تعديلات خاصة تتمنى تنفيذها...",
+                      decoration:  InputDecoration(
+                        labelText: "Additional notes on the request".tr,
+                        hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -279,7 +279,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                         onPressed: () async {
                           if (driveController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("يرجى إضافة رابط ملفات Google Drive")),
+                               SnackBar(content: Text("Please add the Google Drive file link.".tr)),
                             );
                             return;
                           }
@@ -299,14 +299,14 @@ class _ProductWidgetState extends State<ProductWidget> {
                           if (!context.mounted) return;
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("تمت إضافة المنتج إلى سلتك بنجاح! 🎉"),
+                             SnackBar(
+                              content: Text("The product has been successfully added to your cart! 🎉".tr),
                               backgroundColor: Colors.green,
                             ),
                           );
                         },
                         icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                        label: const Text("تأكيد الإضافة إلى السلة",
+                        label:  Text("Confirm addition to cart".tr,
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -334,8 +334,8 @@ class _ProductWidgetState extends State<ProductWidget> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1E293B), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "تفاصيل المنتج",
+        title: Text(
+          "Product Details".tr,
           style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
@@ -351,7 +351,7 @@ class _ProductWidgetState extends State<ProductWidget> {
               }
 
               if (!snapshot.hasData || !snapshot.data!.exists) {
-                return const Center(child: Text("المنتج غير موجود."));
+                return  Center(child: Text("The product does not exist.".tr));
               }
 
               final data = snapshot.data!.data() as Map<String, dynamic>;
@@ -569,7 +569,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              "${discountedPrice.toStringAsFixed(2)} ج.م",
+              "${discountedPrice.toStringAsFixed(2)}${"EGP".tr}",
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -579,7 +579,7 @@ class _ProductWidgetState extends State<ProductWidget> {
             if (hasDiscount) ...[
               const SizedBox(width: 12),
               Text(
-                "${originalPrice.toStringAsFixed(2)} ج.م",
+                "${originalPrice.toStringAsFixed(2)}${"EGP".tr}",
                 style: const TextStyle(
                   fontSize: 18,
                   color: Color(0xFF94A3B8),
@@ -632,8 +632,8 @@ class _ProductWidgetState extends State<ProductWidget> {
             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
           )
               : const Icon(Icons.shopping_bag_outlined, size: 20),
-          label: const Text(
-            "إضافة إلى السلة",
+          label:  Text(
+            "Add to cart".tr,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
@@ -658,8 +658,8 @@ class _ProductWidgetState extends State<ProductWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "بيانات المنتج التفصيلية",
+           Text(
+            "Detailed product information".tr,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -668,7 +668,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
           const Divider(height: 24),
           Text(
-            description.isNotEmpty ? description : "لا يوجد وصف إضافي للمنتج.",
+            description.isNotEmpty ? description : "There is no additional description for the product.".tr,
             style: const TextStyle(color: Color(0xFF475569), height: 1.6, fontSize: 14),
           ),
         ],
@@ -693,8 +693,8 @@ class _ProductWidgetState extends State<ProductWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "تقييمات العملاء والمراجعات",
+           Text(
+            "Customer Ratings and Reviews".tr,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -723,11 +723,11 @@ class _ProductWidgetState extends State<ProductWidget> {
               final reviews = snapshot.data!.docs;
 
               if (reviews.isEmpty) {
-                return const Padding(
+                return  Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Center(
                     child: Text(
-                      "لا توجد تقييمات حالية. كن أول من يقيّم هذا المنتج!",
+                      "There are currently no ratings. Be the first to rate this product!".tr,
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ),
@@ -763,7 +763,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  rev['userName'] ?? 'عميل',
+                                  rev['userName'] ?? 'client'.tr,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
@@ -852,7 +852,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("أضف تقييمك", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("Add your rating".tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               DropdownButton<double>(
                 value: _userRating,
                 underline: const SizedBox(),
@@ -876,8 +876,8 @@ class _AddReviewSectionState extends State<AddReviewSection> {
               focusNode: _focusNode,
               keyboardType: TextInputType.multiline,
               maxLines: null,
-              decoration: const InputDecoration(
-                hintText: "اكتب رأيك عن المنتج هنا...",
+              decoration:  InputDecoration(
+                hintText: "Write your opinion about the product here...".tr,
                 hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
                 border: InputBorder.none,
               ),
@@ -899,7 +899,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
 
                 final ref = widget.productsRef.doc(widget.productDoc).collection('reviews');
                 await ref.add({
-                  'userName': currentUser.displayName ?? 'عميل',
+                  'userName': currentUser.displayName ?? 'client'.tr,
                   'userUid': currentUser.uid,
                   'rating': _userRating,
                   'comment': _commentController.text.trim(),
@@ -914,7 +914,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
               },
               child: _isSubmitting
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text("نشر التقييم"),
+                  :  Text("Publish the review".tr),
             ),
           )
         ],

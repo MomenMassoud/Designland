@@ -1,12 +1,10 @@
-
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/products_list_view.dart';
 import 'package:desginland/feature/Product/widget/product_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
 
 class HomeWidget extends StatefulWidget {
@@ -20,10 +18,15 @@ class _HomeWidgetState extends State<HomeWidget> {
   final CollectionReference _productsRef = FirebaseFirestore.instance.collection('products');
   final CollectionReference _categoriesRef = FirebaseFirestore.instance.collection('categories');
   final CollectionReference _subcategoriesRef = FirebaseFirestore.instance.collection('subcategories');
-
+  String lang = "";
   Timer? _searchDebounce;
   final TextEditingController _searchController = TextEditingController();
-
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    lang=Get.locale?.languageCode ?? "ar";
+  }
   // تم تغيير الاسم إلى _searchNotifier لمنع أي تضارب مع Getter قديم بنفس الاسم
   final ValueNotifier<String> _searchNotifier = ValueNotifier<String>('');
 
@@ -95,8 +98,8 @@ class _HomeWidgetState extends State<HomeWidget> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Filter Products",
+                         Text(
+                          "Filter Products".tr,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -108,8 +111,8 @@ class _HomeWidgetState extends State<HomeWidget> {
                             _resetFilters();
                             Navigator.pop(ctx);
                           },
-                          child: const Text(
-                            "Reset All",
+                          child:  Text(
+                            "Reset All".tr,
                             style: TextStyle(color: Color(0xFF6C5CE7)),
                           ),
                         )
@@ -118,8 +121,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                     const SizedBox(height: 12),
                     const Divider(),
                     const SizedBox(height: 12),
-
-                    const Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text("Category".tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 8),
                     StreamBuilder<QuerySnapshot>(
                       stream: _categoriesRef.snapshots(),
@@ -128,7 +130,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                         final docs = snapshot.data!.docs;
                         return DropdownButtonFormField<String>(
                           value: _selectedCategoryId,
-                          hint: const Text("All Categories"),
+                          hint:  Text("All Categories".tr),
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -137,7 +139,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                             final data = doc.data() as Map<String, dynamic>;
                             return DropdownMenuItem(
                               value: doc.id,
-                              child: Text(data['nameEn'] ?? 'Category'),
+                              child: Text(lang=="en"?data['nameEn'] ?? 'Category'.tr :data['nameAr']),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -153,7 +155,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                     const SizedBox(height: 16),
 
                     if (_selectedCategoryId != null) ...[
-                      const Text("Subcategory", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      Text("Subcategory".tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 8),
                       StreamBuilder<QuerySnapshot>(
                         stream: _subcategoriesRef
@@ -164,7 +166,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                           final docs = snapshot.data!.docs;
                           return DropdownButtonFormField<String>(
                             value: _selectedSubcategoryId,
-                            hint: const Text("All Subcategories"),
+                            hint:  Text("All Subcategories".tr),
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,7 +175,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                               final data = doc.data() as Map<String, dynamic>;
                               return DropdownMenuItem(
                                 value: doc.id,
-                                child: Text(data['nameEn'] ?? 'Subcategory'),
+                                child: Text(lang=="en"? data['nameEn'] ?? 'Subcategory'.tr :data['nameAr'] ),
                               );
                             }).toList(),
                             onChanged: (val) {
@@ -189,7 +191,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Price Range", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text("Price Range".tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                         Text(
                           "\$${_priceRange.start.round()} - \$${_priceRange.end.round()}",
                           style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF6C5CE7)),
@@ -222,7 +224,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                           ),
                         ),
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text("Apply Filters",
+                        child:  Text("Apply Filters".tr,
                             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -276,8 +278,8 @@ class _HomeWidgetState extends State<HomeWidget> {
                             });
                           }
                         },
-                        decoration: const InputDecoration(
-                          hintText: "Search custom gifts, items...",
+                        decoration:  InputDecoration(
+                          hintText: "Search custom gifts, items...".tr,
                           hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                           prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF6C5CE7)),
                           border: InputBorder.none,
@@ -345,11 +347,11 @@ class _HomeWidgetState extends State<HomeWidget> {
               final categoryDocs = catSnapshot.data?.docs ?? [];
 
               if (categoryDocs.isEmpty) {
-                return const SliverToBoxAdapter(
+                return  SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: Text("No categories found.", style: TextStyle(color: Colors.grey)),
+                      child: Text("No categories found.".tr, style: TextStyle(color: Colors.grey)),
                     ),
                   ),
                 );
@@ -360,7 +362,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                       (context, index) {
                     final categoryDoc = categoryDocs[index];
                     final categoryData = categoryDoc.data() as Map<String, dynamic>;
-                    final categoryTitle = categoryData['nameEn'] ?? 'Category';
+                    String categoryTitle =Get.locale?.languageCode=="en"? categoryData['nameEn']:categoryData['nameAr'];
 
                     return _CategorySectionWidget(
                       productsRef: _productsRef,
@@ -459,9 +461,9 @@ class _CategorySectionWidget extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Row(
+                        child:  Row(
                           children: [
-                            Text("See All", style: TextStyle(color: Color(0xFF6C5CE7), fontWeight: FontWeight.bold)),
+                            Text("See All".tr, style: TextStyle(color: Color(0xFF6C5CE7), fontWeight: FontWeight.bold)),
                             SizedBox(width: 4),
                             Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF6C5CE7)),
                           ],
@@ -586,7 +588,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                   final doc = validDiscountDocs[index];
                   final data = doc.data() as Map<String, dynamic>;
 
-                  final String title = data['title'] ?? 'عرض خاص';
+                  final String title = data['title'] ?? 'Special Offer'.tr;
                   final num originalPrice = data['price'] ?? 0;
                   final num discountPercentage = data['discountPercentage'] ?? 0;
                   final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
@@ -672,7 +674,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
-                                        "خصم $discountPercentage%",
+                                        "${"discount".tr} $discountPercentage%",
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
@@ -698,7 +700,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                     Row(
                                       children: [
                                         Text(
-                                          "$finalPrice ج.م",
+                                          "$finalPrice ${"EGP".tr}",
                                           style: const TextStyle(
                                             color: Color(0xFF55E6C1),
                                             fontSize: 18,
@@ -707,7 +709,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          "$originalPrice ج.م",
+                                          "$originalPrice ${"EGP".tr}",
                                           style: const TextStyle(
                                             color: Colors.grey,
                                             fontSize: 13,
@@ -823,8 +825,8 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
           color: Colors.red.withOpacity(0.2),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Text(
-          "انتهى العرض",
+        child:  Text(
+          "The offer has ended.".tr,
           style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
         ),
       );
@@ -838,14 +840,14 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
     return Row(
       children: [
         if (days > 0) ...[
-          _buildTimeBox(_twoDigits(days), "يوم"),
+          _buildTimeBox(_twoDigits(days), "day".tr),
           const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ],
-        _buildTimeBox(_twoDigits(hours), "ساعة"),
+        _buildTimeBox(_twoDigits(hours), "hour".tr),
         const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        _buildTimeBox(_twoDigits(minutes), "دقيقة"),
+        _buildTimeBox(_twoDigits(minutes), "minute".tr),
         const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        _buildTimeBox(_twoDigits(seconds), "ثانية"),
+        _buildTimeBox(_twoDigits(seconds), "second".tr),
       ],
     );
   }
@@ -1037,7 +1039,7 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "$finalPrice ج.م",
+                              "$finalPrice${"EGP".tr}",
                               style: const TextStyle(
                                 color: Color(0xFF6C5CE7),
                                 fontWeight: FontWeight.w800,
@@ -1046,7 +1048,7 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard> {
                             ),
                             if (hasDiscount)
                               Text(
-                                "$originalPrice ج.م",
+                                "$originalPrice${"EGP".tr}",
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 11,
