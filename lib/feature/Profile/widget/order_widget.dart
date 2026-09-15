@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:http/http.dart' as http;
 import '../../../Core/Utils/app.colors.dart';
+
+
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -21,13 +24,13 @@ class OrdersScreen extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 18),
             onPressed: () => Navigator.pop(context),
           ),
-          title:  Text(
+          title: Text(
             "My Orders".tr,
-            style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+            style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
           ),
-          bottom:  TabBar(
+          bottom: TabBar(
             isScrollable: true,
-            physics: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             labelColor: AppColors.primaryPurple,
             unselectedLabelColor: AppColors.textMuted,
             indicatorColor: AppColors.primaryPurple,
@@ -41,8 +44,8 @@ class OrdersScreen extends StatelessWidget {
             ],
           ),
         ),
-        body:  TabBarView(
-          physics: BouncingScrollPhysics(),
+        body: TabBarView(
+          physics: const BouncingScrollPhysics(),
           children: [
             OrdersListWidget(statusFilter: null),
             OrdersListWidget(statusFilter: 'pending'.tr),
@@ -58,7 +61,7 @@ class OrdersScreen extends StatelessWidget {
 
 class OrdersListWidget extends StatelessWidget {
   final String? statusFilter;
-  const OrdersListWidget({super.key, this.statusFilter});
+  OrdersListWidget({super.key, this.statusFilter});
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -90,27 +93,61 @@ class OrdersListWidget extends StatelessWidget {
     }
   }
 
-  Future<void> _cancelOrder(BuildContext context, String orderId) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+  // دالة إرسال إيميل إلغاء الطلب عبر سيرفر Vercel
+  Future<void> _sendCancelInvoiceEmail({
+    required String customerEmail,
+    required String orderId,
+    required double total,
+  }) async {
+    const String apiUrl = 'https://designland-backend.vercel.app/api/cancel-email';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'customerEmail': customerEmail,
+          'orderId': orderId,
+          'total': total,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('🎉 تم إرسال إيميل إلغاء الفاتورة بنجاح!');
+      } else {
+        debugPrint('فشل إرسال إيميل الإلغاء: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error sending cancel email: $e');
+    }
+  }
+
+  Future<void> _cancelOrder(BuildContext context, String orderId, double totalPrice) async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final currentUser = auth.currentUser;
+
+    if (currentUser == null) return;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title:  Text(
+        title: Text(
           "Cancel Order".tr,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textDark),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textDark),
         ),
-        content:  Text(
+        content: Text(
           "Are you sure you want to cancel this request?".tr,
-          style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:  Text("to retreat".tr, style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: Text("to retreat".tr, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -119,7 +156,7 @@ class OrdersListWidget extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child:  Text("Confirm Cancellation".tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text("Confirm Cancellation".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -127,17 +164,36 @@ class OrdersListWidget extends StatelessWidget {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance
+        // 1. تحديث حالة الطلب في الفايربيز إلى ملغي
+        await firestore
             .collection('users')
-            .doc(uid)
+            .doc(currentUser.uid)
             .collection('orders')
             .doc(orderId)
             .update({'status': 'cancelled'});
 
+        // 2. جلب إيميل المستخدم الحالي
+        String userEmail = currentUser.email ?? '';
+        if (userEmail.isEmpty) {
+          final userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+          if (userDoc.exists) {
+            userEmail = userDoc.data()?['email'] ?? '';
+          }
+        }
+
+        // 3. إرسال إيميل الإلغاء أوتوماتيكياً
+        if (userEmail.isNotEmpty) {
+          _sendCancelInvoiceEmail(
+            customerEmail: userEmail,
+            orderId: orderId.length > 6 ? orderId.substring(0, 6) : orderId,
+            total: totalPrice,
+          );
+        }
+
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:  Text("The order has been successfully cancelled.".tr),
+            content: Text("The order has been successfully cancelled.".tr),
             backgroundColor: AppColors.primaryPurple,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -147,7 +203,7 @@ class OrdersListWidget extends StatelessWidget {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:  Text("An error occurred while cancelling the order.".tr),
+            content: Text("An error occurred while cancelling the order.".tr),
             backgroundColor: const Color(0xFFE74C3C),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -161,11 +217,10 @@ class OrdersListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      return  Center(child: Text("Please log in to view orders.".tr));
+      return Center(child: Text("Please log in to view orders.".tr));
     }
 
     return StreamBuilder<QuerySnapshot>(
-      // تم إزالة orderBy من الاستعلام المباشر لتفادي مشكلة الـ Composite Index في الفايربيز
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -182,7 +237,6 @@ class OrdersListWidget extends StatelessWidget {
           return _buildEmptyState();
         }
 
-        // تصفية وترتيب الطلبات محلياً لمنع مشاكل Firestore Index
         List<QueryDocumentSnapshot> orders = snapshot.data!.docs;
         if (statusFilter != null) {
           orders = orders.where((doc) {
@@ -203,7 +257,8 @@ class OrdersListWidget extends StatelessWidget {
             final doc = orders[index];
             final orderData = doc.data() as Map<String, dynamic>;
             final status = orderData['status'] ?? 'pending';
-            final totalPrice = orderData['totalPrice'] ?? orderData['price'] ?? 0;
+            final num priceRaw = orderData['totalPrice'] ?? orderData['price'] ?? 0;
+            final double totalPrice = priceRaw.toDouble();
             final items = List<dynamic>.from(orderData['items'] ?? []);
 
             return Container(
@@ -281,9 +336,9 @@ class OrdersListWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                         Text(
+                        Text(
                           "Total:".tr,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDark),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDark),
                         ),
                         Text(
                           "$totalPrice${"EGP".tr}",
@@ -308,14 +363,14 @@ class OrdersListWidget extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          onPressed: () => _cancelOrder(context, doc.id),
-                          child:  Row(
+                          onPressed: () => _cancelOrder(context, doc.id, totalPrice),
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                            children: const [
                               Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFE74C3C)),
                               SizedBox(width: 6),
                               Text(
-                                "Cancel Order".tr,
+                                "Cancel Order",
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                             ],
@@ -351,9 +406,9 @@ class OrdersListWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-           Text(
+          Text(
             "There are no requests available at the moment.".tr,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textDark,

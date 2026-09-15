@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/Utils/app.images.dart';
+import 'package:desginland/Core/widgets/custom_title.dart';
 import 'package:desginland/Core/widgets/staff_block_widget.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
 import 'package:desginland/feature/Basket/view/basket_view.dart';
@@ -16,7 +17,6 @@ import '../../../Core/widgets/black_list_widget.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
 
 class MainScreenWidget extends StatefulWidget {
-  const MainScreenWidget({super.key});
 
   @override
   State<MainScreenWidget> createState() => _MainScreenWidgetState();
@@ -142,21 +142,13 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
               backgroundColor: Colors.white,
               elevation: 0.5,
               titleSpacing: isDesktop ? 24 : 16,
-              title: const Row(
+              title: Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: AssetImage(AppImages.appPLogo),
-                    radius: 20,
-                  ),
-                  SizedBox(width: 10),
-                 const Text(
-                    "DesignLand",
-                    style: TextStyle(
-                      color: Color(0xFF2D3436),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
+                      CircleAvatar(
+                        backgroundImage: AssetImage(AppImages.appPLogo),
+                        radius: 20,
+                      ),
+                  CustomRainbowAppBarTitle(),
                 ],
               ),
               actions: [

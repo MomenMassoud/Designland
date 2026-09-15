@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../MainScreen/view/main_screen_view.dart';
-import '../function/signup_function.dart';
+import '../function/signup_function.dart'; // افترضنا وجود دالة GoogleSignInFunction هنا أيضاً
 
 class SignUpWidget extends StatefulWidget {
   const SignUpWidget({super.key});
@@ -55,6 +55,11 @@ class _SignUpWidgetState extends State<SignUpWidget> {
         }
       }
     }
+  }
+
+  void _handleGoogleSignUp() async {
+    _isLoading.value = true;
+    SignInWithGoogle(context);
   }
 
   @override
@@ -112,12 +117,12 @@ class _SignUpWidgetState extends State<SignUpWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text(
+            Text(
               "Sign Up".tr,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
             const SizedBox(height: 6),
-             Text(
+            Text(
               "Please fill in your information to register".tr,
               style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
@@ -210,20 +215,62 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             ValueListenableBuilder<bool>(
               valueListenable: _isLoading,
               builder: (context, isLoading, child) {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleSignUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryPurple,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
+                return Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _handleSignUp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPurple,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text("Create Account".tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        :  Text("Create Account".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text("OR".tr, style: TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+                        ),
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: isLoading ? null : _handleGoogleSignUp,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/images/google_logo.png', // التأكد من وجود أيقونة جوجل في المسار المخصص لها
+                              height: 22,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              "Sign up with Google".tr,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -232,10 +279,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                 Text("Already have an account?".tr, style: TextStyle(color: AppColors.textMuted)),
+                Text("Already have an account?".tr, style: TextStyle(color: AppColors.textMuted)),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child:  Text("Sign In".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                  child: Text("Sign In".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
                 ),
               ],
             )
@@ -265,12 +312,12 @@ class _SignUpBrandingSide extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
           const SizedBox(height: 24),
-           Text(
+          Text(
             "Create Account".tr,
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 12),
-           Text(
+          Text(
             "Join DesignLand today and start creating customized gifts & personalized orders easily.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
@@ -300,7 +347,7 @@ class _SignUpMobileHeader extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, height: 90),
           const SizedBox(height: 12),
-           Text(
+          Text(
             "Join DesignLand",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),

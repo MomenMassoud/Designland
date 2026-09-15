@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/product_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -13,6 +16,7 @@ class ProductListWidget extends StatefulWidget {
 }
 
 class _ProductListWidgetState extends State<ProductListWidget> {
+  final ValueNotifier<String> _searchNotifier = ValueNotifier<String>('');
   String lang = Get.locale?.languageCode ?? "ar";
   final CollectionReference _productsRef =
   FirebaseFirestore.instance.collection('products');
@@ -20,11 +24,41 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   FirebaseFirestore.instance.collection('categories');
   final CollectionReference _subcategoriesRef =
   FirebaseFirestore.instance.collection('subcategories');
-
+  Timer? _searchDebounce;
   String? _selectedSubcategoryId;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
+  Future<void> _saveSearchHistory(String query) async {
+    if (query.trim().isEmpty) return;
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      await FirebaseFirestore.instance.collection('search_history').doc().set({
+        'query': query.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'userID': 'Gust',
+        'gust': true
+      });
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('search_history')
+          .add({
+        'query': query.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      await FirebaseFirestore.instance.collection('search_history').doc().set({
+        'query':query.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'userID':userId,
+        'gust':false
+      });
+    } catch (e) {
+      debugPrint("Error saving search history: $e");
+    }
+  }
   @override
   void dispose() {
     _searchController.dispose();
@@ -92,8 +126,17 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                     controller: _searchController,
                     onChanged: (val) {
                       setState(() {
-                        _searchQuery = val.trim().toLowerCase();
+                        _searchQuery = val.trim().toLowerCase(); // تحديث متغير البحث الفعلي
                       });
+                      _searchNotifier.value = val.trim().toLowerCase();
+
+                      if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+
+                      if (val.trim().length >= 2) {
+                        _searchDebounce = Timer(const Duration(milliseconds: 800), () {
+                          _saveSearchHistory(val);
+                        });
+                      }
                     },
                     decoration:  InputDecoration(
                       hintText: "Search in this category...".tr,

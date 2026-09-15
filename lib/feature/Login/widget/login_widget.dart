@@ -1,11 +1,12 @@
 import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
+import 'package:desginland/feature/Signup/function/signup_function.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../ForgetPassword/view/forget_password_view.dart';
 import '../../Signup/view/sigup_view.dart';
-import '../function/auth_function.dart';
+import '../function/auth_function.dart'; // تأكد أن هذه الدالة تحتوي على SignUpWithGoogleFunction أو استدعِ الملف الذي توجد فيه
 
 class LoginWidget extends StatefulWidget {
   const LoginWidget({super.key});
@@ -19,7 +20,6 @@ class _LoginWidgetState extends State<LoginWidget> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // استخدام ValueNotifier للحد من إعادة رسم الشاشة بالكامل عند تغيير حالة بسيطة
   final ValueNotifier<bool> _isPasswordObscure = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
 
@@ -49,9 +49,14 @@ class _LoginWidgetState extends State<LoginWidget> {
     }
   }
 
+  // دالة التعامل مع تسجيل الدخول بواسطة جوجل
+  void _handleGoogleLogin() async {
+    _isLoading.value = true;
+    SignInWithGoogle(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // استخدام LayoutBuilder يمنع إعادة الرسم عند فتح وإغلاق الكيبورد
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       body: Center(
@@ -105,12 +110,12 @@ class _LoginWidgetState extends State<LoginWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text(
+            Text(
               "Sign In".tr,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
             const SizedBox(height: 6),
-             Text(
+            Text(
               "Sign in to access your orders and saved designs".tr,
               style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
@@ -132,7 +137,6 @@ class _LoginWidgetState extends State<LoginWidget> {
             ),
             const SizedBox(height: 16),
 
-            // إعادة رسم زري إخفاء/إظهار كلمة السر فقط دون بقية الشاشة
             ValueListenableBuilder<bool>(
               valueListenable: _isPasswordObscure,
               builder: (context, isObscure, child) {
@@ -162,29 +166,65 @@ class _LoginWidgetState extends State<LoginWidget> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ForgetPasswordView())),
-                child:  Text("Forgot Password?".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
+                child: Text("Forgot Password?".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 20),
 
-            // إعادة رسم زر التحميل فقط أثناء عملية التسجيل
+            // زر تسجيل الدخول الأساسي
             ValueListenableBuilder<bool>(
               valueListenable: _isLoading,
               builder: (context, isLoading, child) {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryPurple,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
+                return Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPurple,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text("Sign In".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        :  Text("Sign In".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
+                    const SizedBox(height: 16),
+
+                    // فاصل OR
+                    Row(
+                      children: const [
+                        Expanded(child: Divider(color: Colors.grey)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text("OR", style: TextStyle(color: AppColors.textMuted)),
+                        ),
+                        Expanded(child: Divider(color: Colors.grey)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // زر تسجيل الدخول باستخدام جوجل
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: isLoading ? null : _handleGoogleLogin,
+                        icon: const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
+                        label: Text(
+                          "Sign in with Google".tr,
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -207,7 +247,6 @@ class _LoginWidgetState extends State<LoginWidget> {
   }
 }
 
-// فصل الـ Branding Side إلى Widget مستقلة وثابتة
 class _BrandingSide extends StatelessWidget {
   const _BrandingSide();
 
@@ -227,12 +266,12 @@ class _BrandingSide extends StatelessWidget {
         children: [
           Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
           const SizedBox(height: 24),
-           Text(
+          Text(
             "Welcome Back!".tr,
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 12),
-           Text(
+          Text(
             "Explore customized gifts, order personalized items, and track your active orders effortlessly.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
@@ -243,7 +282,6 @@ class _BrandingSide extends StatelessWidget {
   }
 }
 
-// فصل Header الموبايل إلى Widget مستقلة وثابتة
 class _MobileHeader extends StatelessWidget {
   const _MobileHeader();
 

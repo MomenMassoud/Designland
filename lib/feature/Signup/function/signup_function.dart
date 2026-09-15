@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
 
-
 final FirebaseAuth _auth=FirebaseAuth.instance;
 final FirebaseFirestore _firestore=FirebaseFirestore.instance;
 
@@ -33,4 +32,43 @@ Future<bool>RegisterFunction(BuildContext context,String email,String password,S
     }
   }
   return false;
+}
+
+
+void SignInWithGoogle(BuildContext context)async{
+  FirebaseAuth auth=FirebaseAuth.instance;
+  FirebaseFirestore firestore=FirebaseFirestore.instance;
+  try{
+    final googleProvider = GoogleAuthProvider();
+    googleProvider.setCustomParameters({
+      'client_id':
+      '444759864301-u38ue6s39jjnkeuhseisj7tftkfusgip.apps.googleusercontent.com',
+    });
+    final userCredential = await auth.signInWithPopup(googleProvider);
+    final user = userCredential.user;
+    if (user == null) {
+      throw Exception("Google sign-in failed. No user returned.");
+    }
+    final String uid = userCredential.user!.uid;
+    final DocumentSnapshot userDoc =
+    await firestore.collection('user').doc(uid).get();
+    print(userDoc.id);
+    if (userDoc.exists) {
+      Get.offAll(MainScreenView());
+    }
+    else{
+     await _firestore.collection('user').doc(_auth.currentUser!.uid).set({
+       'email':_auth.currentUser!.email,
+       'name':_auth.currentUser!.displayName,
+       'role':'user',
+       'isBlocked':false,
+       'uid':_auth.currentUser!.uid
+     }).then((value){
+       Get.offAll(MainScreenView());
+     });
+    }
+  }
+  catch(e){
+    print(e);
+  }
 }

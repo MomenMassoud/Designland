@@ -39,7 +39,12 @@ class _HomeWidgetState extends State<HomeWidget> {
     if (query.trim().isEmpty) return;
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
-
+    await FirebaseFirestore.instance.collection('search_history').doc().set({
+      'query':query.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'userID':'Gust',
+      'gust':true
+    });
     try {
       await FirebaseFirestore.instance
           .collection('user')
@@ -48,6 +53,13 @@ class _HomeWidgetState extends State<HomeWidget> {
           .add({
         'query': query.trim(),
         'createdAt': FieldValue.serverTimestamp(),
+      }).then((value)async{
+        await FirebaseFirestore.instance.collection('search_history').doc().set({
+          'query':query.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'userID':userId,
+          'gust':false
+        });
       });
     } catch (e) {
       debugPrint("Error saving search history: $e");
@@ -501,8 +513,7 @@ class _CategorySectionWidget extends StatelessWidget {
     );
   }
 }
-
-// ==================== DISCOUNT CAROUSEL BANNER ====================
+// ==================== DISCOUNT & ADMIN BANNERS CAROUSEL ====================
 class DiscountProductsCarousel extends StatefulWidget {
   const DiscountProductsCarousel({super.key});
 
@@ -539,224 +550,309 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    // جلب منتجات التخفيضات
+    final productsStream = FirebaseFirestore.instance
+        .collection('products')
+        .where('discountPercentage', isGreaterThan: 0)
+        .snapshots();
+
+    // جلب بنارات الأدمن
+    final bannersStream = FirebaseFirestore.instance
+        .collection('banners')
+        .snapshots();
+
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('products')
-          .where('discountPercentage', isGreaterThan: 0)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final now = DateTime.now();
-
-        final validDiscountDocs = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final Timestamp? discountUntil = data['discountUntil'] as Timestamp?;
-
-          if (discountUntil != null) {
-            final isExpired = discountUntil.toDate().isBefore(now);
-            if (isExpired) {
-              doc.reference.update({
-                'discountPercentage': 0,
-                'discountUntil': FieldValue.delete(),
-              });
-              return false;
+      stream: productsStream,
+      builder: (context, productsSnapshot) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: bannersStream,
+          builder: (context, bannersSnapshot) {
+            if ((!productsSnapshot.hasData || productsSnapshot.data!.docs.isEmpty) &&
+                (!bannersSnapshot.hasData || bannersSnapshot.data!.docs.isEmpty)) {
+              return const SizedBox.shrink();
             }
-          }
-          return true;
-        }).toList();
 
-        if (validDiscountDocs.isEmpty) {
-          return const SizedBox.shrink();
-        }
+            final List<Map<String, dynamic>> combinedItems = [];
+            final now = DateTime.now();
 
-        _startAutoSlide(validDiscountDocs.length);
+            // 1. تصفية وإضافة المنتجات التي عليها خصم
+            if (productsSnapshot.hasData) {
+              for (var doc in productsSnapshot.data!.docs) {
+                final data = doc.data() as Map<String, dynamic>;
+                final Timestamp? discountUntil = data['discountUntil'] as Timestamp?;
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 175,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: validDiscountDocs.length,
-                onPageChanged: (int index) {
-                  setState(() => _activePage = index);
-                },
-                itemBuilder: (context, index) {
-                  final doc = validDiscountDocs[index];
-                  final data = doc.data() as Map<String, dynamic>;
+                if (discountUntil != null && discountUntil.toDate().isBefore(now)) {
+                  doc.reference.update({
+                    'discountPercentage': 0,
+                    'discountUntil': FieldValue.delete(),
+                  });
+                  continue;
+                }
 
-                  final String title = data['title'] ?? 'Special Offer'.tr;
-                  final num originalPrice = data['price'] ?? 0;
-                  final num discountPercentage = data['discountPercentage'] ?? 0;
-                  final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
+                combinedItems.add({
+                  'type': 'product',
+                  'id': doc.id,
+                  'data': data,
+                  'docRef': doc.reference,
+                });
+              }
+            }
 
-                  final List images = data['images'] ?? [];
-                  final String imageUrl = images.isNotEmpty ? images[0] : '';
-                  final Timestamp? discountUntilTimestamp = data['discountUntil'] as Timestamp?;
+            // 2. إضافة بنارات الأدمن
+            if (bannersSnapshot.hasData) {
+              for (var doc in bannersSnapshot.data!.docs) {
+                final data = doc.data() as Map<String, dynamic>;
+                combinedItems.add({
+                  'type': 'banner',
+                  'id': doc.id,
+                  'data': data,
+                });
+              }
+            }
 
-                  return GestureDetector(
-                    onTap: () {
-                      AnalyticsService.logProductOpen(
-                        productId: doc.id,
-                        productTitle: doc.get('title'),
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductWidget(productDoc: doc.id),
-                        ),
-                      );
+            if (combinedItems.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            _startAutoSlide(combinedItems.length);
+
+            return Column(
+              children: [
+                SizedBox(
+                  height: 175,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: combinedItems.length,
+                    onPageChanged: (int index) {
+                      setState(() => _activePage = index);
                     },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2D3436), Color(0xFF111111)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: 200,
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(right: Radius.circular(22)),
-                              child: Stack(
-                                children: [
-                                  if (imageUrl.isNotEmpty)
-                                    Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                    ),
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [Color(0xFF2D3436), Colors.transparent],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFF7675),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        "${"discount".tr} $discountPercentage%",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      width: 170,
-                                      child: Text(
-                                        title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "$finalPrice ${"EGP".tr}",
-                                          style: const TextStyle(
-                                            color: Color(0xFF55E6C1),
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          "$originalPrice ${"EGP".tr}",
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 13,
-                                            decoration: TextDecoration.lineThrough,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                    itemBuilder: (context, index) {
+                      final item = combinedItems[index];
+
+                      // ---------------- عرض بنار الأدمن ----------------
+                      if (item['type'] == 'banner') {
+                        final data = item['data'] as Map<String, dynamic>;
+                        final String imageUrl = data['image'] ?? '';
+                        final bool canClick = data['onclick'] ?? false;
+                        final String categoryId = data['category'] ?? '';
+
+                        return GestureDetector(
+                          onTap: () {
+                            if (canClick && categoryId.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductsListView(CategoryDoc: categoryId),
                                 ),
-                                DynamicCountdownWidget(
-                                  untilTimestamp: discountUntilTimestamp,
-                                  onTimerExpired: () {
-                                    doc.reference.update({
-                                      'discountPercentage': 0,
-                                      'discountUntil': FieldValue.delete(),
-                                    });
-                                  },
+                              );
+                            }
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(22),
+                              child: imageUrl.isNotEmpty
+                                  ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              )
+                                  : Container(
+                                color: Colors.grey.shade300,
+                                child: const Icon(Icons.image, color: Colors.grey),
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                validDiscountDocs.length,
-                    (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  height: 5,
-                  width: _activePage == index ? 18 : 5,
-                  decoration: BoxDecoration(
-                    color: _activePage == index ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
+                        );
+                      }
+
+                      // ---------------- عرض منتج التخفيضات ----------------
+                      final data = item['data'] as Map<String, dynamic>;
+                      final docId = item['id'] as String;
+                      final docRef = item['docRef'] as DocumentReference;
+
+                      final String title = data['title'] ?? 'Special Offer'.tr;
+                      final num originalPrice = data['price'] ?? 0;
+                      final num discountPercentage = data['discountPercentage'] ?? 0;
+                      final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
+
+                      final List images = data['images'] ?? [];
+                      final String imageUrl = images.isNotEmpty ? images[0] : '';
+                      final Timestamp? discountUntilTimestamp = data['discountUntil'] as Timestamp?;
+
+                      return GestureDetector(
+                        onTap: () {
+                          AnalyticsService.logProductOpen(
+                            productId: docId,
+                            productTitle: title,
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductWidget(productDoc: docId),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF2D3436), Color(0xFF111111)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 200,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(22)),
+                                  child: Stack(
+                                    children: [
+                                      if (imageUrl.isNotEmpty)
+                                        Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        ),
+                                      Container(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [Color(0xFF2D3436), Colors.transparent],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFF7675),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            "${"discount".tr} $discountPercentage%",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                          width: 170,
+                                          child: Text(
+                                            title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              "$finalPrice ${"EGP".tr}",
+                                              style: const TextStyle(
+                                                color: Color(0xFF55E6C1),
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              "$originalPrice ${"EGP".tr}",
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 13,
+                                                decoration: TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    DynamicCountdownWidget(
+                                      untilTimestamp: discountUntilTimestamp,
+                                      onTimerExpired: () {
+                                        docRef.update({
+                                          'discountPercentage': 0,
+                                          'discountUntil': FieldValue.delete(),
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ),
-          ],
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    combinedItems.length,
+                        (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      height: 5,
+                      width: _activePage == index ? 18 : 5,
+                      decoration: BoxDecoration(
+                        color: _activePage == index ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

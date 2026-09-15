@@ -57,6 +57,8 @@ dependencies:
   get: ^4.7.3
   flutter_launcher_icons: ^0.14.4
   intl: ^0.20.3
+  google_sign_in: ^7.2.0
+  dio: ^5.11.1
 
 flutter_icons:
   image_path: "lib/core/Utils/assets/Images/applogo.jpeg"
@@ -101,7 +103,10 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+    - family: Pacifico
+      fonts:
+        - asset: lib/core/Utils/assets/font/Pacifico-Regular.ttf
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/server/confirm_email.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -60,6 +61,10 @@ class _BasketWidgetState extends State<BasketWidget> {
     if (uid == null) return;
 
     try {
+      String userEmail="";
+      await FirebaseFirestore.instance.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+        userEmail=value.get('email');
+      });
       // تجهيز قائمة المنتجات للطلب
       final orderItems = items.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -74,13 +79,15 @@ class _BasketWidgetState extends State<BasketWidget> {
           'selectedAddress':"${doc.get('selectedAddress')}"
         };
       }).toList();
-
+      String orderID="";
       // إنشاء وثيقة طلب جديد بحالة pending
       await _db.collection('users').doc(uid).collection('orders').add({
         'items': orderItems,
         'totalPrice': totalPrice,
         'status': 'pending', // حالة الطلب: تحت التنفيذ
         'createdAt': FieldValue.serverTimestamp(),
+      }).then((value){
+       orderID= value.id;
       });
 
       // تفريغ السلة بعد نجاح الطلب
@@ -89,6 +96,11 @@ class _BasketWidgetState extends State<BasketWidget> {
         batch.delete(doc.reference);
       }
       await batch.commit();
+     await sendInvoiceEmail(
+          customerEmail: userEmail,
+          orderId: orderID,
+          total: totalPrice
+      );
 
       if (!mounted) return;
       showDialog(
