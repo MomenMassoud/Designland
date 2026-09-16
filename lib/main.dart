@@ -23,11 +23,6 @@ Future<void> main() async {
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform
   );
-  if (kIsWeb) {
-    await GoogleSignIn.instance.initialize(
-      clientId: '848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com',
-    );
-  }
   runApp(
       MyApp()
   );

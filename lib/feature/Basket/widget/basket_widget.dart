@@ -80,7 +80,13 @@ class _BasketWidgetState extends State<BasketWidget> {
         };
       }).toList();
       String orderID="";
-      // إنشاء وثيقة طلب جديد بحالة pending
+      await _db.collection('user').doc(uid).collection('notifications').doc().set({
+        'isRead':false,
+        'title':"Order Created",
+        'body':'تم إرسال إيميل استقبال الفاتورة بنجاح!',
+        'createdAt':FieldValue.serverTimestamp(),
+        'targetUser':uid
+      });
       await _db.collection('users').doc(uid).collection('orders').add({
         'items': orderItems,
         'totalPrice': totalPrice,

@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
 
 final FirebaseAuth _auth=FirebaseAuth.instance;
@@ -39,36 +41,62 @@ void SignInWithGoogle(BuildContext context)async{
   FirebaseAuth auth=FirebaseAuth.instance;
   FirebaseFirestore firestore=FirebaseFirestore.instance;
   try{
-    final googleProvider = GoogleAuthProvider();
-    googleProvider.setCustomParameters({
-      'client_id':
-      '444759864301-u38ue6s39jjnkeuhseisj7tftkfusgip.apps.googleusercontent.com',
-    });
-    final userCredential = await auth.signInWithPopup(googleProvider);
-    final user = userCredential.user;
-    if (user == null) {
-      throw Exception("Google sign-in failed. No user returned.");
-    }
-    final String uid = userCredential.user!.uid;
-    final DocumentSnapshot userDoc =
-    await firestore.collection('user').doc(uid).get();
-    print(userDoc.id);
-    if (userDoc.exists) {
-      Get.offAll(MainScreenView());
+    GoogleSignIn sign=GoogleSignIn.instance;
+    if(kIsWeb){
+      UserCredential userCredential;
+      final googleProvider = GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        'client_id':
+        '444759864301-u38ue6s39jjnkeuhseisj7tftkfusgip.apps.googleusercontent.com',
+      });
+      userCredential = await auth.signInWithPopup(googleProvider);
+      await firestore.collection('user').doc(auth.currentUser!.uid).get().then((value)async{
+        if(value.exists){
+          Get.offAll(MainScreenView());
+        }
+        else{
+          await firestore.collection('user').doc(_auth.currentUser!.uid).set({
+            'email': _auth.currentUser!.email,
+            'name': _auth.currentUser!.displayName,
+            'role': 'user',
+            'isBlocked': false,
+            'uid': _auth.currentUser!.uid,
+          });
+          Get.offAll(() =>  MainScreenView());
+        }
+      });
     }
     else{
-     await _firestore.collection('user').doc(_auth.currentUser!.uid).set({
-       'email':_auth.currentUser!.email,
-       'name':_auth.currentUser!.displayName,
-       'role':'user',
-       'isBlocked':false,
-       'uid':_auth.currentUser!.uid
-     }).then((value){
-       Get.offAll(MainScreenView());
-     });
+      sign.initialize(
+        serverClientId: "848711152963-tiv41d0ms53d5gl72b60ik54asf5asov.apps.googleusercontent.com",
+      );
+
+      final googleuser=await sign.authenticate();
+      final GoogleSignInAuthentication googleAuth=googleuser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+      auth.signInWithCredential(credential).then((value)async{
+        await firestore.collection('user').doc(auth.currentUser!.uid).get().then((value)async{
+          if(value.exists){
+            Get.offAll(MainScreenView());
+          }
+          else{
+            await firestore.collection('user').doc(_auth.currentUser!.uid).set({
+              'email': _auth.currentUser!.email,
+              'name': _auth.currentUser!.displayName,
+              'role': 'user',
+              'isBlocked': false,
+              'uid': _auth.currentUser!.uid,
+            });
+            Get.offAll(() =>  MainScreenView());
+          }
+        });
+      });
     }
+
   }
   catch(e){
-    print(e);
+    showErrorDialog(context, "Error", e.toString());
   }
 }

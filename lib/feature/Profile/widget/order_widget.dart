@@ -128,8 +128,9 @@ class OrdersListWidget extends StatelessWidget {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final currentUser = auth.currentUser;
-
     if (currentUser == null) return;
+    
+    
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -164,6 +165,13 @@ class OrdersListWidget extends StatelessWidget {
 
     if (confirm == true) {
       try {
+        await firestore.collection('user').doc(auth.currentUser!.uid).collection('notifications').doc().set({
+          'isRead':false,
+          'title':"Order Cancel",
+          'body':'تم إرسال إيميل إلغاء الفاتورة بنجاح!',
+          'createdAt':FieldValue.serverTimestamp(),
+          'targetUser':auth.currentUser!.uid
+        });
         // 1. تحديث حالة الطلب في الفايربيز إلى ملغي
         await firestore
             .collection('users')

@@ -84,12 +84,13 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   void _listenToNotificationCount(String uid) {
     _firestore
         .collection('user')
-        .doc(uid)
-        .collection('notification')
-        .where('isRead', isEqualTo: true)
+        .doc(_auth.currentUser!.uid)
+        .collection('notifications')
+        .where('isRead', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
       _notificationCount.value = snapshot.size;
+      print("Notification Size ${snapshot.size}");
     }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
   }
 
