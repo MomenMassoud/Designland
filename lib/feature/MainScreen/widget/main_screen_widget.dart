@@ -9,12 +9,15 @@ import 'package:desginland/feature/Home/view/home_view.dart';
 import 'package:desginland/feature/Notification/view/notification_view.dart';
 import 'package:desginland/feature/Profile/view/profile_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
+import '../../../Core/server/save_device_token.dart';
 import '../../../Core/widgets/black_list_widget.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
+import '../../../main.dart';
 
 class MainScreenWidget extends StatefulWidget {
 
@@ -49,6 +52,14 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     AnalyticsService.startSession();
     _fetchInitialUserData();
+    _gettoken();
+  }
+
+  void _gettoken()async{
+    if (!kIsWeb) {
+      await setupAndroidNotifications();
+    }
+    await saveDeviceTokenToFirestore();
   }
 
   // تجميع الطلبات في طلب واحد متوازي لتنفيذ الفحص بسرعة

@@ -67,19 +67,19 @@ class _ProductWidgetState extends State<ProductWidget> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title:  Text("Login required".tr),
-        content:  Text("Please log in first to add products to the cart.".tr),
+        title: Text("Login required".tr),
+        content: Text("Please log in first to add products to the cart.".tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:  Text("cancellation".tr),
+            child: Text("cancellation".tr),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
             onPressed: () {
               Navigator.pushNamed(context, LoginView.id);
             },
-            child:  Text("Log in".tr, style: TextStyle(color: Colors.white)),
+            child: Text("Log in".tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -111,39 +111,39 @@ class _ProductWidgetState extends State<ProductWidget> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 Text(
+                Text(
                   "Complete contact and address details".tr,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 if (existingPhone == null || existingPhone.isEmpty) ...[
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration:  InputDecoration(
+                    decoration: InputDecoration(
                       labelText: "Contact phone number".tr,
-                      prefixIcon: Icon(Icons.phone),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.phone),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
                 TextField(
                   controller: addressTitleController,
-                  decoration:  InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Address name (e.g., Home, Work)".tr,
-                    prefixIcon: Icon(Icons.label_outline),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.label_outline),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: addressDetailsController,
                   maxLines: 2,
-                  decoration:  InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Full address details".tr,
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -159,7 +159,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                           addressTitleController.text.trim().isEmpty ||
                           addressDetailsController.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text("Please fill in all the details.".tr)),
+                          SnackBar(content: Text("Please fill in all the details.".tr)),
                         );
                         return;
                       }
@@ -177,10 +177,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                       if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(content: Text("Data saved successfully! Order now.".tr)),
+                        SnackBar(content: Text("Data saved successfully! Order now.".tr)),
                       );
                     },
-                    child:  Text("Save and track the order".tr, style: TextStyle(color: Colors.white)),
+                    child: Text("Save and track the order".tr, style: const TextStyle(color: Colors.white)),
                   ),
                 ),
               ],
@@ -197,9 +197,20 @@ class _ProductWidgetState extends State<ProductWidget> {
       double finalPrice,
       List<dynamic> addresses,
       ) async {
-    final driveController = TextEditingController();
     final notesController = TextEditingController();
     int selectedAddressIndex = 0;
+
+    // استخراج الحقول الديناميكية التي حددها الأدمن
+    final List<dynamic> customFieldsRaw = productData['fields'] ?? productData['customFields'] ?? [];
+    final List<Map<String, dynamic>> customFields = customFieldsRaw.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    // إنشاء Controllers لكل حقل قادم من الأدمن
+    final Map<String, TextEditingController> customControllers = {
+      for (var field in customFields)
+        (field['name'] ?? 'field_${customFields.indexOf(field)}').toString(): TextEditingController()
+    };
+
+    final formKey = GlobalKey<FormState>();
 
     await showModalBottomSheet(
       context: context,
@@ -218,99 +229,156 @@ class _ProductWidgetState extends State<ProductWidget> {
                 right: 20,
               ),
               child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Text(
-                      "Order and Design Details".tr,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                     Text("Select a delivery address:".tr, style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      value: selectedAddressIndex,
-                      items: List.generate(addresses.length, (index) {
-                        final addr = addresses[index];
-                        return DropdownMenuItem(
-                          value: index,
-                          child: Text("${addr['title']} - ${addr['details']}"),
-                        );
-                      }),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setBottomSheetState(() => selectedAddressIndex = val);
-                        }
-                      },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Order and Design Details".tr,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: driveController,
-                      decoration:  InputDecoration(
-                        labelText: "Google Drive image link".tr,
-                        hintText: "https://drive.google.com/...",
-                        prefixIcon: Icon(Icons.add_link),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: notesController,
-                      maxLines: 3,
-                      decoration:  InputDecoration(
-                        labelText: "Additional notes on the request".tr,
-                        hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () async {
-                          if (driveController.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(content: Text("Please add the Google Drive file link.".tr)),
-                            );
-                            return;
+                      const SizedBox(height: 16),
+                      Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: selectedAddressIndex,
+                        items: List.generate(addresses.length, (index) {
+                          final addr = addresses[index];
+                          return DropdownMenuItem(
+                            value: index,
+                            child: Text("${addr['title']} - ${addr['details']}"),
+                          );
+                        }),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setBottomSheetState(() => selectedAddressIndex = val);
                           }
+                        },
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
 
-                          await _db.collection('users').doc(uid).collection('cart').add({
-                            'productId': widget.productDoc,
-                            'title': productData['title'] ?? '',
-                            'price': finalPrice,
-                            'originalPrice': (productData['price'] ?? 0.0).toDouble(),
-                            'image': (productData['images'] as List?)?.firstOrNull ?? '',
-                            'driveUrl': driveController.text.trim(),
-                            'notes': notesController.text.trim(),
-                            'selectedAddress': addresses[selectedAddressIndex],
-                            'createdAt': FieldValue.serverTimestamp(),
-                          });
+                      // ==================== 🛠️ DYNAMIC ADMIN FIELDS ====================
+                      if (customFields.isNotEmpty) ...[
+                        const Divider(height: 24),
+                        Text(
+                          "Required Product Specifications".tr,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+                        ),
+                        const SizedBox(height: 12),
+                        ...customFields.map((field) {
+                          final String fieldName = field['name'] ?? '';
+                          final String fieldType = field['type'] ?? 'text';
+                          final bool isRequired = field['isRequired'] ?? false;
 
-                          if (!context.mounted) return;
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(
-                              content: Text("The product has been successfully added to your cart! 🎉".tr),
-                              backgroundColor: Colors.green,
+                          final bool isDrive = fieldType == 'drive_link';
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: TextFormField(
+                              controller: customControllers[fieldName],
+                              keyboardType: isDrive ? TextInputType.url : TextInputType.text,
+                              decoration: InputDecoration(
+                                labelText: "$fieldName${isRequired ? ' *' : ''}",
+                                hintText: isDrive ? "https://drive.google.com/..." : null,
+                                border: const OutlineInputBorder(),
+                                prefixIcon: Icon(isDrive ? Icons.add_link : Icons.edit_note),
+                              ),
+                              validator: (value) {
+                                final textVal = value?.trim() ?? '';
+
+                                // 1. التحقق من الإلزامية بناءً على isRequired
+                                if (isRequired && textVal.isEmpty) {
+                                  return "${"Please enter".tr} $fieldName";
+                                }
+
+                                // 2. التحقق من نوع drive_link لو كان مدخلاً
+                                if (isDrive && textVal.isNotEmpty) {
+                                  if (!textVal.startsWith('http://') && !textVal.startsWith('https://')) {
+                                    return "Please enter a valid link (e.g. https://...)".tr;
+                                  }
+                                }
+
+                                return null;
+                              },
                             ),
                           );
+                        }),
+                        const Divider(height: 24),
+                      ],
+
+                      // ==================== 📝 REQUIRED NOTES FIELD ====================
+                      TextFormField(
+                        controller: notesController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: "${"Additional notes on the request".tr} *",
+                          hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
+                          border: const OutlineInputBorder(),
+                          alignLabelWithHint: true,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Please enter the required notes for the order.".tr;
+                          }
+                          return null;
                         },
-                        icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                        label:  Text("Confirm addition to cart".tr,
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () async {
+                            // التحقق من كافة الحقول وفق شروط الأدمن والملاحظات
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+
+                            // تجميع كافة الحقول الديناميكية المدخلة
+                            final Map<String, String> collectedCustomFields = {};
+                            customControllers.forEach((key, controller) {
+                              collectedCustomFields[key] = controller.text.trim();
+                            });
+
+                            await _db.collection('users').doc(uid).collection('cart').add({
+                              'productId': widget.productDoc,
+                              'title': productData['title'] ?? '',
+                              'price': finalPrice,
+                              'originalPrice': (productData['price'] ?? 0.0).toDouble(),
+                              'image': (productData['images'] as List?)?.firstOrNull ?? '',
+                              'notes': notesController.text.trim(),
+                              'customFieldsData': collectedCustomFields,
+                              'selectedAddress': addresses[selectedAddressIndex],
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("The product has been successfully added to your cart! 🎉".tr),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                          label: Text(
+                            "Confirm addition to cart".tr,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -325,7 +393,7 @@ class _ProductWidgetState extends State<ProductWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // يمنع تغيير حجم الـ Scaffold وإلغاء تركيز الكيبورد
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -336,7 +404,7 @@ class _ProductWidgetState extends State<ProductWidget> {
         ),
         title: Text(
           "Product Details".tr,
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
+          style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
       body: LayoutBuilder(
@@ -351,7 +419,7 @@ class _ProductWidgetState extends State<ProductWidget> {
               }
 
               if (!snapshot.hasData || !snapshot.data!.exists) {
-                return  Center(child: Text("The product does not exist.".tr));
+                return Center(child: Text("The product does not exist.".tr));
               }
 
               final data = snapshot.data!.data() as Map<String, dynamic>;
@@ -380,7 +448,7 @@ class _ProductWidgetState extends State<ProductWidget> {
               }
 
               return SingleChildScrollView(
-                physics: const ClampingScrollPhysics(), // منع التمرير السلس المسبب لإغلاق الـ IME
+                physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? constraints.maxWidth * 0.08 : 16,
                   vertical: 24,
@@ -632,9 +700,9 @@ class _ProductWidgetState extends State<ProductWidget> {
             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
           )
               : const Icon(Icons.shopping_bag_outlined, size: 20),
-          label:  Text(
+          label: Text(
             "Add to cart".tr,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
       ],
@@ -658,9 +726,9 @@ class _ProductWidgetState extends State<ProductWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(
+          Text(
             "Detailed product information".tr,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF0F172A),
@@ -693,9 +761,9 @@ class _ProductWidgetState extends State<ProductWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(
+          Text(
             "Customer Ratings and Reviews".tr,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF0F172A),
@@ -703,7 +771,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
           const SizedBox(height: 16),
           AddReviewSection(
-            key: const PageStorageKey('add_review_section_key'), // ثبات الـ State
+            key: const PageStorageKey('add_review_section_key'),
             productDoc: widget.productDoc,
             productsRef: _productsRef,
             showLoginDialog: _showLoginDialog,
@@ -723,12 +791,12 @@ class _ProductWidgetState extends State<ProductWidget> {
               final reviews = snapshot.data!.docs;
 
               if (reviews.isEmpty) {
-                return  Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
                     child: Text(
                       "There are currently no ratings. Be the first to rate this product!".tr,
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ),
                 );
@@ -805,7 +873,6 @@ class _ProductWidgetState extends State<ProductWidget> {
   }
 }
 
-// Component حماية التركيز (Focus) مع منع التأثر بالتسلسل الهيكلي
 class AddReviewSection extends StatefulWidget {
   final String productDoc;
   final CollectionReference productsRef;
@@ -852,7 +919,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Add your rating".tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("Add your rating".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               DropdownButton<double>(
                 value: _userRating,
                 underline: const SizedBox(),
@@ -869,16 +936,16 @@ class _AddReviewSectionState extends State<AddReviewSection> {
             ],
           ),
           TapRegion(
-            onTapOutside: (_) {}, // منع إلغاء التركيز عشوائياً عند الضغط خارج المكون
+            onTapOutside: (_) {},
             child: TextField(
               key: const PageStorageKey('review_input_field'),
               controller: _commentController,
               focusNode: _focusNode,
               keyboardType: TextInputType.multiline,
               maxLines: null,
-              decoration:  InputDecoration(
+              decoration: InputDecoration(
                 hintText: "Write your opinion about the product here...".tr,
-                hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
                 border: InputBorder.none,
               ),
             ),
@@ -914,7 +981,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
               },
               child: _isSubmitting
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  :  Text("Publish the review".tr),
+                  : Text("Publish the review".tr),
             ),
           )
         ],
