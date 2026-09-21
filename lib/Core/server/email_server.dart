@@ -1,40 +1,74 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
-class EmailNotificationService {
-  // استبدل هذا الرابط برابط الـ Vercel الخاص بـ backend مشروعك
+class EmailServer {
   static const String baseUrl = 'https://designland-backend.vercel.app/api';
 
-  /// 1. إرسال إيميل مخصص من الأدمن لمستخدم معين
-  Future<bool> sendCustomEmail({
-    required String recipientEmail,
-    required String subject,
-    required String messageBody,
+  Future<void> sendCancelInvoiceEmail({
+    required String customerEmail,
+    required String orderId,
+    required double total,
+    String? reason,
   }) async {
-    final url = Uri.parse('$baseUrl/send-custom-email');
+    const String apiUrl = '${baseUrl}/cancel-email';
+
     try {
       final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode({
-          'recipientEmail': recipientEmail,
-          'subject': subject,
-          'messageBody': messageBody,
+          'customerEmail': customerEmail,
+          'orderId': orderId,
+          'total': total,
+          if (reason != null) 'reason': reason,
         }),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['success'] == true;
+        debugPrint('🎉 تم إرسال إيميل إلغاء الفاتورة بنجاح!');
+      } else {
+        debugPrint('فشل الإرسال: ${response.body}');
       }
-      return false;
     } catch (e) {
-      print('Error sending custom email: $e');
-      return false;
+      debugPrint('Error: $e');
     }
   }
 
-  /// 2. إرسال إشعار وإيميل تنبيه لجميع الأدمينات عند وجود طلب جديد
+
+  Future<void> sendInvoiceEmail({
+    required String customerEmail,
+    required String orderId,
+    required double total,
+  }) async {
+    const String apiUrl = '${baseUrl}/api/send-email';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'customerEmail': customerEmail,
+          'orderId': orderId,
+          'total': total,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('🎉 تم إرسال الفاتورة بنجاح باستخدام http!');
+      } else {
+        debugPrint('فشل الإرسال: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
+  }
+
   Future<bool> notifyAdmins({
     required String orderId,
     required double total,

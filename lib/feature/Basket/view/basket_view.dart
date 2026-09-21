@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 
 class BasketView extends StatelessWidget{
-  static const id = 'basket_screen';
+  static const id = '/basket_screen';
   final FirebaseAuth _auth=FirebaseAuth.instance;
   @override
   Widget build(BuildContext context) {

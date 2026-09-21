@@ -284,6 +284,8 @@ class _AboutWidgetState extends State<AboutWidget> {
         final String email = data?['email'] ?? "support@domain.com";
         final String phone = data?['phone'] ?? "+201000000000";
         final String whatsapp = data?['whatsapp'] ?? "+201000000000";
+        final String facebook=data?['facebook']??"";
+        final String insta=data?['instegram']??"";
 
         return Column(
           children: [
@@ -316,6 +318,24 @@ class _AboutWidgetState extends State<AboutWidget> {
               iconColor: const Color(0xFF0984E3),
               onTap: () => _launchAction("mailto:$email"),
             ),
+            const SizedBox(height: 8),
+            _buildContactItem(
+              icon: Icons.facebook,
+              title: "FaceBook".tr,
+              subtitle: "FaceBook Page",
+              iconBgColor: const Color(0xFF0984E3).withOpacity(0.1),
+              iconColor: const Color(0xFF0984E3),
+              onTap: () => _launchAction(facebook),
+            ),
+            const SizedBox(height: 8),
+            _buildContactItem(
+              icon: Icons.link,
+              title: "Instagram".tr,
+              subtitle: "Instagram page",
+              iconBgColor:  Color(0xFF0984E3).withOpacity(0.1),
+              iconColor:  Colors.pink,
+              onTap: () => _launchAction(insta),
+            ),
           ],
         );
       },
@@ -333,7 +353,6 @@ class _AboutWidgetState extends State<AboutWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -343,27 +362,32 @@ class _AboutWidgetState extends State<AboutWidget> {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconBgColor,
-            borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          child: Icon(icon, color: iconColor, size: 20),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
+          ),
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted), //[cite: 5]
+          ),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(fontSize: 12, color: AppColors.textMuted), //[cite: 5]
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
       ),
     );
   }
@@ -402,9 +426,7 @@ class _AboutWidgetState extends State<AboutWidget> {
             final String answer = data['answer'] ?? '';
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
@@ -414,27 +436,32 @@ class _AboutWidgetState extends State<AboutWidget> {
                   ),
                 ],
               ),
-              child: Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  title: Text(
-                    question,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark, //[cite: 5]
-                    ),
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                      child: Text(
-                        answer,
-                        style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.textMuted), //[cite: 5]
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                clipBehavior: Clip.antiAlias,
+                child: Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    title: Text(
+                      question,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark, //[cite: 5]
                       ),
                     ),
-                  ],
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                        child: Text(
+                          answer,
+                          style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.textMuted), //[cite: 5]
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -452,7 +479,6 @@ class _AboutWidgetState extends State<AboutWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -462,23 +488,28 @@ class _AboutWidgetState extends State<AboutWidget> {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.primaryPurple.withOpacity(0.06), //[cite: 5]
-            borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primaryPurple.withOpacity(0.06), //[cite: 5]
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primaryPurple, size: 20), //[cite: 5]
           ),
-          child: Icon(icon, color: AppColors.primaryPurple, size: 20), //[cite: 5]
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
+          ),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
       ),
     );
   }

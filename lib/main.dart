@@ -4,23 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:get/get.dart';
 import 'Core/Utils/app_routes.dart';
 import 'Core/widgets/App_localization.dart';
 import 'feature/Splash/View/splash_view.dart';
 import 'firebase_options.dart';
 
-
-
-
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
 Future<void> setupAndroidNotifications() async {
-  // 1. إنشاء قناة الإشعارات للـ Android
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'high_importance_channel', // id
-    'High Importance Notifications', // title
+    'high_importance_channel',
+    'High Importance Notifications',
     description: 'هذه القناة خاصة بإشعارات التطبيق الهامة',
     importance: Importance.high,
   );
@@ -30,14 +27,12 @@ Future<void> setupAndroidNotifications() async {
       AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
-  // 2. إظهار الإشعار حتى لو التطبيق مفتوح في الـ Foreground
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
   );
 
-  // 3. الاستماع للإشعارات أثناء فتح التطبيق
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -52,7 +47,7 @@ Future<void> setupAndroidNotifications() async {
             channel.id,
             channel.name,
             channelDescription: channel.description,
-            icon: '@mipmap/ic_launcher', // أو أيقونة إشعاراتك
+            icon: '@mipmap/ic_launcher',
           ),
         ),
       );
@@ -68,13 +63,13 @@ Future<void> setupAndroidNotifications() async {
 
 void showWebNotification(String title, String body) {
   if (!kIsWeb) return;
-
-
 }
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  usePathUrlStrategy(); // تفعيل PathUrlStrategy لإزالة #
+
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -85,15 +80,13 @@ Future<void> main() async {
     ),
   );
   await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform
-  );
-  runApp(
-      MyApp()
-  );
+      options: DefaultFirebaseOptions.currentPlatform);
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     final deviceLocale = Get.deviceLocale ?? const Locale('en');
@@ -101,16 +94,11 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return child ?? const SizedBox();
       },
-      onGenerateRoute: (setting){
-        return GetPageRoute(
-            routeName: SplashView.id
-        );
-      },
       debugShowCheckedModeBanner: false,
       title: 'DesignLand',
       translations: AppTranslations(),
       locale: deviceLocale,
-      initialRoute: SplashView.id,
+      initialRoute: SplashView.id, // تأكد أنه ينتهي/يبدأ بـ '/' مثل '/splashView'
       routes: appRoutes,
       fallbackLocale: const Locale('en', 'US'),
       theme: ThemeData(

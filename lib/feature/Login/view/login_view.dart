@@ -5,7 +5,7 @@ import '../widget/login_widget.dart';
 
 
 class LoginView extends StatelessWidget{
-  static const id = 'login';
+  static const id = '/login';
   @override
   Widget build(BuildContext context) {
     return LoginWidget();

@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/product_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -330,7 +330,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                     borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(16)),
                                     child: imageUrl.isNotEmpty
-                                        ? Image.network(
+                                        ?
+                                    CachedNetworkImage(
+                                      imageUrl:
                                       imageUrl,
                                       width: double.infinity,
                                       height: double.infinity,

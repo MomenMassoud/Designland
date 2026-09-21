@@ -23,6 +23,7 @@ Future<bool>RegisterFunction(BuildContext context,String email,String password,S
           'role':'user',
           'uid':_auth.currentUser!.uid,
           'isBlocked':false,
+          "createdAt":FieldValue.serverTimestamp(),
         });
       });
       Get.offAll(MainScreenView(),routeName: MainScreenView.id);
@@ -88,6 +89,7 @@ void SignInWithGoogle(BuildContext context)async{
               'role': 'user',
               'isBlocked': false,
               'uid': _auth.currentUser!.uid,
+              "createdAt":FieldValue.serverTimestamp(),
             });
             Get.offAll(() =>  MainScreenView());
           }

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:desginland/Core/server/confirm_email.dart';
-import 'package:desginland/Core/server/email_notification_server.dart';
+import 'package:desginland/Core/server/email_server.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -208,9 +207,9 @@ class _BasketWidgetState extends State<BasketWidget> {
       });
 
       orderID = orderRef.id;
-      sendInvoiceEmail(customerEmail: _auth.currentUser!.email.toString(),
+      EmailServer().sendInvoiceEmail(customerEmail: _auth.currentUser!.email.toString(),
           orderId: orderID, total: finalTotalPrice);
-      EmailNotificationService()
+      EmailServer()
           .notifyAdmins(orderId: orderID, total: finalTotalPrice, customerEmail: _auth.currentUser!.email.toString());
       // تفريغ السلة بعد نجاح الطلب
       final batch = _db.batch();
@@ -220,7 +219,7 @@ class _BasketWidgetState extends State<BasketWidget> {
       await batch.commit();
 
       if (userEmail.isNotEmpty) {
-        await sendInvoiceEmail(
+        await EmailServer().sendInvoiceEmail(
             customerEmail: userEmail, orderId: orderID, total: finalTotalPrice);
       }
 

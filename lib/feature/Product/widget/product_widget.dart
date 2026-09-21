@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Login/view/login_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -571,7 +572,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                         width: 2,
                       ),
                       image: DecorationImage(
-                        image: NetworkImage(images[index]),
+                        image: CachedNetworkImageProvider(images[index]),
                         fit: BoxFit.cover,
                       ),
                     ),

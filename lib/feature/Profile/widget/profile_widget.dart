@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/widgets/auth_not_found.dart';
 import 'package:desginland/feature/Login/function/auth_function.dart';
 import 'package:desginland/feature/Profile/widget/search_history_widget.dart';
+import 'package:desginland/feature/Profile/widget/user_favourite_product.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -347,6 +348,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         icon: Icons.language,
                         title: "Change Language".tr,
                         onTap: _showLanguageDialog,
+                      ),
+                      const Divider(height: 1),
+                      _buildProfileTile(
+                        icon: Icons.favorite,
+                        title: "Favourite Product".tr,
+                        onTap: (){
+                          Get.to(UserFavouriteProduct(UserId: _auth.currentUser!.uid));
+                        },
                       ),
                     ],
                   ),

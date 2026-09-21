@@ -5,7 +5,7 @@ import '../functions/delay_and_navigate.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
-  static const id = 'splashview';
+  static const id = '/splashview';
 
   @override
   State<SplashView> createState() => _SplashViewState();
