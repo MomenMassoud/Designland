@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../Core/Utils/app.colors.dart'; //[cite: 5, 6]
-
 class AboutWidget extends StatefulWidget {
   const AboutWidget({super.key});
 
@@ -33,152 +31,266 @@ class _AboutWidgetState extends State<AboutWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppColors.primaryPurple, //[cite: 5]
+        backgroundColor: const Color(0xFF6C5CE7), // بنفس اللون المعتمد في الهوم
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  // 2. عرض السياسات والشروط في Modal Sheet أنيق
-  void _showPolicyBottomSheet(String title, String content) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
+  // 2. عرض السياسات والشروط بستايل متناسق
+  void _showPolicyDialogOrSheet(String title, String content) {
+    bool isDesktop = MediaQuery.of(context).size.width > 800;
+
+    if (isDesktop) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            width: 600,
+            constraints: const BoxConstraints(maxHeight: 500),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3436), // لون النص الداكن المعتمد
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                    ),
+                  ],
                 ),
-              ),
+                const Divider(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Text(
+                      content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark, //[cite: 5]
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: AppColors.textMuted, //[cite: 5]
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3436),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Text(
+                    content,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.6,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight, //[cite: 5]
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // -------------------- Header Banner --------------------
-            _buildHeaderBanner(),
+      backgroundColor: const Color(0xFFFAF9FF), // خلفية ناعمة نفس الشغالة بالهوم[cite: 7]
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1300),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isDesktop = constraints.maxWidth > 800;
 
-            const SizedBox(height: 24),
+                  if (isDesktop) {
+                    // ======= تصميم الويب (Two-Column Grid) =======
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // القائمة الجانبية: البانر والسياسات
+                        SizedBox(
+                          width: 380,
+                          child: Column(
+                            children: [
+                              _buildHeaderBanner(),
+                              const SizedBox(height: 24),
+                              _buildSectionTitle("Terms and Policies".tr),
+                              const SizedBox(height: 12),
+                              _buildLegalCard(
+                                title: "terms of use".tr,
+                                icon: Icons.gavel_rounded,
+                                onTap: () => _showPolicyDialogOrSheet("terms of use".tr, _termsOfUseText),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildLegalCard(
+                                title: "privacy policy".tr,
+                                icon: Icons.security_rounded,
+                                onTap: () => _showPolicyDialogOrSheet("privacy policy".tr, _privacyPolicyText),
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                "Version 1.0.0".tr,
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 32),
 
-            // -------------------- 1. من نحن (Firebase Dynamic) --------------------
-            _buildSectionTitle("About Us".tr),
-            const SizedBox(height: 10),
-            _buildAboutUsStream(),
+                        // المحتوى الرئيسي: من نحن + التواصل + الأسئلة الشائعة
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle("About Us".tr),
+                              const SizedBox(height: 12),
+                              _buildAboutUsStream(),
+                              const SizedBox(height: 24),
+                              _buildSectionTitle("Contact us".tr),
+                              const SizedBox(height: 12),
+                              _buildContactInfoStream(),
+                              const SizedBox(height: 24),
+                              _buildSectionTitle("Frequently Asked Questions".tr),
+                              const SizedBox(height: 12),
+                              _buildFaqStream(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }
 
-            const SizedBox(height: 24),
-
-            // -------------------- 2. بيانات التواصل (Firebase Dynamic Actions) --------------------
-            _buildSectionTitle("Contact us".tr),
-            const SizedBox(height: 10),
-            _buildContactInfoStream(),
-
-            const SizedBox(height: 24),
-
-            // -------------------- 3. الأسئلة الشائعة (Firebase Dynamic FAQs) --------------------
-            _buildSectionTitle("Frequently Asked Questions".tr),
-            const SizedBox(height: 10),
-            _buildFaqStream(),
-
-            const SizedBox(height: 24),
-
-            // -------------------- 4. السياسات والشروط (Static Local) --------------------
-            _buildSectionTitle("Terms and Policies".tr),
-            const SizedBox(height: 10),
-            _buildLegalCard(
-              title: "terms of use".tr,
-              icon: Icons.gavel_rounded,
-              onTap: () => _showPolicyBottomSheet("terms of use".tr, _termsOfUseText),
-            ),
-            const SizedBox(height: 8),
-            _buildLegalCard(
-              title: "privacy policy".tr,
-              icon: Icons.security_rounded,
-              onTap: () => _showPolicyBottomSheet("privacy policy".tr, _privacyPolicyText),
-            ),
-
-            const SizedBox(height: 30),
-            Center(
-              child: Text(
-                "Version 1.0.0".tr,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+                  // ======= تصميم الموبايل =======
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderBanner(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle("About Us".tr),
+                      const SizedBox(height: 12),
+                      _buildAboutUsStream(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle("Contact us".tr),
+                      const SizedBox(height: 12),
+                      _buildContactInfoStream(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle("Frequently Asked Questions".tr),
+                      const SizedBox(height: 12),
+                      _buildFaqStream(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle("Terms and Policies".tr),
+                      const SizedBox(height: 12),
+                      _buildLegalCard(
+                        title: "terms of use".tr,
+                        icon: Icons.gavel_rounded,
+                        onTap: () => _showPolicyDialogOrSheet("terms of use".tr, _termsOfUseText),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildLegalCard(
+                        title: "privacy policy".tr,
+                        icon: Icons.security_rounded,
+                        onTap: () => _showPolicyDialogOrSheet("privacy policy".tr, _privacyPolicyText),
+                      ),
+                      const SizedBox(height: 30),
+                      Center(
+                        child: Text(
+                          "Version 1.0.0".tr,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Header Banner أنيق
+  // Banner بنفس درجات البنفسجي للـ Color(0xFF6C5CE7) مع التدرج والأبعاد
   Widget _buildHeaderBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryPurple,
-            AppColors.primaryPurple.withOpacity(0.85),
-          ], //[cite: 5, 6]
+            const Color(0xFF6C5CE7), // اللون البنفسجي الأساسي من الهوم
+            const Color(0xFF6C5CE7).withOpacity(0.85),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryPurple.withOpacity(0.25), //[cite: 5]
-            blurRadius: 15,
+            color: const Color(0xFF6C5CE7).withOpacity(0.22),
+            blurRadius: 18,
             offset: const Offset(0, 6),
           ),
         ],
@@ -188,31 +300,33 @@ class _AboutWidgetState extends State<AboutWidget> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withOpacity(0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.auto_awesome_rounded,
               color: Colors.white,
-              size: 36,
+              size: 34,
             ),
           ),
           const SizedBox(height: 12),
-           Text(
+          Text(
             "Welcome to our platform.".tr,
-            style: TextStyle(
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             "Specially designed to provide the best experience for custom designs and gifts.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.85),
+              height: 1.4,
+              color: Colors.white.withOpacity(0.88),
             ),
           ),
         ],
@@ -220,20 +334,20 @@ class _AboutWidgetState extends State<AboutWidget> {
     );
   }
 
-  // عنوان الأقسام
+  // عناوين النصوص بنفس درجة Color(0xFF2D3436)
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textDark, //[cite: 5]
-        letterSpacing: -0.3,
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF2D3436), // اللون الداكن للنصوص من الهوم[cite: 7]
+        letterSpacing: -0.2,
       ),
     );
   }
 
-  // جلب نبذة "من نحن" من Firestore
+  // كروت شفافة وظلال بتأثير الهوم
   Widget _buildAboutUsStream() {
     return StreamBuilder<DocumentSnapshot>(
       stream: _db.collection('app_info').doc('about_us').snapshots(),
@@ -246,24 +360,25 @@ class _AboutWidgetState extends State<AboutWidget> {
         final String text = data?['description'] ?? "We are pleased to provide the best services and custom designs of the highest quality.".tr;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.025),
-                blurRadius: 10,
+                color: const Color(0xFF6C5CE7).withOpacity(0.06),
+                blurRadius: 15,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               height: 1.6,
-              color: AppColors.textMuted, //[cite: 5]
+              color: Colors.grey.shade700,
             ),
           ),
         );
@@ -271,7 +386,6 @@ class _AboutWidgetState extends State<AboutWidget> {
     );
   }
 
-  // جلب بيانات التواصل من Firestore
   Widget _buildContactInfoStream() {
     return StreamBuilder<DocumentSnapshot>(
       stream: _db.collection('app_info').doc('contact').snapshots(),
@@ -284,8 +398,8 @@ class _AboutWidgetState extends State<AboutWidget> {
         final String email = data?['email'] ?? "support@domain.com";
         final String phone = data?['phone'] ?? "+201000000000";
         final String whatsapp = data?['whatsapp'] ?? "+201000000000";
-        final String facebook=data?['facebook']??"";
-        final String insta=data?['instegram']??"";
+        final String facebook = data?['facebook'] ?? "";
+        final String insta = data?['instegram'] ?? "";
 
         return Column(
           children: [
@@ -300,40 +414,40 @@ class _AboutWidgetState extends State<AboutWidget> {
                 _launchAction("https://wa.me/$cleanPhone");
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildContactItem(
               icon: Icons.phone_in_talk_rounded,
               title: "Contact number".tr,
               subtitle: phone,
-              iconBgColor: AppColors.primaryPurple.withOpacity(0.08), //[cite: 5]
-              iconColor: AppColors.primaryPurple, //[cite: 5]
+              iconBgColor: const Color(0xFF6C5CE7).withOpacity(0.08),
+              iconColor: const Color(0xFF6C5CE7),
               onTap: () => _launchAction("tel:$phone"),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildContactItem(
               icon: Icons.alternate_email_rounded,
               title: "e-mail".tr,
               subtitle: email,
-              iconBgColor: const Color(0xFF0984E3).withOpacity(0.1),
-              iconColor: const Color(0xFF0984E3),
+              iconBgColor: const Color(0xFF6C5CE7).withOpacity(0.08),
+              iconColor: const Color(0xFF6C5CE7),
               onTap: () => _launchAction("mailto:$email"),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildContactItem(
               icon: Icons.facebook,
               title: "FaceBook".tr,
               subtitle: "FaceBook Page",
-              iconBgColor: const Color(0xFF0984E3).withOpacity(0.1),
-              iconColor: const Color(0xFF0984E3),
+              iconBgColor: const Color(0xFF1877F2).withOpacity(0.1),
+              iconColor: const Color(0xFF1877F2),
               onTap: () => _launchAction(facebook),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildContactItem(
-              icon: Icons.link,
+              icon: Icons.camera_alt_outlined,
               title: "Instagram".tr,
               subtitle: "Instagram page",
-              iconBgColor:  Color(0xFF0984E3).withOpacity(0.1),
-              iconColor:  Colors.pink,
+              iconBgColor: const Color(0xFFE1306C).withOpacity(0.1),
+              iconColor: const Color(0xFFE1306C),
               onTap: () => _launchAction(insta),
             ),
           ],
@@ -342,7 +456,6 @@ class _AboutWidgetState extends State<AboutWidget> {
     );
   }
 
-  // ودجت عنصر التواصل
   Widget _buildContactItem({
     required IconData icon,
     required String title,
@@ -353,19 +466,19 @@ class _AboutWidgetState extends State<AboutWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
-            blurRadius: 10,
+            color: const Color(0xFF6C5CE7).withOpacity(0.05),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
         child: ListTile(
           onTap: onTap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -380,11 +493,11 @@ class _AboutWidgetState extends State<AboutWidget> {
           ),
           title: Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
           ),
           subtitle: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted), //[cite: 5]
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
         ),
@@ -392,7 +505,6 @@ class _AboutWidgetState extends State<AboutWidget> {
     );
   }
 
-  // جلب الأسئلة الشائعة FAQs من Firestore
   Widget _buildFaqStream() {
     return StreamBuilder<QuerySnapshot>(
       stream: _db.collection('faqs').snapshots(),
@@ -408,12 +520,12 @@ class _AboutWidgetState extends State<AboutWidget> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child:  Center(
+            child: Center(
               child: Text(
                 "There are currently no frequently asked questions.".tr,
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted), //[cite: 5]
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
             ),
           );
@@ -426,42 +538,47 @@ class _AboutWidgetState extends State<AboutWidget> {
             final String answer = data['answer'] ?? '';
 
             return Container(
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.025),
-                    blurRadius: 10,
+                    color: const Color(0xFF6C5CE7).withOpacity(0.05),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                clipBehavior: Clip.antiAlias,
-                child: Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    title: Text(
-                      question,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark, //[cite: 5]
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C5CE7).withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.help_outline_rounded, color: Color(0xFF6C5CE7), size: 18),
+                  ),
+                  title: Text(
+                    question,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3436),
+                    ),
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                      child: Text(
+                        answer,
+                        style: TextStyle(fontSize: 12, height: 1.5, color: Colors.grey.shade600),
                       ),
                     ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                        child: Text(
-                          answer,
-                          style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.textMuted), //[cite: 5]
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             );
@@ -471,7 +588,6 @@ class _AboutWidgetState extends State<AboutWidget> {
     );
   }
 
-  // كارت الشروط والسياسات الثابتة
   Widget _buildLegalCard({
     required String title,
     required IconData icon,
@@ -479,19 +595,19 @@ class _AboutWidgetState extends State<AboutWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
-            blurRadius: 10,
+            color: const Color(0xFF6C5CE7).withOpacity(0.05),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
         child: ListTile(
           onTap: onTap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -499,14 +615,14 @@ class _AboutWidgetState extends State<AboutWidget> {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primaryPurple.withOpacity(0.06), //[cite: 5]
+              color: const Color(0xFF6C5CE7).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primaryPurple, size: 20), //[cite: 5]
+            child: Icon(icon, color: const Color(0xFF6C5CE7), size: 20),
           ),
           title: Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark), //[cite: 5]
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
           ),
           trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
         ),
@@ -526,20 +642,19 @@ class _AboutWidgetState extends State<AboutWidget> {
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryPurple), //[cite: 5]
+          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6C5CE7)),
         ),
       ),
     );
   }
 
-  // نصوص ثابتة للشروط والسياسات
   static const String _termsOfUseText =
       "أهلاً بك في تطبيقنا. باستخدامك لهذا التطبيق، فإنك توافق على الالتزام بالشروط والأحكام التالية:\n\n"
       "1. الاستخدام المقبول: يُمنع استخدام التطبيق لأي أغراض غير قانونية أو انتهاك حقوق الملكية الفكرية.\n"
       "2. الحسابات والطلبات: المستخدم مسؤول عن صحة البيانات المدخلة في طلبات التصاميم والهدايا.\n"
       "3. التعديلات: يحق للقيمين على التطبيق تعديل الخدمات أو الأسعار في أي وقت دون إشعار مسبق.";
 
-  static  String _privacyPolicyText =
+  static String _privacyPolicyText =
       "نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية:\n\n"
       "1. جمع البيانات: نجمع البيانات الأساسية مثل الاسم، رقم الهاتف، والبريد الإلكتروني لإتمام طلباتك بنجاح.\n"
       "2. حماية البيانات: نستخدم تقنيات تشفير عالية الجودة لضمان عدم تسريب أي من بياناتك أو مشاركتها مع أطراف ثالثة.\n"

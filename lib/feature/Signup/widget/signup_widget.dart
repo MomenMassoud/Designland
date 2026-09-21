@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../MainScreen/view/main_screen_view.dart';
-import '../function/signup_function.dart'; // افترضنا وجود دالة GoogleSignInFunction هنا أيضاً
+import '../function/signup_function.dart';
 
 class SignUpWidget extends StatefulWidget {
   const SignUpWidget({super.key});
@@ -19,10 +18,14 @@ class _SignUpWidgetState extends State<SignUpWidget> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // استخدام ValueNotifier لمنع Rebuilds الشاشة كاملة
   final ValueNotifier<bool> _isPasswordObscure = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _isConfirmPasswordObscure = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
+
+  // Home Design Theme Palette
+  static const Color primaryColor = Color(0xFF6C5CE7);
+  static const Color darkText = Color(0xFF2D3436);
+  static const Color backgroundColor = Color(0xFFFAF9FF);
 
   @override
   void dispose() {
@@ -65,29 +68,32 @@ class _SignUpWidgetState extends State<SignUpWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 980),
+              clipBehavior: Clip.antiAlias, // قص الحواف الزائدة البنفسجية تلقائياً
+              constraints: const BoxConstraints(maxWidth: 950),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 25,
-                    offset: const Offset(0, 8),
+                    color: primaryColor.withOpacity(0.08),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth > 850;
+                  final isDesktop = constraints.maxWidth > 800;
                   if (isDesktop) {
                     return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Expanded(child: _SignUpBrandingSide()),
                         Expanded(child: _buildSignUpForm()),
@@ -116,66 +122,118 @@ class _SignUpWidgetState extends State<SignUpWidget> {
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               "Sign Up".tr,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: darkText,
+                letterSpacing: -0.3,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               "Please fill in your information to register".tr,
-              style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 24),
 
+            // Full Name Field
             TextFormField(
               controller: _nameController,
+              style: const TextStyle(color: darkText, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Full Name".tr,
-                prefixIcon: const Icon(Icons.person_outline),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                prefixIcon: const Icon(Icons.person_outline_rounded, color: primaryColor, size: 20),
+                filled: true,
+                fillColor: backgroundColor,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: primaryColor, width: 1.8),
                 ),
               ),
               validator: (val) => (val == null || val.trim().isEmpty) ? "Please enter your full name".tr : null,
             ),
             const SizedBox(height: 16),
 
+            // Email Field
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: darkText, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Email Address".tr,
-                prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                prefixIcon: const Icon(Icons.email_outlined, color: primaryColor, size: 20),
+                filled: true,
+                fillColor: backgroundColor,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: primaryColor, width: 1.8),
                 ),
               ),
               validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address".tr : null,
             ),
             const SizedBox(height: 16),
 
+            // Password Field
             ValueListenableBuilder<bool>(
               valueListenable: _isPasswordObscure,
               builder: (context, isObscure, child) {
                 return TextFormField(
                   controller: _passwordController,
                   obscureText: isObscure,
+                  style: const TextStyle(color: darkText, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Password".tr,
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
-                      icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(
+                        isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
                       onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: backgroundColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: primaryColor, width: 1.8),
                     ),
                   ),
                   validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters".tr : null,
@@ -184,23 +242,40 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             ),
             const SizedBox(height: 16),
 
+            // Confirm Password Field
             ValueListenableBuilder<bool>(
               valueListenable: _isConfirmPasswordObscure,
               builder: (context, isConfirmObscure, child) {
                 return TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: isConfirmObscure,
+                  style: const TextStyle(color: darkText, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Confirm Password".tr,
-                    prefixIcon: const Icon(Icons.lock_reset_outlined),
+                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    prefixIcon: const Icon(Icons.lock_reset_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
-                      icon: Icon(isConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(
+                        isConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
                       onPressed: () => _isConfirmPasswordObscure.value = !_isConfirmPasswordObscure.value,
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: backgroundColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: primaryColor, width: 1.8),
                     ),
                   ),
                   validator: (val) {
@@ -219,52 +294,71 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _handleSignUp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryPurple,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
+                          shadowColor: primaryColor.withOpacity(0.3),
                         ),
                         child: isLoading
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text("Create Account".tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                            : Text(
+                          "Create Account".tr,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
                     Row(
                       children: [
                         Expanded(child: Divider(color: Colors.grey.shade300)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text("OR".tr, style: TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            "OR".tr,
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                         Expanded(child: Divider(color: Colors.grey.shade300)),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: 50,
                       child: OutlinedButton(
                         onPressed: isLoading ? null : _handleGoogleSignUp,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: Colors.grey.shade200),
+                          backgroundColor: Colors.white,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              'assets/images/google_logo.png', // التأكد من وجود أيقونة جوجل في المسار المخصص لها
-                              height: 22,
-                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
-                            ),
-                            const SizedBox(width: 12),
+                            const Icon(Icons.g_mobiledata_rounded, size: 30, color: Color(0xFFEA4335)),
+                            const SizedBox(width: 8),
                             Text(
                               "Sign up with Google".tr,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: darkText,
+                              ),
                             ),
                           ],
                         ),
@@ -274,15 +368,25 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                 );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Already have an account?".tr, style: TextStyle(color: AppColors.textMuted)),
+                Text(
+                  "Already have an account?".tr,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text("Sign In".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    "Sign In".tr,
+                    style: const TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             )
@@ -301,26 +405,61 @@ class _SignUpBrandingSide extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(40),
       decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          bottomLeft: Radius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6C5CE7),
+            Color(0xFF8172F8),
+          ],
         ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
-          const SizedBox(height: 24),
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Image.asset(
+                  AppImages.logo,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
           Text(
             "Create Account".tr,
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             "Join DesignLand today and start creating customized gifts & personalized orders easily.".tr,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white70,
+              height: 1.6,
+            ),
           ),
         ],
       ),
@@ -335,21 +474,41 @@ class _SignUpMobileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6C5CE7),
+            Color(0xFF8172F8),
+          ],
         ),
       ),
       child: Column(
         children: [
-          Image.asset(AppImages.appPLogo, height: 90),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset(AppImages.logo, fit: BoxFit.contain),
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             "Join DesignLand",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ],
       ),

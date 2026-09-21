@@ -1,12 +1,11 @@
 import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
-import 'package:desginland/feature/Signup/function/signup_function.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
 import '../../ForgetPassword/view/forget_password_view.dart';
+import '../../Signup/function/signup_function.dart';
 import '../../Signup/view/sigup_view.dart';
-import '../function/auth_function.dart'; // تأكد أن هذه الدالة تحتوي على SignUpWithGoogleFunction أو استدعِ الملف الذي توجد فيه
+import '../function/auth_function.dart';
 
 class LoginWidget extends StatefulWidget {
   const LoginWidget({super.key});
@@ -22,6 +21,11 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   final ValueNotifier<bool> _isPasswordObscure = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
+
+  // Home Design Theme Palette
+  static const Color primaryColor = Color(0xFF6C5CE7);
+  static const Color darkText = Color(0xFF2D3436);
+  static const Color backgroundColor = Color(0xFFFAF9FF);
 
   @override
   void dispose() {
@@ -49,7 +53,6 @@ class _LoginWidgetState extends State<LoginWidget> {
     }
   }
 
-  // دالة التعامل مع تسجيل الدخول بواسطة جوجل
   void _handleGoogleLogin() async {
     _isLoading.value = true;
     SignInWithGoogle(context);
@@ -58,29 +61,32 @@ class _LoginWidgetState extends State<LoginWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 980),
+              clipBehavior: Clip.antiAlias, // حل مشكلة الحواف الحادة للـ Container البنفسجي
+              constraints: const BoxConstraints(maxWidth: 950),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 25,
-                    offset: const Offset(0, 8),
+                    color: primaryColor.withOpacity(0.08),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth > 850;
+                  final isDesktop = constraints.maxWidth > 800;
                   if (isDesktop) {
                     return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Expanded(child: _BrandingSide()),
                         Expanded(child: _buildLoginForm()),
@@ -104,74 +110,120 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   Widget _buildLoginForm() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               "Sign In".tr,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: darkText,
+                letterSpacing: -0.3,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               "Sign in to access your orders and saved designs".tr,
-              style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 28),
 
+            // Email Field
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: darkText, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Email Address".tr,
-                prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                prefixIcon: const Icon(Icons.email_outlined, color: primaryColor, size: 20),
+                filled: true,
+                fillColor: backgroundColor,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: primaryColor, width: 1.8),
                 ),
               ),
               validator: (val) => (val == null || !val.contains('@')) ? "Enter a valid email address".tr : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
+            // Password Field
             ValueListenableBuilder<bool>(
               valueListenable: _isPasswordObscure,
               builder: (context, isObscure, child) {
                 return TextFormField(
                   controller: _passwordController,
                   obscureText: isObscure,
+                  style: const TextStyle(color: darkText, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Password".tr,
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
-                      icon: Icon(isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(
+                        isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
                       onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: backgroundColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: primaryColor, width: 1.8),
                     ),
                   ),
                   validator: (val) => (val == null || val.length < 6) ? "Password must be at least 6 characters".tr : null,
                 );
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ForgetPasswordView())),
-                child: Text("Forgot Password?".tr, style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.w600)),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                child: Text(
+                  "Forgot Password?".tr,
+                  style: const TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),
 
-            // زر تسجيل الدخول الأساسي
             ValueListenableBuilder<bool>(
               valueListenable: _isLoading,
               builder: (context, isLoading, child) {
@@ -179,48 +231,73 @@ class _LoginWidgetState extends State<LoginWidget> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryPurple,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
+                          shadowColor: primaryColor.withOpacity(0.3),
                         ),
                         child: isLoading
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text("Sign In".tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                            : Text(
+                          "Sign In".tr,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // فاصل OR
                     Row(
-                      children: const [
-                        Expanded(child: Divider(color: Colors.grey)),
+                      children: [
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text("OR", style: TextStyle(color: AppColors.textMuted)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            "OR".tr,
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                        Expanded(child: Divider(color: Colors.grey)),
+                        Expanded(child: Divider(color: Colors.grey.shade300)),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // زر تسجيل الدخول باستخدام جوجل
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton.icon(
+                      height: 50,
+                      child: OutlinedButton(
                         onPressed: isLoading ? null : _handleGoogleLogin,
-                        icon: const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
-                        label: Text(
-                          "Sign in with Google".tr,
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textDark),
-                        ),
                         style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: Colors.grey.shade200),
+                          backgroundColor: Colors.white,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.g_mobiledata_rounded, size: 30, color: Color(0xFFEA4335)),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Sign in with Google".tr,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: darkText,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -228,15 +305,25 @@ class _LoginWidgetState extends State<LoginWidget> {
                 );
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account?", style: TextStyle(color: AppColors.textMuted)),
+                Text(
+                  "Don't have an account?".tr,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
                 TextButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SigupView())),
-                  child: const Text("Create Account", style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    "Create Account".tr,
+                    style: const TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             )
@@ -255,26 +342,62 @@ class _BrandingSide extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(40),
       decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          bottomLeft: Radius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6C5CE7),
+            Color(0xFF8172F8),
+          ],
         ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(AppImages.appPLogo, width: 220, fit: BoxFit.contain),
-          const SizedBox(height: 24),
+          // تم قص اللوجو داخل دائرة ناعمة لحل مشكلة الحواف البيضاء المربعة
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Image.asset(
+                  AppImages.logo,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
           Text(
             "Welcome Back!".tr,
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             "Explore customized gifts, order personalized items, and track your active orders effortlessly.".tr,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white70,
+              height: 1.6,
+            ),
           ),
         ],
       ),
@@ -289,21 +412,41 @@ class _MobileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: const BoxDecoration(
-        color: AppColors.primaryPurple,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6C5CE7),
+            Color(0xFF8172F8),
+          ],
         ),
       ),
       child: Column(
         children: [
-          Image.asset(AppImages.appPLogo, height: 90),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset(AppImages.logo, fit: BoxFit.contain),
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           const Text(
             "DesignLand Store",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ],
       ),

@@ -1,13 +1,7 @@
-import 'dart:math';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/Utils/app.images.dart';
-import '../../Login/view/login_view.dart';
 import '../../MainScreen/view/main_screen_view.dart';
-import 'circular_gradiant_opacity_container.dart';
-import 'gradient_container.dart';
 
 class SplashViewBody extends StatefulWidget {
   const SplashViewBody({super.key});
@@ -21,44 +15,63 @@ class _SplashViewBodyState extends State<SplashViewBody>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _setupSystemUI();
+    _setupAnimations();
+    _navigateToNextScreen();
+  }
+
+  void _setupSystemUI() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent, // جعل خلفية الشريط شفافة تماماً
-        statusBarIconBrightness: Brightness.light, // أيقونات بيضاء للأندرويد
-        statusBarBrightness: Brightness.dark, // أيقونات بيضاء للـ iOS
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // أيقونات سوداء لتقرأ على الخلفية البيضاء
+        statusBarBrightness: Brightness.light,    // أيقونات سوداء للـ iOS
       ),
     );
-    _setupAnimations();
-    _navigateToNextScreen();
   }
 
   void _setupAnimations() {
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1600),
     );
 
+    // انيميشن الظهور التدريجي (Opacity)
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.60, curve: Curves.easeIn),
       ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+    // انيميشن التكبير الهادئ والمرن (Scale)
+    _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.85, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.80, curve: Curves.easeOutBack),
+      ),
+    );
+
+    // انيميشن صعود خفيف للأعلى لإعطاء حيوية للوجو (Slide UP)
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.10, 0.85, curve: Curves.easeOutCubic),
       ),
     );
 
     _animationController.forward();
   }
+
   void _navigateToNextScreen() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -75,93 +88,105 @@ class _SplashViewBodyState extends State<SplashViewBody>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 600;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light, // أيقونات بيضاء
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-        body: GradientContainer(
-          // خلفية بنفسجية فخمة مستوحاة من الشنطة
-          colorOne: AppColors.primaryPurple,
-          colorTwo: AppColors.secondaryPurple,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // هالة ضوئية ناعمة خلف اللوجو
-              CircularGradientOpacityContainer(
-                size: isWeb ? 450 : size.width * 0.85,
-                colorOne: AppColors.lightPurpleGlow,
-                colorTwo: Colors.transparent,
-                colorOneOpacity: 0.35,
-              ),
-      
-              // المحتوى الرئيسي: اللوجو
-              AnimatedBuilder(
+        backgroundColor: Colors.white,
+        body: Stack(
+          alignment: Alignment.center,
+          children: [
+            // المحتوى الرئيسي: اللوجو والنص بانيميشن مدمج
+            Center(
+              child: AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: AssetImage(
-                              AppImages.appPLogo
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // إطار دائري للوجو مع ظل ناعم باللون الأسود
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.06),
+                                    blurRadius: 25,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 85,
+                                backgroundColor: Colors.transparent,
+                                backgroundImage: AssetImage(AppImages.logo),
+                              ),
                             ),
-                            radius: 90,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            "Customized Gifts & Memories",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 1.5,
-                              color: Colors.white70,
+                            const SizedBox(height: 24),
+                            // النص الرئيسي
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Text(
+                                "A Happy Place for Customization Personalized Gifts & More",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 1.2,
+                                  color: Colors.black,
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
               ),
-      
-              // يوزر إنستغرام في أسفل الشاشة زي الشنطة
-              Positioned(
-                bottom: 30,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.camera_alt_outlined,
-                        color: Colors.white60,
-                        size: 16,
+            ),
+
+            // حسان يوزر الإنستغرام بأسفل الشاشة
+            Positioned(
+              bottom: 36,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.camera_alt_outlined,
+                      color: Colors.black,
+                      size: 16,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      "@Designland.eg",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                        letterSpacing: 1.1,
                       ),
-                      SizedBox(width: 6),
-                      Text(
-                        "@Designland.eg",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white60,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

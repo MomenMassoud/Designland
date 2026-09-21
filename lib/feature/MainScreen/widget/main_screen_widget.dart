@@ -154,15 +154,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
               backgroundColor: Colors.white,
               elevation: 0.5,
               titleSpacing: isDesktop ? 24 : 16,
-              title: Row(
-                children: [
-                      CircleAvatar(
-                        backgroundImage: AssetImage(AppImages.appPLogo),
-                        radius: 20,
-                      ),
-                  CustomRainbowAppBarTitle(),
-                ],
-              ),
+             title: CustomRainbowAppBarTitle(),
               actions: [
                 // تحديث عداد الإشعارات فقط
                 ValueListenableBuilder<int>(

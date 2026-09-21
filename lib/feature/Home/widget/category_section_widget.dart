@@ -4,9 +4,6 @@ import 'package:get/get.dart';
 import '../../Product/view/products_list_view.dart';
 import 'animated_product_card_widget.dart';
 
-
-
-// ==================== FAST CATEGORY & PRODUCTS SECTION ====================
 class CategorySectionWidget extends StatelessWidget {
   final CollectionReference productsRef;
   final String categoryId;
@@ -57,65 +54,93 @@ class CategorySectionWidget extends StatelessWidget {
 
             if (products.isEmpty) return const SizedBox.shrink();
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        categoryTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                          color: Color(0xFF2D3436),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductsListView(CategoryDoc: categoryId),
-                            ),
-                          );
-                        },
-                        child:  Row(
+            return Container(
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section Title Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Text("See All".tr, style: TextStyle(color: Color(0xFF6C5CE7), fontWeight: FontWeight.bold)),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF6C5CE7)),
+                            Container(
+                              width: 4,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C5CE7),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              categoryTitle,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2D3436),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductsListView(CategoryDoc: categoryId),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                "See All".tr,
+                                style: const TextStyle(
+                                  color: Color(0xFF6C5CE7),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 12,
+                                color: Color(0xFF6C5CE7),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: 250,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      final productData = products[index].data() as Map<String, dynamic>;
-                      final images = productData['images'] as List<dynamic>?;
-                      final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
 
-                      return AnimatedProductCard(
-                        productData: productData,
-                        imageUrl: imageUrl,
-                        productId: products[index].id,
-                      );
-                    },
+                  // Horizontal Product Carousel
+                  SizedBox(
+                    height: 260,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        final productData = products[index].data() as Map<String, dynamic>;
+                        final images = productData['images'] as List<dynamic>?;
+                        final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
+
+                        return AnimatedProductCard(
+                          productData: productData,
+                          imageUrl: imageUrl,
+                          productId: products[index].id,
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
+                ],
+              ),
             );
           },
         );

@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/widgets/full_screen_image_widget.dart';
 import 'package:desginland/feature/Login/view/login_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
+import '../../../Core/widgets/error_dailog_custom.dart';
+import '../../Basket/view/basket_view.dart';
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -16,17 +19,33 @@ class ProductWidget extends StatefulWidget {
 }
 
 class _ProductWidgetState extends State<ProductWidget> {
+  final ValueNotifier<int> _cartCount = ValueNotifier<int>(0);
   final CollectionReference _productsRef =
   FirebaseFirestore.instance.collection('products');
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   int _selectedImageIndex = 0;
   bool _isAddingToCart = false;
   bool _hasLoggedAnalytics = false;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if(_auth.currentUser!=null){
+      _listenToCartCount(_auth.currentUser!.uid);
+    }
+  }
 
-  // ==================== 🛒 CART & CHECKOUT FLOW ====================
-
+  void _listenToCartCount(String uid) {
+    _db
+        .collection('users')
+        .doc(uid)
+        .collection('cart')
+        .snapshots()
+        .listen((snapshot) {
+      _cartCount.value = snapshot.size;
+    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
+  }
   Future<void> _handleAddToCart(
       Map<String, dynamic> productData, double finalPrice) async {
     final user = _auth.currentUser;
@@ -407,6 +426,28 @@ class _ProductWidgetState extends State<ProductWidget> {
           "Product Details".tr,
           style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
         ),
+        actions: [
+          ValueListenableBuilder<int>(
+            valueListenable: _cartCount,
+            builder: (context, count, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF2D3436)),
+                    onPressed: () => Navigator.pushNamed(context, BasketView.id),
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: _BadgeCounter(count: count),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -533,22 +574,27 @@ class _ProductWidgetState extends State<ProductWidget> {
 
     return Column(
       children: [
-        Container(
-          height: 340,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(16),
-            image: currentImage.isNotEmpty
-                ? DecorationImage(
-              image: NetworkImage(currentImage),
-              fit: BoxFit.contain,
-            )
+        InkWell(
+          onTap: (){
+            Get.to(FullScreenImageViewer(images: images, initialIndex: _selectedImageIndex));
+          },
+          child: Container(
+            height: 340,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(16),
+              image: currentImage.isNotEmpty
+                  ? DecorationImage(
+                image: CachedNetworkImageProvider(currentImage),
+                fit: BoxFit.contain,
+              )
+                  : null,
+            ),
+            child: currentImage.isEmpty
+                ? const Icon(Icons.image_not_supported_outlined, size: 50, color: Colors.grey)
                 : null,
           ),
-          child: currentImage.isEmpty
-              ? const Icon(Icons.image_not_supported_outlined, size: 50, color: Colors.grey)
-              : null,
         ),
         const SizedBox(height: 12),
         if (images.length > 1)
@@ -903,6 +949,7 @@ class _AddReviewSectionState extends State<AddReviewSection> {
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -986,6 +1033,30 @@ class _AddReviewSectionState extends State<AddReviewSection> {
             ),
           )
         ],
+      ),
+    );
+  }
+}
+
+class _BadgeCounter extends StatelessWidget {
+  final int count;
+  const _BadgeCounter({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFF7675),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        "$count",
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

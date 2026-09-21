@@ -62,6 +62,9 @@ class _BasketWidgetState extends State<BasketWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("The product has been removed from the cart.".tr),
+        backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -78,7 +81,6 @@ class _BasketWidgetState extends State<BasketWidget> {
     });
 
     try {
-      // تحويل الكود المكتوب إلى Capital للحصول على المطابقة بمرونة بدون إجبار العميل
       final uppercaseCode = enteredCode.toUpperCase();
 
       final query = await _db
@@ -101,7 +103,6 @@ class _BasketWidgetState extends State<BasketWidget> {
       final double percentage =
       (promoData['discountPercentage'] ?? 0).toDouble();
 
-      // التحقق من صلاحية وتاريخ الكود
       final now = DateTime.now();
       if (!isActive || (expiresAt != null && expiresAt.toDate().isBefore(now))) {
         setState(() {
@@ -122,7 +123,9 @@ class _BasketWidgetState extends State<BasketWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("${"Promo code applied successfully! Discount:".tr} $percentage% 🎉"),
-          backgroundColor: Colors.green,
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } catch (e) {
@@ -133,7 +136,6 @@ class _BasketWidgetState extends State<BasketWidget> {
     }
   }
 
-  // إزالة البرومو كود المطبق
   void _removePromoCode() {
     setState(() {
       _appliedPromoCode = null;
@@ -156,11 +158,9 @@ class _BasketWidgetState extends State<BasketWidget> {
         userEmail = userDoc.data()?['email'] ?? _auth.currentUser?.email ?? '';
       }
 
-      // حساب الخصم والسعر النهائي
       final double discountAmount = subtotal * (_discountPercentage / 100);
       final double finalTotalPrice = subtotal - discountAmount;
 
-      // تجهيز قائمة المنتجات بكل التفاصيل والداتا المدخلة
       final orderItems = items.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return {
@@ -179,7 +179,6 @@ class _BasketWidgetState extends State<BasketWidget> {
 
       String orderID = "";
 
-      // إضافة إشعار للمستخدم
       await _db
           .collection('user')
           .doc(uid)
@@ -193,7 +192,6 @@ class _BasketWidgetState extends State<BasketWidget> {
         'targetUser': uid
       });
 
-      // حفظ الطلب مع تفاصيل البرومو كود والخصم
       final orderRef = await _db.collection('users').doc(uid).collection('orders').add({
         'items': orderItems,
         'subtotal': subtotal,
@@ -207,18 +205,24 @@ class _BasketWidgetState extends State<BasketWidget> {
       });
 
       orderID = orderRef.id;
-      EmailServer().sendInvoiceEmail(customerEmail: _auth.currentUser!.email.toString(),
-          orderId: orderID, total: finalTotalPrice);
-      EmailServer()
-          .notifyAdmins(orderId: orderID, total: finalTotalPrice, customerEmail: _auth.currentUser!.email.toString());
-      // تفريغ السلة بعد نجاح الطلب
+
+      EmailServer().sendInvoiceEmail(
+          customerEmail: _auth.currentUser!.email.toString(),
+          orderId: orderID,
+          total: finalTotalPrice);
+
+      EmailServer().notifyAdmins(
+          orderId: orderID,
+          total: finalTotalPrice,
+          customerEmail: _auth.currentUser!.email.toString());
+
       final batch = _db.batch();
       for (var doc in items) {
         batch.delete(doc.reference);
       }
       await batch.commit();
 
-      if (userEmail.isNotEmpty) {
+      if (userEmail.isNotEmpty && userEmail != _auth.currentUser?.email) {
         await EmailServer().sendInvoiceEmail(
             customerEmail: userEmail, orderId: orderID, total: finalTotalPrice);
       }
@@ -227,18 +231,23 @@ class _BasketWidgetState extends State<BasketWidget> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Icon(Icons.check_circle, color: Colors.green, size: 50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 60),
           content: Text(
             "Your order has been successfully confirmed and is now being processed!".tr,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF2D3436)), //[cite: 7]
           ),
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
               onPressed: () => Navigator.pop(context),
-              child: Text("Good".tr),
+              child: Text("Good".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -246,8 +255,9 @@ class _BasketWidgetState extends State<BasketWidget> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                "${"An error occurred while confirming the order:".tr}$e")),
+          content: Text("${"An error occurred while confirming the order:".tr} $e"),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }
@@ -255,32 +265,39 @@ class _BasketWidgetState extends State<BasketWidget> {
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUser?.uid;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth > 900;
 
     if (uid == null) {
       return Scaffold(
-        appBar: AppBar(title: Text("Shopping Cart".tr)),
+        backgroundColor: const Color(0xFFFAF9FF), //[cite: 7]
+        appBar: AppBar(
+          title: Text("Shopping Cart".tr, style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold)), //[cite: 7]
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
         body: Center(
-          child: Text("Please log in to view the shopping cart.".tr),
+          child: Text("Please log in to view the shopping cart.".tr, style: TextStyle(color: Colors.grey.shade600)),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFFAF9FF), //[cite: 7]
       appBar: AppBar(
         title: Text(
           "Shopping Cart".tr,
-          style: const TextStyle(
-              color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.w800, fontSize: 20), //[cite: 7]
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
+        centerTitle: false,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _db.collection('users').doc(uid).collection('cart').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF6C5CE7))); //[cite: 7]
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -288,12 +305,23 @@ class _BasketWidgetState extends State<BasketWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shopping_cart_outlined,
-                      size: 80, color: Colors.grey),
-                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.shopping_bag_outlined, size: 70, color: Color(0xFF6C5CE7)), //[cite: 7]
+                  ),
+                  const SizedBox(height: 20),
                   Text(
                     "The cart is currently empty.".tr,
-                    style: const TextStyle(fontSize: 18, color: Colors.grey),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)), //[cite: 7]
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Explore products and add your choices to the cart!".tr,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -302,7 +330,6 @@ class _BasketWidgetState extends State<BasketWidget> {
 
           final cartDocs = snapshot.data!.docs;
 
-          // حساب الإجمالي الضمني قبل الخصم
           double subtotal = 0;
           for (var doc in cartDocs) {
             final data = doc.data() as Map<String, dynamic>;
@@ -311,270 +338,316 @@ class _BasketWidgetState extends State<BasketWidget> {
             subtotal += price * quantity;
           }
 
-          // حساب الخصم والسعر الصافي
           final double discountAmount = subtotal * (_discountPercentage / 100);
           final double finalTotalPrice = subtotal - discountAmount;
 
-          return Column(
-            children: [
-              // قائمة العناصر في السلة
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cartDocs.length,
-                  itemBuilder: (context, index) {
-                    final doc = cartDocs[index];
-                    final item = doc.data() as Map<String, dynamic>;
-
-                    final title = item['title'] ?? 'منتج';
-                    final price = (item['price'] ?? 0).toDouble();
-                    final quantity = (item['quantity'] ?? 1) as int;
-                    final image = item['image'] ?? '';
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Material(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        elevation: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: image.isNotEmpty
-                                    ? Image.network(image,
-                                    width: 65, height: 65, fit: BoxFit.cover)
-                                    : Container(
-                                  width: 65,
-                                  height: 65,
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(Icons.image,
-                                      color: Colors.grey),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "${price.toStringAsFixed(2)} ${"EGP".tr}",
-                                      style: const TextStyle(
-                                          color: Color(0xFF6366F1),
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline,
-                                        color: Colors.grey),
-                                    onPressed: () =>
-                                        _updateQuantity(doc.id, quantity, -1),
-                                  ),
-                                  Text(
-                                    "$quantity",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline,
-                                        color: Color(0xFF6366F1)),
-                                    onPressed: () =>
-                                        _updateQuantity(doc.id, quantity, 1),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline,
-                                        color: Colors.red),
-                                    onPressed: () => _removeItem(doc.id),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // قسم البرومو كود والشريط السفلي
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                        offset: Offset(0, -2))
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ==================== 🎟️ PROMO CODE SECTION ====================
-                    if (_appliedPromoCode == null) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _promoController,
-                              textCapitalization: TextCapitalization.characters,
-                              decoration: InputDecoration(
-                                hintText: "Enter promo code".tr,
-                                prefixIcon: const Icon(Icons.local_offer_outlined),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                errorText: _promoErrorMsg,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6366F1),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: _isApplyingPromo ? null : _applyPromoCode,
-                            child: _isApplyingPromo
-                                ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
-                            )
-                                : Text("Apply".tr,
-                                style: const TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                    ] else ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.green.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle,
-                                color: Colors.green, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "${"Promo code applied:".tr} $_appliedPromoCode (-$_discountPercentage%)",
-                                style: const TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close,
-                                  color: Colors.red, size: 18),
-                              onPressed: _removePromoCode,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // ==================== 📊 SUMMARY & TOTALS ====================
-                    if (_discountPercentage > 0) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Subtotal:".tr,
-                              style: const TextStyle(color: Colors.grey)),
-                          Text("${subtotal.toStringAsFixed(2)} ${"EGP".tr}",
-                              style: const TextStyle(
-                                  color: Colors.grey,
-                                  decoration: TextDecoration.lineThrough)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Discount:".tr,
-                              style: const TextStyle(color: Colors.green)),
-                          Text("-${discountAmount.toStringAsFixed(2)} ${"EGP".tr}",
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Total:".tr,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text(
-                          "${finalTotalPrice.toStringAsFixed(2)} ${"EGP".tr}",
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6366F1)),
-                        ),
-                      ],
+          return Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1300),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: isDesktop
+                  ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // قائمة منتجات السلة للويب (الجانب الأيسر/الأكبر)
+                  Expanded(
+                    flex: 3,
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: cartDocs.length,
+                      itemBuilder: (context, index) {
+                        return _buildCartItemCard(cartDocs[index]);
+                      },
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => _confirmOrder(cartDocs, subtotal),
-                        child: Text(
-                          "Order Confirmation (In Progress)".tr,
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(width: 24),
+                  // بطاقة ملخص الحساب للويب (الجانب الأيمن)
+                  Expanded(
+                    flex: 2,
+                    child: _buildSummaryCard(cartDocs, subtotal, discountAmount, finalTotalPrice),
+                  ),
+                ],
+              )
+                  : Column(
+                children: [
+                  // قائمة المنتجات للموبايل
+                  Expanded(
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: cartDocs.length,
+                      itemBuilder: (context, index) {
+                        return _buildCartItemCard(cartDocs[index]);
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                  // بطاقة الملخص للموبايل
+                  _buildSummaryCard(cartDocs, subtotal, discountAmount, finalTotalPrice),
+                ],
               ),
-            ],
+            ),
           );
         },
+      ),
+    );
+  }
+
+  // كارت مفصل ومصمم لكل منتج داخل السلة
+  Widget _buildCartItemCard(QueryDocumentSnapshot doc) {
+    final item = doc.data() as Map<String, dynamic>;
+    final title = item['title'] ?? 'منتج';
+    final price = (item['price'] ?? 0).toDouble();
+    final quantity = (item['quantity'] ?? 1) as int;
+    final image = item['image'] ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6C5CE7).withOpacity(0.06), //[cite: 7]
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            // صورة المنتج
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: image.isNotEmpty
+                  ? Image.network(image, width: 80, height: 80, fit: BoxFit.cover)
+                  : Container(
+                width: 80,
+                height: 80,
+                color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
+                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFF6C5CE7)), //[cite: 7]
+              ),
+            ),
+            const SizedBox(width: 16),
+            // تفاصيل الاسم والسعر
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3436)), //[cite: 7]
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "${price.toStringAsFixed(2)} ${"EGP".tr}",
+                    style: const TextStyle(
+                      color: Color(0xFF6C5CE7), //[cite: 7]
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // أزرار التحكم بالكمية
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAF9FF), //[cite: 7]
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove, size: 16, color: Color(0xFF2D3436)), //[cite: 7]
+                        onPressed: () => _updateQuantity(doc.id, quantity, -1),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        padding: EdgeInsets.zero,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          "$quantity",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2D3436)), //[cite: 7]
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 16, color: Color(0xFF6C5CE7)), //[cite: 7]
+                        onPressed: () => _updateQuantity(doc.id, quantity, 1),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF4757), size: 22),
+                  onPressed: () => _removeItem(doc.id),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // بطاقة الحساب والخصومات والأزرار الناتجة
+  Widget _buildSummaryCard(List<QueryDocumentSnapshot> items, double subtotal, double discountAmount, double finalTotalPrice) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Order Summary".tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)), //[cite: 7]
+          ),
+          const SizedBox(height: 16),
+
+          // قسم أدخال الكوبون
+          if (_appliedPromoCode == null) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _promoController,
+                    textCapitalization: TextCapitalization.characters,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: "Enter promo code".tr,
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      prefixIcon: const Icon(Icons.local_offer_outlined, color: Color(0xFF6C5CE7), size: 18), //[cite: 7]
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      filled: true,
+                      fillColor: const Color(0xFFFAF9FF), //[cite: 7]
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      errorText: _promoErrorMsg,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _isApplyingPromo ? null : _applyPromoCode,
+                  child: _isApplyingPromo
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                      : Text("Apply".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "${"Promo code applied:".tr} $_appliedPromoCode (-$_discountPercentage%)",
+                      style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.red, size: 18),
+                    onPressed: _removePromoCode,
+                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // التفاصيل المالية
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Subtotal:".tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+              Text("${subtotal.toStringAsFixed(2)} ${"EGP".tr}",
+                  style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold, fontSize: 14)), //[cite: 7]
+            ],
+          ),
+          if (_discountPercentage > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Discount:".tr, style: const TextStyle(color: Color(0xFF10B981), fontSize: 14)),
+                Text("-${discountAmount.toStringAsFixed(2)} ${"EGP".tr}",
+                    style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14)),
+              ],
+            ),
+          ],
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Total:".tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF2D3436))), //[cite: 7]
+              Text(
+                "${finalTotalPrice.toStringAsFixed(2)} ${"EGP".tr}",
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF6C5CE7)), //[cite: 7]
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: 4,
+                shadowColor: const Color(0xFF6C5CE7).withOpacity(0.3), //[cite: 7]
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => _confirmOrder(items, subtotal),
+              child: Text(
+                "Order Confirmation (In Progress)".tr,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
