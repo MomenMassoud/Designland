@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Product/view/product_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,6 +18,7 @@ class HomeWidget extends StatefulWidget {
 
 class _HomeWidgetState extends State<HomeWidget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<String> _searchNotifier = ValueNotifier<String>('');
 
@@ -28,13 +30,18 @@ class _HomeWidgetState extends State<HomeWidget> {
   String? _selectedSubcategoryId;
   RangeValues _priceRange = const RangeValues(0, 10000);
 
-  // 🎡 التمرير التلقائي للبانرات
   final PageController _bannerPageController = PageController();
   Timer? _bannerTimer;
   int _currentBannerPage = 0;
+  int _lastBannerCount = 0;
+  Timer? _searchDebounceTimer;
 
   void _startBannerAutoScroll(int totalBanners) {
-    if (_bannerTimer != null && _bannerTimer!.isActive) return;
+    if (_lastBannerCount == totalBanners && _bannerTimer != null && _bannerTimer!.isActive) {
+      return;
+    }
+    _lastBannerCount = totalBanners;
+    _bannerTimer?.cancel();
     if (totalBanners <= 1) return;
 
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
@@ -49,11 +56,43 @@ class _HomeWidgetState extends State<HomeWidget> {
     });
   }
 
-  // ⏳ حساب الوقت المتبقي لانتهاء خصومات اليوم
   Duration _getRemainingDiscountTime() {
     final now = DateTime.now();
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
     return endOfDay.difference(now);
+  }
+
+  Future<void> _saveSearchToFirebase(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty || cleanQuery.length < 2) return;
+
+    if (_auth.currentUser == null) {
+      await FirebaseFirestore.instance.collection('search_history').doc().set({
+        'query': cleanQuery,
+        'createdAt': FieldValue.serverTimestamp(),
+        'userID': 'Gust',
+        'gust': true
+      });
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection('user')
+          .doc(_auth.currentUser!.uid)
+          .collection('search_history')
+          .add({
+        'query': cleanQuery,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      await FirebaseFirestore.instance.collection('search_history').doc().set({
+        'query': cleanQuery,
+        'createdAt': FieldValue.serverTimestamp(),
+        'userID': _auth.currentUser!.uid,
+        'gust': false
+      });
+    } catch (e) {
+      debugPrint("Error saving search history: $e");
+    }
   }
 
   @override
@@ -64,13 +103,23 @@ class _HomeWidgetState extends State<HomeWidget> {
     _bannersRef = _firestore.collection('banners');
 
     _searchController.addListener(() {
-      _searchNotifier.value = _searchController.text.trim().toLowerCase();
+      final query = _searchController.text.trim().toLowerCase();
+      _searchNotifier.value = query;
+
+      if (_searchDebounceTimer?.isActive ?? false) _searchDebounceTimer!.cancel();
+
+      if (query.isNotEmpty && query.length >= 2) {
+        _searchDebounceTimer = Timer(const Duration(seconds: 1), () {
+          _saveSearchToFirebase(query);
+        });
+      }
     });
   }
 
   @override
   void dispose() {
     _bannerTimer?.cancel();
+    _searchDebounceTimer?.cancel();
     _bannerPageController.dispose();
     _searchController.dispose();
     _searchNotifier.dispose();
@@ -83,12 +132,11 @@ class _HomeWidgetState extends State<HomeWidget> {
     final bool isDesktop = screenWidth > 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FF), // خلفية ناعمة تبرز المنتجات
+      backgroundColor: const Color(0xFFFAF9FF),
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // 1. Top Bar & Search System
             SliverToBoxAdapter(
               child: Center(
                 child: Container(
@@ -96,7 +144,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                   child: Column(
                     children: [
-                      // Navigation Bar
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -116,6 +163,9 @@ class _HomeWidgetState extends State<HomeWidget> {
                             ),
                             child: TextField(
                               controller: _searchController,
+                              onSubmitted: (value) {
+                                _saveSearchToFirebase(value);
+                              },
                               decoration: InputDecoration(
                                 hintText: 'Search custom gifts, bags, items...'.tr,
                                 hintStyle: TextStyle(
@@ -135,8 +185,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                 ),
               ),
             ),
-
-            // 2. Carousel Banners (مع التمرير التلقائي والتوجيه)
             SliverToBoxAdapter(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _bannersRef.snapshots(),
@@ -147,9 +195,8 @@ class _HomeWidgetState extends State<HomeWidget> {
 
                   final bannerDocs = snapshot.data!.docs;
 
-                  // تشغيل السكرول التلقائي للبانرات
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _startBannerAutoScroll(bannerDocs.length);
+                    if (mounted) _startBannerAutoScroll(bannerDocs.length);
                   });
 
                   return Center(
@@ -218,8 +265,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                 },
               ),
             ),
-
-            // 2.5 🔥 FLASH SALE SECTION (منتجات الخصومات والعداد التنازلي)
             SliverToBoxAdapter(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _productsRef.where('discountPercentage', isGreaterThan: 0).snapshots(),
@@ -283,8 +328,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                 },
               ),
             ),
-
-            // 3. 🚀 EXPLORE CATEGORIES (Visual Modern Grid)
             SliverToBoxAdapter(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _categoriesRef.snapshots(),
@@ -337,8 +380,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                             ],
                           ),
                           const SizedBox(height: 16),
-
-                          // Visual Category Grid Layout
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -378,8 +419,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                 },
               ),
             ),
-
-            // 4. Products By Categories Sections
             StreamBuilder<QuerySnapshot>(
               stream: _categoriesRef.snapshots(),
               builder: (context, snapshot) {
@@ -428,7 +467,6 @@ class _HomeWidgetState extends State<HomeWidget> {
                 );
               },
             ),
-
             const SliverToBoxAdapter(
               child: SizedBox(height: 40),
             ),
@@ -439,7 +477,6 @@ class _HomeWidgetState extends State<HomeWidget> {
   }
 }
 
-// ⏳ العداد التنازلي للخصومات
 class _DiscountTimerWidget extends StatefulWidget {
   final Duration duration;
   const _DiscountTimerWidget({required this.duration});
@@ -503,7 +540,6 @@ class _DiscountTimerWidgetState extends State<_DiscountTimerWidget> {
   }
 }
 
-// 🏷️ كارت منتج الخصم التفاعلي
 class _FlashSaleCardWidget extends StatefulWidget {
   final Map<String, dynamic> productData;
   final String productId;
@@ -648,7 +684,6 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
   }
 }
 
-// 🎨 كارت الكاتيجوري
 class _CategoryCardWidget extends StatefulWidget {
   final String name;
   final String? imageUrl;

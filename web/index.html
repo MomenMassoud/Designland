@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <!-- SEO الأساسي -->
   <title>DesignLand</title>
   <meta name="description" content="A Happy Place for Customization Personalized Gifts & More">
@@ -11,7 +13,7 @@
   <meta name="author" content="DesignLand">
   <meta name="robots" content="index, follow">
 
-  <!-- Open Graph / Facebook / WhatsApp (معاينة الروابط) -->
+  <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://designlandeg.com/">
   <meta property="og:title" content="DesignLand">
@@ -24,18 +26,45 @@
   <meta name="twitter:description" content="A Happy Place for Customization Personalized Gifts & More">
   <meta name="twitter:image" content="https://designlandeg.com/favicon.png">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS & PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="DesignLand">
   <link rel="apple-touch-icon" href="favicon.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
 
+  <!-- Favicon & Manifest -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase JS SDK (تم تحديث الإصدار ليتوافق مع الـ Service Worker) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
+
+  <!-- كود إلغاء الكاش واكتشاف التحديثات تلقائياً -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        // تسجيل الـ Service Worker مع إضافة Timestamp للتحقق المباشر من التحديثات
+        navigator.serviceWorker.register('flutter_service_worker.js?v=' + Date.now()).then(function (reg) {
+          reg.onupdatefound = function () {
+            var installingWorker = reg.installing;
+            installingWorker.onstatechange = function () {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('كود جديد تم اكتشافه، يتم الآن إعادة تحميل التطبيق...');
+                  window.location.reload();
+                }
+              }
+            };
+          };
+        });
+      });
+    }
+  </script>
 </head>
 <body>
+<!-- تحميل محرك فلاتر -->
 <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

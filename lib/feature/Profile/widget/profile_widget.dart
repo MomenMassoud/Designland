@@ -166,23 +166,27 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.location_on_rounded, color: primaryColor, size: 20),
-                        ),
-                        title: Text(addr['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(addr['details'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                          onPressed: () async {
-                            final uid = _auth.currentUser!.uid;
-                            await _db.collection('users').doc(uid).update({
-                              'addresses': FieldValue.arrayRemove([addr])
-                            });
-                            setModalState(() => addresses.remove(addr));
-                          },
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(14),
+                        child: ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                            child: const Icon(Icons.location_on_rounded, color: primaryColor, size: 20),
+                          ),
+                          title: Text(addr['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Text(addr['details'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                            onPressed: () async {
+                              final uid = _auth.currentUser!.uid;
+                              await _db.collection('users').doc(uid).update({
+                                'addresses': FieldValue.arrayRemove([addr])
+                              });
+                              setModalState(() => addresses.remove(addr));
+                            },
+                          ),
                         ),
                       ),
                     )),
@@ -307,40 +311,54 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               Text("اختر اللغة / Select Language", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
               const SizedBox(height: 16),
               Container(
-                decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(14)),
-                child: ListTile(
-                  leading: const Text("🇪🇬", style: TextStyle(fontSize: 22)),
-                  title: const Text("العربية", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
-                  trailing: Get.locale?.languageCode == 'ar' ? const Icon(Icons.check_circle, color: primaryColor) : null,
-                  onTap: () {
-                    try {
-                      Locale locale = const Locale("ar");
-                      Intl.defaultLocale = locale.languageCode;
-                      Get.updateLocale(locale);
-                      Navigator.pop(context);
-                    } catch (e) {
-                      debugPrint(e.toString());
-                    }
-                  },
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListTile(
+                    leading: const Text("🇪🇬", style: TextStyle(fontSize: 22)),
+                    title: const Text("العربية", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
+                    trailing: Get.locale?.languageCode == 'ar' ? const Icon(Icons.check_circle, color: primaryColor) : null,
+                    onTap: () {
+                      try {
+                        Locale locale = const Locale("ar");
+                        Intl.defaultLocale = locale.languageCode;
+                        Get.updateLocale(locale);
+                        Navigator.pop(context);
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
               Container(
-                decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(14)),
-                child: ListTile(
-                  leading: const Text("🇺🇸", style: TextStyle(fontSize: 22)),
-                  title: const Text("English", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
-                  trailing: Get.locale?.languageCode == 'en' ? const Icon(Icons.check_circle, color: primaryColor) : null,
-                  onTap: () {
-                    try {
-                      Locale locale = const Locale("en");
-                      Intl.defaultLocale = locale.languageCode;
-                      Get.updateLocale(locale);
-                      Navigator.pop(context);
-                    } catch (e) {
-                      debugPrint(e.toString());
-                    }
-                  },
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListTile(
+                    leading: const Text("🇺🇸", style: TextStyle(fontSize: 22)),
+                    title: const Text("English", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
+                    trailing: Get.locale?.languageCode == 'en' ? const Icon(Icons.check_circle, color: primaryColor) : null,
+                    onTap: () {
+                      try {
+                        Locale locale = const Locale("en");
+                        Intl.defaultLocale = locale.languageCode;
+                        Get.updateLocale(locale);
+                        Navigator.pop(context);
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
+                    },
+                  ),
                 ),
               ),
             ],
@@ -723,22 +741,43 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   }
 
   Widget _buildProfileTile({required IconData icon, required String title, required VoidCallback onTap}) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: primaryColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 4,
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: primaryColor,
+              size: 20,
+            ),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: darkText,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: Colors.grey,
+          ),
         ),
-        child: Icon(icon, color: primaryColor, size: 20),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: darkText),
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-      onTap: onTap,
     );
   }
 }

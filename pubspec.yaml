@@ -37,7 +37,7 @@ dependencies:
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.5
-  http: ^0.13.5
+  http: ^1.6.0
   modal_progress_hud_nsn: ^0.5.1
   webview_flutter: ^4.10.0
   webview_flutter_wkwebview: ^3.11.1
@@ -59,9 +59,10 @@ dependencies:
   intl: ^0.20.3
   google_sign_in: ^7.2.0
   dio: ^5.11.1
-  flutter_local_notifications: ^18.0.1
+  flutter_local_notifications: ^22.3.1
   firebase_messaging: ^15.2.10
   cached_network_image: ^3.3.1
+  universal_html: ^2.3.0
 
 flutter_icons:
   image_path: "lib/core/Utils/assets/Images/applogo.jpeg"

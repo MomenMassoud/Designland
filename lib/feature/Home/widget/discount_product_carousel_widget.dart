@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,8 +7,6 @@ import '../../Product/view/products_list_view.dart';
 import '../../Product/widget/product_widget.dart';
 import 'dynamic_countdown_widget.dart';
 
-
-// ==================== DISCOUNT & ADMIN BANNERS CAROUSEL ====================
 class DiscountProductsCarousel extends StatefulWidget {
   const DiscountProductsCarousel({super.key});
 
@@ -21,10 +18,16 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
   final PageController _pageController = PageController(viewportFraction: 0.92);
   int _activePage = 0;
   Timer? _autoSlideTimer;
+  int _lastItemCount = 0;
 
   void _startAutoSlide(int itemCount) {
+    if (_lastItemCount == itemCount && _autoSlideTimer != null && _autoSlideTimer!.isActive) {
+      return;
+    }
+    _lastItemCount = itemCount;
     _autoSlideTimer?.cancel();
     if (itemCount <= 1) return;
+
     _autoSlideTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_pageController.hasClients) {
         _activePage = (_activePage + 1) % itemCount;
@@ -46,13 +49,11 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    // جلب منتجات التخفيضات
     final productsStream = FirebaseFirestore.instance
         .collection('products')
         .where('discountPercentage', isGreaterThan: 0)
         .snapshots();
 
-    // جلب بنارات الأدمن
     final bannersStream = FirebaseFirestore.instance
         .collection('banners')
         .snapshots();
@@ -71,7 +72,6 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
             final List<Map<String, dynamic>> combinedItems = [];
             final now = DateTime.now();
 
-            // 1. تصفية وإضافة المنتجات التي عليها خصم
             if (productsSnapshot.hasData) {
               for (var doc in productsSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
@@ -94,7 +94,6 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
               }
             }
 
-            // 2. إضافة بنارات الأدمن
             if (bannersSnapshot.hasData) {
               for (var doc in bannersSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
@@ -110,7 +109,9 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
               return const SizedBox.shrink();
             }
 
-            _startAutoSlide(combinedItems.length);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _startAutoSlide(combinedItems.length);
+            });
 
             return Column(
               children: [
@@ -125,7 +126,6 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                     itemBuilder: (context, index) {
                       final item = combinedItems[index];
 
-                      // ---------------- عرض بنار الأدمن ----------------
                       if (item['type'] == 'banner') {
                         final data = item['data'] as Map<String, dynamic>;
                         final String imageUrl = data['image'] ?? '';
@@ -173,7 +173,6 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                         );
                       }
 
-                      // ---------------- عرض منتج التخفيضات ----------------
                       final data = item['data'] as Map<String, dynamic>;
                       final docId = item['id'] as String;
                       final docRef = item['docRef'] as DocumentReference;

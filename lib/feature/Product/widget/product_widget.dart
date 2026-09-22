@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/server/email_server.dart';
@@ -9,6 +10,7 @@ import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
 import '../../Basket/view/basket_view.dart';
+import 'order_details_bottom_sheet.dart'; // تأكد من استيراد الـ Bottom Sheet الموحد
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -25,28 +27,41 @@ class _ProductWidgetState extends State<ProductWidget> {
   FirebaseFirestore.instance.collection('products');
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  StreamSubscription<QuerySnapshot>? _cartSubscription;
   int _selectedImageIndex = 0;
   bool _isAddingToCart = false;
   bool _hasLoggedAnalytics = false;
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    if(_auth.currentUser!=null){
+    if (_auth.currentUser != null) {
       _listenToCartCount(_auth.currentUser!.uid);
     }
   }
 
   void _listenToCartCount(String uid) {
-    _db
+    _cartSubscription = _db
         .collection('users')
         .doc(uid)
         .collection('cart')
         .snapshots()
-        .listen((snapshot) {
-      _cartCount.value = snapshot.size;
-    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
+        .listen(
+          (snapshot) {
+        _cartCount.value = snapshot.size;
+      },
+      onError: (e) => showErrorDialog(context, "Error".tr, e.toString()),
+    );
   }
+
+  @override
+  void dispose() {
+    _cartSubscription?.cancel();
+    _cartCount.dispose();
+    super.dispose();
+  }
+
   Future<void> _handleAddToCart(
       Map<String, dynamic> productData, double finalPrice) async {
     final user = _auth.currentUser;
@@ -59,15 +74,16 @@ class _ProductWidgetState extends State<ProductWidget> {
     setState(() => _isAddingToCart = true);
 
     try {
-      final userDoc = await _db.collection('users').doc(user.uid).get();
-      final userData = userDoc.data() ?? {};
-
-      String? phone = userData['phone'];
-      List<dynamic> addresses = userData['addresses'] ?? [];
       if (!mounted) return;
       setState(() => _isAddingToCart = false);
-      await _showOrderDetailsBottomSheet(
-          user.uid, productData, finalPrice, addresses);
+
+      await showOrderDetailsBottomSheet(
+        context: context,
+        uid: user.uid,
+        productId: widget.productDoc,
+        productData: productData,
+        finalPrice: finalPrice,
+      );
     } catch (e) {
       setState(() => _isAddingToCart = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,202 +112,6 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
         ],
       ),
-    );
-  }
-  Future<void> _showOrderDetailsBottomSheet(
-      String uid,
-      Map<String, dynamic> productData,
-      double finalPrice,
-      List<dynamic> addresses,
-      ) async {
-    final notesController = TextEditingController();
-    int selectedAddressIndex = 0;
-
-    // استخراج الحقول الديناميكية التي حددها الأدمن
-    final List<dynamic> customFieldsRaw = productData['fields'] ?? productData['customFields'] ?? [];
-    final List<Map<String, dynamic>> customFields = customFieldsRaw.map((e) => Map<String, dynamic>.from(e)).toList();
-
-    // إنشاء Controllers لكل حقل قادم من الأدمن
-    final Map<String, TextEditingController> customControllers = {
-      for (var field in customFields)
-        (field['name'] ?? 'field_${customFields.indexOf(field)}').toString(): TextEditingController()
-    };
-
-    final formKey = GlobalKey<FormState>();
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setBottomSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                top: 20,
-                left: 20,
-                right: 20,
-              ),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Order and Design Details".tr,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      // const SizedBox(height: 16),
-                      // Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      // const SizedBox(height: 8),
-                      // DropdownButtonFormField<int>(
-                      //   value: selectedAddressIndex,
-                      //   items: List.generate(addresses.length, (index) {
-                      //     final addr = addresses[index];
-                      //     return DropdownMenuItem(
-                      //       value: index,
-                      //       child: Text("${addr['title']} - ${addr['details']}"),
-                      //     );
-                      //   }),
-                      //   onChanged: (val) {
-                      //     if (val != null) {
-                      //       setBottomSheetState(() => selectedAddressIndex = val);
-                      //     }
-                      //   },
-                      //   decoration: const InputDecoration(
-                      //     border: OutlineInputBorder(),
-                      //     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      //   ),
-                      // ),
-                      const SizedBox(height: 12),
-
-                      // ==================== 🛠️ DYNAMIC ADMIN FIELDS ====================
-                      if (customFields.isNotEmpty) ...[
-                        const Divider(height: 24),
-                        Text(
-                          "Required Product Specifications".tr,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
-                        ),
-                        const SizedBox(height: 12),
-                        ...customFields.map((field) {
-                          final String fieldName = field['name'] ?? '';
-                          final String fieldType = field['type'] ?? 'text';
-                          final bool isRequired = field['isRequired'] ?? false;
-
-                          final bool isDrive = fieldType == 'drive_link';
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: TextFormField(
-                              controller: customControllers[fieldName],
-                              keyboardType: isDrive ? TextInputType.url : TextInputType.text,
-                              decoration: InputDecoration(
-                                labelText: "$fieldName${isRequired ? ' *' : ''}",
-                                hintText: isDrive ? "https://drive.google.com/..." : null,
-                                border: const OutlineInputBorder(),
-                                prefixIcon: Icon(isDrive ? Icons.add_link : Icons.edit_note),
-                              ),
-                              validator: (value) {
-                                final textVal = value?.trim() ?? '';
-
-                                // 1. التحقق من الإلزامية بناءً على isRequired
-                                if (isRequired && textVal.isEmpty) {
-                                  return "${"Please enter".tr} $fieldName";
-                                }
-
-                                // 2. التحقق من نوع drive_link لو كان مدخلاً
-                                if (isDrive && textVal.isNotEmpty) {
-                                  if (!textVal.startsWith('http://') && !textVal.startsWith('https://')) {
-                                    return "Please enter a valid link (e.g. https://...)".tr;
-                                  }
-                                }
-
-                                return null;
-                              },
-                            ),
-                          );
-                        }),
-                        const Divider(height: 24),
-                      ],
-
-                      // ==================== 📝 REQUIRED NOTES FIELD ====================
-                      TextFormField(
-                        controller: notesController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: "${"Additional notes on the request".tr} *",
-                          hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
-                          border: const OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return "Please enter the required notes for the order.".tr;
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: () async {
-                            // التحقق من كافة الحقول وفق شروط الأدمن والملاحظات
-                            if (!formKey.currentState!.validate()) {
-                              return;
-                            }
-
-                            // تجميع كافة الحقول الديناميكية المدخلة
-                            final Map<String, String> collectedCustomFields = {};
-                            customControllers.forEach((key, controller) {
-                              collectedCustomFields[key] = controller.text.trim();
-                            });
-
-                            await _db.collection('users').doc(uid).collection('cart').add({
-                              'productId': widget.productDoc,
-                              'title': productData['title'] ?? '',
-                              'price': finalPrice,
-                              'originalPrice': (productData['price'] ?? 0.0).toDouble(),
-                              'image': (productData['images'] as List?)?.firstOrNull ?? '',
-                              'notes': notesController.text.trim(),
-                              'customFieldsData': collectedCustomFields,
-                              'selectedAddress': "",
-                              'createdAt': FieldValue.serverTimestamp(),
-                            });
-
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("The product has been successfully added to your cart! 🎉".tr),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                          label: Text(
-                            "Confirm addition to cart".tr,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -462,7 +282,7 @@ class _ProductWidgetState extends State<ProductWidget> {
     return Column(
       children: [
         InkWell(
-          onTap: (){
+          onTap: () {
             Get.to(FullScreenImageViewer(images: images, initialIndex: _selectedImageIndex));
           },
           child: Container(
@@ -836,7 +656,6 @@ class _AddReviewSectionState extends State<AddReviewSection> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -907,14 +726,16 @@ class _AddReviewSectionState extends State<AddReviewSection> {
                   'comment': _commentController.text.trim(),
                   'createdAt': FieldValue.serverTimestamp(),
                 });
-                String productname="";
-                await widget.productsRef.doc(widget.productDoc).get().then((value){
-                  productname=value.get("title");
-                  EmailServer().sendCommentNotificationToAdmins(
-                      customerName: currentUser.displayName??'client',
-                      productName: productname,
-                      commentText: _commentController.text.trim());
-                });
+
+                final docSnapshot = await widget.productsRef.doc(widget.productDoc).get();
+                final data = docSnapshot.data() as Map<String, dynamic>?;
+                final String productName = data?['title'] ?? '';
+
+                await EmailServer().sendCommentNotificationToAdmins(
+                  customerName: currentUser.displayName ?? 'client',
+                  productName: productName,
+                  commentText: _commentController.text.trim(),
+                );
 
                 _commentController.clear();
                 if (mounted) {

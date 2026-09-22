@@ -9,11 +9,20 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css|wasm|png|jpg|jpeg|gif|ico|woff2|ttf)",
+        "source": "/{entrypoint.html,flutter_service_worker.js,index.html,version.json}",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=31536000, immutable"
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(js|wasm|css|png|jpg|jpeg|gif|ico|woff2|ttf)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=86400"
           }
         ]
       }

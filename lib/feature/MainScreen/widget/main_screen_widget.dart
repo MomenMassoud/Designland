@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:desginland/Core/Utils/app.images.dart';
 import 'package:desginland/Core/widgets/custom_title.dart';
 import 'package:desginland/Core/widgets/staff_block_widget.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
@@ -13,13 +13,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+
 import '../../../Core/server/analytics_service.dart';
 import '../../../Core/server/save_device_token.dart';
+import '../../../Core/server/setup_notification.dart';
 import '../../../Core/widgets/black_list_widget.dart';
 import '../../../Core/widgets/error_dailog_custom.dart';
-import '../../../main.dart';
 
 class MainScreenWidget extends StatefulWidget {
+  const MainScreenWidget({super.key});
 
   @override
   State<MainScreenWidget> createState() => _MainScreenWidgetState();
@@ -31,17 +33,20 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   String _userRole = "";
   bool _isStaff = false;
 
-  // جعل القائمة const ومستقرة لتجنب إنشائها عند كل Rebuild
+  // 1. تخزين مستمعي الـ Firebase لإلغائها عند التخلص من الشاشة لتجنب تسريب الذاكرة (Memory Leaks)
+  StreamSubscription<QuerySnapshot>? _cartSubscription;
+  StreamSubscription<QuerySnapshot>? _notificationSubscription;
+
+  // 2. استخدام const للشاشات ثابتة الحالة لمنع إعادة البناء وتخفيف الـ Rebuilds
   static  List<Widget> _screens = [
     HomeView(),
     ProfileView(),
     AboutView(),
   ];
 
-  // استخدام ValueNotifier لتقليل Rebuilds العدادات
+  // 3. ValueNotifiers لإعادة بناء أزرار العدادات فقط بدلاً من إعادة بناء الشاشة بأكملها
   final ValueNotifier<int> _cartCount = ValueNotifier<int>(0);
   final ValueNotifier<int> _notificationCount = ValueNotifier<int>(0);
-  static  List<String> _tabNames = ['Home'.tr, 'Profile'.tr, 'About'.tr];
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -52,30 +57,33 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     AnalyticsService.startSession();
     _fetchInitialUserData();
-    _gettoken();
+    _getToken();
   }
 
-  void _gettoken()async{
-    if (!kIsWeb) {
-      await setupAndroidNotifications();
+  Future<void> _getToken() async {
+    try {
+      if (!kIsWeb) {
+        await setupAndroidNotifications();
+      } else {
+        await setupWeb();
+      }
+      await saveDeviceTokenToFirestore();
+    } catch (e) {
+      debugPrint("Error initializing notifications/tokens: $e");
     }
-    await saveDeviceTokenToFirestore();
   }
 
-  // تجميع الطلبات في طلب واحد متوازي لتنفيذ الفحص بسرعة
+  // تجميع وقراءة بيانات المستخدم مع إدارة الـ Subscriptions بطريقة نظيفة
   Future<void> _fetchInitialUserData() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     try {
-      // 1. طلب بيانات المستخدم الرئيسية مرة واحدة (Block status & Staff role)
-      final userDocFuture = _firestore.collection('user').doc(user.uid).get();
-
-      // 2. الاستماع التفاعلي اللحظي للعدادات عبر Streams لسرعة الاستجابة ودقة البيانات
+      // الاستماع للعدادات وإلغاء الاستماع القديم إن وجد
       _listenToCartCount(user.uid);
       _listenToNotificationCount(user.uid);
 
-      final userDoc = await userDocFuture;
+      final userDoc = await _firestore.collection('user').doc(user.uid).get();
       if (mounted && userDoc.exists) {
         final data = userDoc.data();
         if (data != null) {
@@ -93,31 +101,45 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   }
 
   void _listenToNotificationCount(String uid) {
-    _firestore
+    _notificationSubscription?.cancel();
+    _notificationSubscription = _firestore
         .collection('user')
-        .doc(_auth.currentUser!.uid)
+        .doc(uid)
         .collection('notifications')
         .where('isRead', isEqualTo: false)
         .snapshots()
-        .listen((snapshot) {
-      _notificationCount.value = snapshot.size;
-      print("Notification Size ${snapshot.size}");
-    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
+        .listen(
+          (snapshot) {
+        _notificationCount.value = snapshot.size;
+      },
+      onError: (e) {
+        debugPrint("Error listening to notification count: $e");
+      },
+    );
   }
 
   void _listenToCartCount(String uid) {
-    _firestore
+    _cartSubscription?.cancel();
+    _cartSubscription = _firestore
         .collection('users')
         .doc(uid)
         .collection('cart')
         .snapshots()
-        .listen((snapshot) {
-      _cartCount.value = snapshot.size;
-    }, onError: (e) => showErrorDialog(context, "Error".tr, e.toString()));
+        .listen(
+          (snapshot) {
+        _cartCount.value = snapshot.size;
+      },
+      onError: (e) {
+        debugPrint("Error listening to cart count: $e");
+      },
+    );
   }
 
   @override
   void dispose() {
+    // إغلاق كافة الـ Subscriptions ومراقبات الذاكرة بشكل سليم لتفريغ الـ RAM
+    _cartSubscription?.cancel();
+    _notificationSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     AnalyticsService.endSession();
     _cartCount.dispose();
@@ -128,7 +150,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   void _onTabSelected(int index) {
     if (_selectedIndex != index) {
       setState(() => _selectedIndex = index);
-      AnalyticsService.logTabVisit(_tabNames[index]);
+      final List<String> tabNames = ['Home'.tr, 'Profile'.tr, 'About'.tr];
+      AnalyticsService.logTabVisit(tabNames[index]);
     }
   }
 
@@ -146,26 +169,26 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= 850;
             return AppBar(
-              systemOverlayStyle:  SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent, // أو Colors.white
-                statusBarIconBrightness: Brightness.dark, // أيقونات سوداء/داكنة لكي تظهر فوق الخلفية البيضاء
-                statusBarBrightness: Brightness.light, // مخصص لـ iOS
+              systemOverlayStyle: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
               ),
               backgroundColor: Colors.white,
               elevation: 0.5,
               titleSpacing: isDesktop ? 24 : 16,
-             title: CustomRainbowAppBarTitle(),
+              title: const CustomRainbowAppBarTitle(),
               actions: [
-                // تحديث عداد الإشعارات فقط
+                // تحديث عداد الإشعارات عبر ValueListenableBuilder لمنع Rebuild الشاشة
                 ValueListenableBuilder<int>(
                   valueListenable: _notificationCount,
-                  builder: (context, count, child) {
+                  builder: (context, count, _) {
                     return Stack(
                       alignment: Alignment.center,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.notifications_none, color: Color(0xFF2D3436)),
-                          onPressed: () => Get.to(() => NotificationView()),
+                          onPressed: () => Get.to(() =>  NotificationView()),
                         ),
                         if (count > 0)
                           Positioned(
@@ -177,10 +200,10 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
-                // تحديث عداد السلة فقط
+                // تحديث عداد السلة بشكل مستقل
                 ValueListenableBuilder<int>(
                   valueListenable: _cartCount,
-                  builder: (context, count, child) {
+                  builder: (context, count, _) {
                     return Stack(
                       alignment: Alignment.center,
                       children: [
@@ -321,7 +344,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   }
 }
 
-// Widget مستقل وثابت لشارة العدادات لمنع إعادة إنشاء الـ Decoration
+// العداد مكوّن كـ const Widget منفصل لمنع إعادة إنشائه وتخفيف الضغط على المعالج
 class _BadgeCounter extends StatelessWidget {
   final int count;
   const _BadgeCounter({required this.count});

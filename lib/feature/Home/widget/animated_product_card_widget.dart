@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +11,8 @@ class AnimatedProductCard extends StatefulWidget {
   final Map<String, dynamic> productData;
   final String imageUrl;
   final String productId;
-   AnimatedProductCard({
+
+  const AnimatedProductCard({
     super.key,
     required this.productData,
     required this.imageUrl,
@@ -22,33 +24,70 @@ class AnimatedProductCard extends StatefulWidget {
 }
 
 class _AnimatedProductCardState extends State<AnimatedProductCard> {
-  List<String> _favProduct=[];
   bool _isHovered = false;
-  final FirebaseFirestore _firestore=FirebaseFirestore.instance;
-  final FirebaseAuth _auth=FirebaseAuth.instance;
+  bool _isFavorite = false;
+  StreamSubscription<QuerySnapshot>? _favSubscription;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   void initState() {
     super.initState();
-    _GetFavProduct();
+    _listenToFavoriteStatus();
   }
-  void _GetFavProduct()async{
-    try{
-      _favProduct=[];
-      if(_auth.currentUser!=null){
-        await for(var snap in _firestore.collection('user').doc(_auth.currentUser!.uid).collection('fav').snapshots()){
-          for(int i=0;i<snap.size;i++){
-            _favProduct.add(snap.docs[i].get('product'));
-          }
-        }
+
+  // الاستماع لحالة المفضلة لهذا المنتج بشكل منفصل ومُدار
+  void _listenToFavoriteStatus() {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    _favSubscription = _firestore
+        .collection('user')
+        .doc(user.uid)
+        .collection('fav')
+        .where('product', isEqualTo: widget.productId)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
         setState(() {
-          _favProduct;
+          _isFavorite = snapshot.docs.isNotEmpty;
         });
       }
-    }
-    catch(e){
-      print(e);
+    }, onError: (e) => debugPrint("Error listening to favorite status: $e"));
+  }
+
+  Future<void> _toggleFavorite() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final favCollection = _firestore
+        .collection('user')
+        .doc(user.uid)
+        .collection('fav');
+
+    try {
+      if (_isFavorite) {
+        final querySnapshot = await favCollection
+            .where('product', isEqualTo: widget.productId)
+            .get();
+        for (var doc in querySnapshot.docs) {
+          await doc.reference.delete();
+        }
+      } else {
+        await favCollection.add({'product': widget.productId});
+      }
+    } catch (e) {
+      debugPrint("Error toggling favorite: $e");
     }
   }
+
+  @override
+  void dispose() {
+    _favSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final num originalPrice = widget.productData['price'] ?? 0;
@@ -56,7 +95,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
     final Timestamp? discountUntil = widget.productData['discountUntil'] as Timestamp?;
     final bool isExpired = discountUntil != null && discountUntil.toDate().isBefore(DateTime.now());
     final bool hasDiscount = discountPercentage > 0 && !isExpired;
-    bool fav=_favProduct.contains(widget.productId);
+
     final num finalPrice = hasDiscount
         ? (originalPrice * (1 - (discountPercentage / 100))).round()
         : originalPrice;
@@ -104,7 +143,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: widget.imageUrl.isNotEmpty
                         ? CachedNetworkImage(
-                      imageUrl:  widget.imageUrl,
+                      imageUrl: widget.imageUrl,
                       height: 130,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -151,43 +190,13 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                         color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
-                      child:  IconButton(
+                      child: IconButton(
                         icon: Icon(
-                          fav?Icons.favorite: Icons.favorite_border_rounded,
+                          _isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
                           size: 16,
-                          color:fav?Colors.red: Color(0xFF6C5CE7),
+                          color: _isFavorite ? Colors.red : const Color(0xFF6C5CE7),
                         ),
-                        onPressed: ()async{
-                          if(_auth.currentUser!=null){
-                            _GetFavProduct();
-                            if(fav){
-                              String ref="";
-                              await _firestore.collection('user').doc(_auth.currentUser!.uid).collection('fav').where('product',isEqualTo: widget.productId).get().then((value){
-                                ref=value.docs[0].id;
-                              }).then((value)async{
-                                await _firestore.collection('user').doc(_auth.currentUser!.uid).collection('fav').doc(ref).delete();
-                                fav=false;
-                                _favProduct.remove(widget.productId);
-                                setState(() {
-                                 _favProduct;
-                                  fav;
-                                });
-                              });
-                            }
-                            else{
-                              await _firestore.collection('user').doc(_auth.currentUser!.uid).collection('fav').doc().set({
-                                'product':widget.productId
-                              });
-                              fav=true;
-                              _favProduct.add(widget.productId);
-                              setState(() {
-                                _favProduct;
-                                fav;
-                              });
-                            }
-
-                          }
-                        },
+                        onPressed: _toggleFavorite,
                       ),
                     ),
                   ),
@@ -217,7 +226,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "$finalPrice${"EGP".tr}",
+                              "$finalPrice ${"EGP".tr}",
                               style: const TextStyle(
                                 color: Color(0xFF6C5CE7),
                                 fontWeight: FontWeight.w800,
@@ -226,7 +235,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                             ),
                             if (hasDiscount)
                               Text(
-                                "$originalPrice${"EGP".tr}",
+                                "$originalPrice ${"EGP".tr}",
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 11,
