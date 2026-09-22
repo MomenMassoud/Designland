@@ -44,7 +44,7 @@ class EmailServer {
     required String orderId,
     required double total,
   }) async {
-    const String apiUrl = '${baseUrl}/api/send-email';
+    const String apiUrl = '${baseUrl}/send-email';
 
     try {
       final response = await http.post(
@@ -116,6 +116,37 @@ class EmailServer {
       return false;
     } catch (e) {
       print('Error deleting user account: $e');
+      return false;
+    }
+  }
+   Future<bool> sendCommentNotificationToAdmins({
+    required String customerName,
+    required String productName,
+    required String commentText,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/notify_comment"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'customerName': customerName,
+          'productName': productName,
+          'commentText': commentText,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("Notification sent successfully: ${data['notificationsSent']}");
+        return true;
+      } else {
+        print("Failed to send notification. Status Code: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      print("Error sending comment notification: $e");
       return false;
     }
   }

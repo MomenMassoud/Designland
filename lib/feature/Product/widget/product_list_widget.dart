@@ -6,6 +6,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../Login/view/login_view.dart';
+
+final FirebaseAuth _auth=FirebaseAuth.instance;
+final FirebaseFirestore _firestore=FirebaseFirestore.instance;
+
+
 class ProductListWidget extends StatefulWidget {
   final String categoryDoc;
 
@@ -633,8 +639,19 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           ),
                         ),
                         InkWell(
-                          onTap: () {
-                            // Add to Cart action
+                          onTap: ()async{
+                            await _firestore.collection('products').doc(widget.productId).get().then((value){
+                              final data=value.data() as Map<String, dynamic>;
+                              final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
+
+                              final double discountPercentage = double.tryParse(
+                                  (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
+                              ) ?? 0.0;
+                              final double discountedPrice = discountPercentage > 0
+                                  ? originalPrice - (originalPrice * (discountPercentage / 100))
+                                  : originalPrice;
+                              _handleAddToCart(data, discountedPrice);
+                            });
                           },
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
@@ -660,6 +677,221 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleAddToCart(
+      Map<String, dynamic> productData, double finalPrice) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      _showLoginDialog();
+      return;
+    }
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final userData = userDoc.data() ?? {};
+      String? phone = userData['phone'];
+      List<dynamic> addresses = userData['addresses'] ?? [];
+      if (!mounted) return;
+      await _showOrderDetailsBottomSheet(
+          user.uid, productData, finalPrice, addresses);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
+      );
+    }
+  }
+  Future<void> _showOrderDetailsBottomSheet(
+      String uid,
+      Map<String, dynamic> productData,
+      double finalPrice,
+      List<dynamic> addresses,
+      ) async {
+    final notesController = TextEditingController();
+    int selectedAddressIndex = 0;
+
+    // استخراج الحقول الديناميكية التي حددها الأدمن
+    final List<dynamic> customFieldsRaw = productData['fields'] ?? productData['customFields'] ?? [];
+    final List<Map<String, dynamic>> customFields = customFieldsRaw.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    // إنشاء Controllers لكل حقل قادم من الأدمن
+    final Map<String, TextEditingController> customControllers = {
+      for (var field in customFields)
+        (field['name'] ?? 'field_${customFields.indexOf(field)}').toString(): TextEditingController()
+    };
+
+    final formKey = GlobalKey<FormState>();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setBottomSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Order and Design Details".tr,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      if (customFields.isNotEmpty) ...[
+                        const Divider(height: 24),
+                        Text(
+                          "Required Product Specifications".tr,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+                        ),
+                        const SizedBox(height: 12),
+                        ...customFields.map((field) {
+                          final String fieldName = field['name'] ?? '';
+                          final String fieldType = field['type'] ?? 'text';
+                          final bool isRequired = field['isRequired'] ?? false;
+
+                          final bool isDrive = fieldType == 'drive_link';
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: TextFormField(
+                              controller: customControllers[fieldName],
+                              keyboardType: isDrive ? TextInputType.url : TextInputType.text,
+                              decoration: InputDecoration(
+                                labelText: "$fieldName${isRequired ? ' *' : ''}",
+                                hintText: isDrive ? "https://drive.google.com/..." : null,
+                                border: const OutlineInputBorder(),
+                                prefixIcon: Icon(isDrive ? Icons.add_link : Icons.edit_note),
+                              ),
+                              validator: (value) {
+                                final textVal = value?.trim() ?? '';
+
+                                // 1. التحقق من الإلزامية بناءً على isRequired
+                                if (isRequired && textVal.isEmpty) {
+                                  return "${"Please enter".tr} $fieldName";
+                                }
+
+                                // 2. التحقق من نوع drive_link لو كان مدخلاً
+                                if (isDrive && textVal.isNotEmpty) {
+                                  if (!textVal.startsWith('http://') && !textVal.startsWith('https://')) {
+                                    return "Please enter a valid link (e.g. https://...)".tr;
+                                  }
+                                }
+
+                                return null;
+                              },
+                            ),
+                          );
+                        }),
+                        const Divider(height: 24),
+                      ],
+                      TextFormField(
+                        controller: notesController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: "${"Additional notes on the request".tr} *",
+                          hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
+                          border: const OutlineInputBorder(),
+                          alignLabelWithHint: true,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Please enter the required notes for the order.".tr;
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () async {
+                            // التحقق من كافة الحقول وفق شروط الأدمن والملاحظات
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+
+                            // تجميع كافة الحقول الديناميكية المدخلة
+                            final Map<String, String> collectedCustomFields = {};
+                            customControllers.forEach((key, controller) {
+                              collectedCustomFields[key] = controller.text.trim();
+                            });
+
+                            await _firestore.collection('users').doc(uid).collection('cart').add({
+                              'productId': widget.productId,
+                              'title': productData['title'] ?? '',
+                              'price': finalPrice,
+                              'originalPrice': (productData['price'] ?? 0.0).toDouble(),
+                              'image': (productData['images'] as List?)?.firstOrNull ?? '',
+                              'notes': notesController.text.trim(),
+                              'customFieldsData': collectedCustomFields,
+                              'selectedAddress': "",
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("The product has been successfully added to your cart! 🎉".tr),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                          label: Text(
+                            "Confirm addition to cart".tr,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Login required".tr),
+        content: Text("Please log in first to add products to the cart.".tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("cancellation".tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+            onPressed: () {
+              Navigator.pushNamed(context, LoginView.id);
+            },
+            child: Text("Log in".tr, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

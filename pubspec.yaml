@@ -107,6 +107,9 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+    - family: Lilitaone
+      fonts:
+        - asset: lib/core/Utils/assets/font/LilitaOne-Regular.ttf
     - family: Waltograph
       fonts:
         - asset: lib/core/Utils/assets/font/waltograph42.otf

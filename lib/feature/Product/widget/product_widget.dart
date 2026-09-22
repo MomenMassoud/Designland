@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/server/email_server.dart';
 import 'package:desginland/Core/widgets/full_screen_image_widget.dart';
 import 'package:desginland/feature/Login/view/login_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -63,14 +64,6 @@ class _ProductWidgetState extends State<ProductWidget> {
 
       String? phone = userData['phone'];
       List<dynamic> addresses = userData['addresses'] ?? [];
-
-      if (phone == null || phone.isEmpty || addresses.isEmpty) {
-        if (!mounted) return;
-        setState(() => _isAddingToCart = false);
-        await _showAddAddressAndPhoneDialog(user.uid, phone, addresses);
-        return;
-      }
-
       if (!mounted) return;
       setState(() => _isAddingToCart = false);
       await _showOrderDetailsBottomSheet(
@@ -105,112 +98,6 @@ class _ProductWidgetState extends State<ProductWidget> {
       ),
     );
   }
-
-  Future<void> _showAddAddressAndPhoneDialog(
-      String uid, String? existingPhone, List<dynamic> existingAddresses) async {
-    final phoneController = TextEditingController(text: existingPhone ?? '');
-    final addressTitleController = TextEditingController();
-    final addressDetailsController = TextEditingController();
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            top: 20,
-            left: 20,
-            right: 20,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Complete contact and address details".tr,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                if (existingPhone == null || existingPhone.isEmpty) ...[
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: "Contact phone number".tr,
-                      prefixIcon: const Icon(Icons.phone),
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                TextField(
-                  controller: addressTitleController,
-                  decoration: InputDecoration(
-                    labelText: "Address name (e.g., Home, Work)".tr,
-                    prefixIcon: const Icon(Icons.label_outline),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: addressDetailsController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: "Full address details".tr,
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: () async {
-                      if (phoneController.text.trim().isEmpty ||
-                          addressTitleController.text.trim().isEmpty ||
-                          addressDetailsController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Please fill in all the details.".tr)),
-                        );
-                        return;
-                      }
-
-                      final newAddress = {
-                        'title': addressTitleController.text.trim(),
-                        'details': addressDetailsController.text.trim(),
-                      };
-
-                      await _db.collection('users').doc(uid).set({
-                        'phone': phoneController.text.trim(),
-                        'addresses': FieldValue.arrayUnion([newAddress]),
-                      }, SetOptions(merge: true));
-
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Data saved successfully! Order now.".tr)),
-                      );
-                    },
-                    child: Text("Save and track the order".tr, style: const TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _showOrderDetailsBottomSheet(
       String uid,
       Map<String, dynamic> productData,
@@ -259,28 +146,28 @@ class _ProductWidgetState extends State<ProductWidget> {
                         "Order and Design Details".tr,
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 16),
-                      Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<int>(
-                        value: selectedAddressIndex,
-                        items: List.generate(addresses.length, (index) {
-                          final addr = addresses[index];
-                          return DropdownMenuItem(
-                            value: index,
-                            child: Text("${addr['title']} - ${addr['details']}"),
-                          );
-                        }),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setBottomSheetState(() => selectedAddressIndex = val);
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                      ),
+                      // const SizedBox(height: 16),
+                      // Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      // const SizedBox(height: 8),
+                      // DropdownButtonFormField<int>(
+                      //   value: selectedAddressIndex,
+                      //   items: List.generate(addresses.length, (index) {
+                      //     final addr = addresses[index];
+                      //     return DropdownMenuItem(
+                      //       value: index,
+                      //       child: Text("${addr['title']} - ${addr['details']}"),
+                      //     );
+                      //   }),
+                      //   onChanged: (val) {
+                      //     if (val != null) {
+                      //       setBottomSheetState(() => selectedAddressIndex = val);
+                      //     }
+                      //   },
+                      //   decoration: const InputDecoration(
+                      //     border: OutlineInputBorder(),
+                      //     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      //   ),
+                      // ),
                       const SizedBox(height: 12),
 
                       // ==================== 🛠️ DYNAMIC ADMIN FIELDS ====================
@@ -377,7 +264,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                               'image': (productData['images'] as List?)?.firstOrNull ?? '',
                               'notes': notesController.text.trim(),
                               'customFieldsData': collectedCustomFields,
-                              'selectedAddress': addresses[selectedAddressIndex],
+                              'selectedAddress': "",
                               'createdAt': FieldValue.serverTimestamp(),
                             });
 
@@ -1019,6 +906,14 @@ class _AddReviewSectionState extends State<AddReviewSection> {
                   'rating': _userRating,
                   'comment': _commentController.text.trim(),
                   'createdAt': FieldValue.serverTimestamp(),
+                });
+                String productname="";
+                await widget.productsRef.doc(widget.productDoc).get().then((value){
+                  productname=value.get("title");
+                  EmailServer().sendCommentNotificationToAdmins(
+                      customerName: currentUser.displayName??'client',
+                      productName: productname,
+                      commentText: _commentController.text.trim());
                 });
 
                 _commentController.clear();

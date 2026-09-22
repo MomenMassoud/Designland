@@ -414,15 +414,15 @@ class _AboutWidgetState extends State<AboutWidget> {
                 _launchAction("https://wa.me/$cleanPhone");
               },
             ),
-            const SizedBox(height: 10),
-            _buildContactItem(
-              icon: Icons.phone_in_talk_rounded,
-              title: "Contact number".tr,
-              subtitle: phone,
-              iconBgColor: const Color(0xFF6C5CE7).withOpacity(0.08),
-              iconColor: const Color(0xFF6C5CE7),
-              onTap: () => _launchAction("tel:$phone"),
-            ),
+            // const SizedBox(height: 10),
+            // _buildContactItem(
+            //   icon: Icons.phone_in_talk_rounded,
+            //   title: "Contact number".tr,
+            //   subtitle: phone,
+            //   iconBgColor: const Color(0xFF6C5CE7).withOpacity(0.08),
+            //   iconColor: const Color(0xFF6C5CE7),
+            //   onTap: () => _launchAction("tel:$phone"),
+            // ),
             const SizedBox(height: 10),
             _buildContactItem(
               icon: Icons.alternate_email_rounded,

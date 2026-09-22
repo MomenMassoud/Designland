@@ -145,6 +145,111 @@ class _BasketWidgetState extends State<BasketWidget> {
     });
   }
 
+  Future<void> _showAddAddressAndPhoneDialog(
+      String uid, String? existingPhone, List<dynamic> existingAddresses) async {
+    final phoneController = TextEditingController(text: existingPhone ?? '');
+    final addressTitleController = TextEditingController();
+    final addressDetailsController = TextEditingController();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Complete contact and address details".tr,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (existingPhone == null || existingPhone.isEmpty) ...[
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: "Contact phone number".tr,
+                      prefixIcon: const Icon(Icons.phone),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: addressTitleController,
+                  decoration: InputDecoration(
+                    labelText: "Address name (e.g., Home, Work)".tr,
+                    prefixIcon: const Icon(Icons.label_outline),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressDetailsController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: "Full address details".tr,
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () async {
+                      if (phoneController.text.trim().isEmpty ||
+                          addressTitleController.text.trim().isEmpty ||
+                          addressDetailsController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Please fill in all the details.".tr)),
+                        );
+                        return;
+                      }
+
+                      final newAddress = {
+                        'title': addressTitleController.text.trim(),
+                        'details': addressDetailsController.text.trim(),
+                      };
+
+                      await _db.collection('users').doc(uid).set({
+                        'phone': phoneController.text.trim(),
+                        'addresses': FieldValue.arrayUnion([newAddress]),
+                      }, SetOptions(merge: true));
+
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Data saved successfully! Order now.".tr)),
+                      );
+                    },
+                    child: Text("Save and track the order".tr, style: const TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // 4. تأكيد الطلب وتحويله لحالة "تحت التنفيذ"
   Future<void> _confirmOrder(
       List<QueryDocumentSnapshot> items, double subtotal) async {
@@ -152,8 +257,85 @@ class _BasketWidgetState extends State<BasketWidget> {
     if (uid == null) return;
 
     try {
-      String userEmail = "";
+      int selectedAddressIndex = 0;
       final userDoc = await _db.collection('users').doc(uid).get();
+      final userData = userDoc.data() ?? {};
+
+      String? phone = userData['phone'];
+      List<dynamic> addresses = userData['addresses'] ?? [];
+      if (phone == null || phone.isEmpty || addresses.isEmpty) {
+        if (!mounted) return;
+        await _showAddAddressAndPhoneDialog(uid, phone, addresses);
+        return;
+      }
+
+
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+          builder: (context){
+            return StatefulBuilder(
+                builder: (context, setBottomSheetState){
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                      top: 20,
+                      left: 20,
+                      right: 20,
+                    ),
+                      child: SingleChildScrollView(
+                        child: Form(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<int>(
+                                value: selectedAddressIndex,
+                                items: List.generate(addresses.length, (index) {
+                                  final addr = addresses[index];
+                                  return DropdownMenuItem(
+                                    value: index,
+                                    child: Text("${addr['title']} - ${addr['details']}"),
+                                  );
+                                }),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setBottomSheetState(() => selectedAddressIndex = val);
+                                  }
+                                },
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF10B981),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                    ),
+                                    onPressed: (){Navigator.pop(context);},
+                                    icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                                    label: Text("Order")),
+                              )
+                            ],
+                          ),
+                        ),
+                      )
+                  );
+                }
+            );
+          }
+      );
+
+      String userEmail = "";
       if (userDoc.exists) {
         userEmail = userDoc.data()?['email'] ?? _auth.currentUser?.email ?? '';
       }
@@ -173,7 +355,7 @@ class _BasketWidgetState extends State<BasketWidget> {
           'image': data['image'] ?? '',
           'notes': data['notes'] ?? '',
           'customFieldsData': data['customFieldsData'] ?? {},
-          'selectedAddress': data['selectedAddress'] ?? {},
+          'selectedAddress': addresses[selectedAddressIndex]?? {},
         };
       }).toList();
 
@@ -186,8 +368,8 @@ class _BasketWidgetState extends State<BasketWidget> {
           .doc()
           .set({
         'isRead': false,
-        'title': "Order Created",
-        'body': 'تم إرسال إيميل استقبال الفاتورة بنجاح!',
+        'title': "Order Done",
+        'body': '',
         'createdAt': FieldValue.serverTimestamp(),
         'targetUser': uid
       });
@@ -642,7 +824,7 @@ class _BasketWidgetState extends State<BasketWidget> {
               ),
               onPressed: () => _confirmOrder(items, subtotal),
               child: Text(
-                "Order Confirmation (In Progress)".tr,
+                "Confirm Order".tr,
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),

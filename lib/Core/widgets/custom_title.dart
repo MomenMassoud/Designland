@@ -18,6 +18,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
               fontWeight: FontWeight.w800,
               color: Color(0xFF1E232A), // كحلي/أسود داكن شيك
               letterSpacing: -0.5,
+              fontFamily: "Lilitaone"
             ),
           ),
 
@@ -31,6 +32,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFFF4880), // وردي القلعة
+                      fontFamily: "Lilitaone"
                   ),
                 ),
                 TextSpan(
@@ -39,6 +41,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFFFB800), // أصفر دافئ
+                      fontFamily: "Lilitaone"
                   ),
                 ),
                 TextSpan(
@@ -47,6 +50,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF00C4CC), // تركواز
+                      fontFamily: "Lilitaone"
                   ),
                 ),
                 TextSpan(
@@ -55,6 +59,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF9B51E0), // بنفسجي
+                      fontFamily: "Lilitaone"
                   ),
                 ),
               ],
@@ -65,6 +70,10 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
           // لمسة شرارة صغيرة/أيقونة سحرية تعكس روح القلعة
           const Text(
             "✨",
+            style: TextStyle(fontSize: 16),
+          ),
+          const Text(
+            "🎨",
             style: TextStyle(fontSize: 16),
           ),
         ],
