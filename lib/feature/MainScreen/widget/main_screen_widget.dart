@@ -33,18 +33,15 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   String _userRole = "";
   bool _isStaff = false;
 
-  // 1. تخزين مستمعي الـ Firebase لإلغائها عند التخلص من الشاشة لتجنب تسريب الذاكرة (Memory Leaks)
   StreamSubscription<QuerySnapshot>? _cartSubscription;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
 
-  // 2. استخدام const للشاشات ثابتة الحالة لمنع إعادة البناء وتخفيف الـ Rebuilds
-  static  List<Widget> _screens = [
+  static final List<Widget> _screens = [
     HomeView(),
     ProfileView(),
     AboutView(),
   ];
 
-  // 3. ValueNotifiers لإعادة بناء أزرار العدادات فقط بدلاً من إعادة بناء الشاشة بأكملها
   final ValueNotifier<int> _cartCount = ValueNotifier<int>(0);
   final ValueNotifier<int> _notificationCount = ValueNotifier<int>(0);
 
@@ -73,13 +70,11 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     }
   }
 
-  // تجميع وقراءة بيانات المستخدم مع إدارة الـ Subscriptions بطريقة نظيفة
   Future<void> _fetchInitialUserData() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     try {
-      // الاستماع للعدادات وإلغاء الاستماع القديم إن وجد
       _listenToCartCount(user.uid);
       _listenToNotificationCount(user.uid);
 
@@ -137,7 +132,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
 
   @override
   void dispose() {
-    // إغلاق كافة الـ Subscriptions ومراقبات الذاكرة بشكل سليم لتفريغ الـ RAM
     _cartSubscription?.cancel();
     _notificationSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -160,26 +154,30 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     if (_isblocked) return const BlockListScreen();
     if (_isStaff) return StaffBlockScreen(userRole: _userRole);
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final iconColor = theme.colorScheme.onSurface;
+
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= 850;
             return AppBar(
-              systemOverlayStyle: const SystemUiOverlayStyle(
+              systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-                statusBarBrightness: Brightness.light,
+                statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+                statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
               ),
-              backgroundColor: Colors.white,
-              elevation: 0.5,
+              backgroundColor: theme.cardColor,
+              elevation: isDarkMode ? 0 : 0.5,
               titleSpacing: isDesktop ? 24 : 16,
               title: const CustomRainbowAppBarTitle(),
               actions: [
-                // تحديث عداد الإشعارات عبر ValueListenableBuilder لمنع Rebuild الشاشة
+                // عداد الإشعارات
                 ValueListenableBuilder<int>(
                   valueListenable: _notificationCount,
                   builder: (context, count, _) {
@@ -187,8 +185,8 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                       alignment: Alignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.notifications_none, color: Color(0xFF2D3436)),
-                          onPressed: () => Get.to(() =>  NotificationView()),
+                          icon: Icon(Icons.notifications_none, color: iconColor),
+                          onPressed: () => Get.to(() => NotificationView()),
                         ),
                         if (count > 0)
                           Positioned(
@@ -200,7 +198,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
-                // تحديث عداد السلة بشكل مستقل
+                // عداد السلة
                 ValueListenableBuilder<int>(
                   valueListenable: _cartCount,
                   builder: (context, count, _) {
@@ -208,7 +206,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                       alignment: Alignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF2D3436)),
+                          icon: Icon(Icons.shopping_cart_outlined, color: iconColor),
                           onPressed: () => Navigator.pushNamed(context, BasketView.id),
                         ),
                         if (count > 0)
@@ -221,13 +219,31 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
+                // 🌙/☀️ زر التبديل بين الـ Light والـ Dark Theme
+                IconButton(
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                    child: Icon(
+                      isDarkMode ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
+                      key: ValueKey<bool>(isDarkMode),
+                      color: isDarkMode ? const Color(0xFFFFD166) : iconColor,
+                    ),
+                  ),
+                  onPressed: () {
+                    Get.changeThemeMode(
+                      isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  },
+                  tooltip: isDarkMode ? 'Light Mode' : 'Dark Mode',
+                ),
                 if (isDesktop) ...[
                   const SizedBox(width: 8),
                   _buildNavTextButton("Home".tr, Icons.home_outlined, 0),
                   _buildNavTextButton("Profile".tr, Icons.person_outline, 1),
                   _buildNavTextButton("About".tr, Icons.info_outline, 2),
                 ],
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
               ],
             );
           },
@@ -240,13 +256,16 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
       bottomNavigationBar: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 850) return const SizedBox.shrink();
-          return _buildLiquidGlassNavBar();
+          return _buildLiquidGlassNavBar(context);
         },
       ),
     );
   }
 
-  Widget _buildLiquidGlassNavBar() {
+  Widget _buildLiquidGlassNavBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(left: 20, right: 20, bottom: 24),
       height: 65,
@@ -254,7 +273,9 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
             blurRadius: 25,
             spreadRadius: 2,
             offset: const Offset(0, 10),
@@ -267,10 +288,14 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.75),
+              color: isDarkMode
+                  ? const Color(0xFF1E1D2A).withOpacity(0.85)
+                  : Colors.white.withOpacity(0.75),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withOpacity(0.5),
+                color: isDarkMode
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.white.withOpacity(0.5),
                 width: 1.5,
               ),
             ),
@@ -290,6 +315,10 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
 
   Widget _buildNavItem(IconData unselectedIcon, IconData selectedIcon, String label, int index) {
     final bool isSelected = _selectedIndex == index;
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final unselectedColor = theme.colorScheme.onSurfaceVariant;
+
     return GestureDetector(
       onTap: () => _onTabSelected(index),
       behavior: HitTestBehavior.opaque,
@@ -297,22 +326,22 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6C5CE7).withOpacity(0.12) : Colors.transparent,
+          color: isSelected ? primaryColor.withOpacity(0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
             Icon(
               isSelected ? selectedIcon : unselectedIcon,
-              color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade600,
+              color: isSelected ? primaryColor : unselectedColor,
               size: 24,
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF6C5CE7),
+                style: TextStyle(
+                  color: primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -326,17 +355,21 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
 
   Widget _buildNavTextButton(String title, IconData icon, int index) {
     final bool isSelected = _selectedIndex == index;
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final textColor = theme.colorScheme.onSurfaceVariant;
+
     return TextButton.icon(
       onPressed: () => _onTabSelected(index),
       icon: Icon(
         icon,
         size: 18,
-        color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade700,
+        color: isSelected ? primaryColor : textColor,
       ),
       label: Text(
         title,
         style: TextStyle(
-          color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade700,
+          color: isSelected ? primaryColor : textColor,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -344,7 +377,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   }
 }
 
-// العداد مكوّن كـ const Widget منفصل لمنع إعادة إنشائه وتخفيف الضغط على المعالج
 class _BadgeCounter extends StatelessWidget {
   final int count;
   const _BadgeCounter({required this.count});

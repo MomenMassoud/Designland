@@ -24,8 +24,6 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   // Home Design Theme Palette
   static const Color primaryColor = Color(0xFF6C5CE7);
-  static const Color darkText = Color(0xFF2D3436);
-  static const Color backgroundColor = Color(0xFFFAF9FF);
 
   @override
   void dispose() {
@@ -56,26 +54,35 @@ class _LoginWidgetState extends State<LoginWidget> {
   void _handleGoogleLogin() async {
     _isLoading.value = true;
     SignInWithGoogle(context);
+    if (mounted) {
+      _isLoading.value = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ألوان ديناميكية بحسب الثيم
+    final scaffoldBgColor = isDark ? const Color(0xFF121212) : const Color(0xFFFAF9FF);
+    final cardBgColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
+
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: scaffoldBgColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Container(
-              clipBehavior: Clip.antiAlias, // حل مشكلة الحواف الحادة للـ Container البنفسجي
+              clipBehavior: Clip.antiAlias,
               constraints: const BoxConstraints(maxWidth: 950),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBgColor,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.08),
+                    color: isDark ? Colors.black26 : primaryColor.withOpacity(0.08),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   ),
@@ -89,14 +96,14 @@ class _LoginWidgetState extends State<LoginWidget> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Expanded(child: _BrandingSide()),
-                        Expanded(child: _buildLoginForm()),
+                        Expanded(child: _buildLoginForm(isDark)),
                       ],
                     );
                   }
                   return Column(
                     children: [
                       const _MobileHeader(),
-                      _buildLoginForm(),
+                      _buildLoginForm(isDark),
                     ],
                   );
                 },
@@ -108,7 +115,12 @@ class _LoginWidgetState extends State<LoginWidget> {
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(bool isDark) {
+    final mainTextColor = isDark ? Colors.white : const Color(0xFF2D3436);
+    final subTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    final fieldBgColor = isDark ? const Color(0xFF2A2A3D) : const Color(0xFFFAF9FF);
+    final fieldBorderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
       child: Form(
@@ -119,10 +131,10 @@ class _LoginWidgetState extends State<LoginWidget> {
           children: [
             Text(
               "Sign In".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: darkText,
+                color: mainTextColor,
                 letterSpacing: -0.3,
               ),
             ),
@@ -131,7 +143,7 @@ class _LoginWidgetState extends State<LoginWidget> {
               "Sign in to access your orders and saved designs".tr,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade600,
+                color: subTextColor,
               ),
             ),
             const SizedBox(height: 28),
@@ -140,13 +152,13 @@ class _LoginWidgetState extends State<LoginWidget> {
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: darkText, fontSize: 14),
+              style: TextStyle(color: mainTextColor, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Email Address".tr,
-                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
                 prefixIcon: const Icon(Icons.email_outlined, color: primaryColor, size: 20),
                 filled: true,
-                fillColor: backgroundColor,
+                fillColor: fieldBgColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -154,7 +166,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: fieldBorderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -172,21 +184,21 @@ class _LoginWidgetState extends State<LoginWidget> {
                 return TextFormField(
                   controller: _passwordController,
                   obscureText: isObscure,
-                  style: const TextStyle(color: darkText, fontSize: 14),
+                  style: TextStyle(color: mainTextColor, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Password".tr,
-                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
                     prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: Colors.grey.shade500,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                         size: 20,
                       ),
                       onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
                     ),
                     filled: true,
-                    fillColor: backgroundColor,
+                    fillColor: fieldBgColor,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -194,7 +206,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(color: fieldBorderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -210,7 +222,7 @@ class _LoginWidgetState extends State<LoginWidget> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ForgetPasswordView())),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>  ForgetPasswordView())),
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 child: Text(
                   "Forgot Password?".tr,
@@ -257,19 +269,19 @@ class _LoginWidgetState extends State<LoginWidget> {
 
                     Row(
                       children: [
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Expanded(child: Divider(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
                             "OR".tr,
                             style: TextStyle(
-                              color: Colors.grey.shade400,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Expanded(child: Divider(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -281,8 +293,8 @@ class _LoginWidgetState extends State<LoginWidget> {
                         onPressed: isLoading ? null : _handleGoogleLogin,
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: Colors.grey.shade200),
-                          backgroundColor: Colors.white,
+                          side: BorderSide(color: fieldBorderColor),
+                          backgroundColor: fieldBgColor,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -290,13 +302,13 @@ class _LoginWidgetState extends State<LoginWidget> {
                             CircleAvatar(
                               backgroundImage: AssetImage(AppImages.google),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Text(
                               "Sign in with Google".tr,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: darkText,
+                                color: mainTextColor,
                               ),
                             ),
                           ],
@@ -314,10 +326,10 @@ class _LoginWidgetState extends State<LoginWidget> {
               children: [
                 Text(
                   "Don't have an account?".tr,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: subTextColor, fontSize: 13),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SigupView())),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>  SigupView())),
                   child: Text(
                     "Create Account".tr,
                     style: const TextStyle(
@@ -356,7 +368,6 @@ class _BrandingSide extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // تم قص اللوجو داخل دائرة ناعمة لحل مشكلة الحواف البيضاء المربعة
           Container(
             width: 140,
             height: 140,

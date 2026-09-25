@@ -456,11 +456,13 @@ class _BasketWidgetState extends State<BasketWidget> {
         transaction.set(constDocRef, {'order_number': newOrderNumber + 1}, SetOptions(merge: true));
       });
 
-      String userEmail = userData['email'] ?? _auth.currentUser?.email ?? '';
-      String clientname="";
-      await _db.collection('user').doc(_auth.currentUser!.uid).get().then((value){
-        clientname=value.get('name');
-      });
+      String clientName = userData['name'] ?? '';
+      if (clientName.isEmpty) {
+        final mainUserDoc = await _db.collection('user').doc(uid).get();
+        if (mainUserDoc.exists) {
+          clientName = mainUserDoc.data()?['name'] ?? '';
+        }
+      }
 
       final double discountAmount = subtotal * (_discountPercentage / 100);
       final double finalTotalPrice = subtotal - discountAmount;
@@ -507,26 +509,26 @@ class _BasketWidgetState extends State<BasketWidget> {
       });
 
       // إرسال الإيميل
+      final userEmail = _auth.currentUser?.email ?? '';
       EmailServer().sendInvoiceEmail(
-        customerEmail: _auth.currentUser!.email.toString(),
+        customerEmail: userEmail,
         orderId: orderID,
         total: finalTotalPrice,
-        customerName: clientname,
+        customerName: clientName,
         items: orderItems,
-        orderNumber: newOrderNumber
+        orderNumber: newOrderNumber,
       );
 
       EmailServer().notifyAdmins(
         orderId: orderID,
         total: finalTotalPrice,
-        customerEmail: _auth.currentUser!.email.toString(),
+        customerEmail: userEmail,
         orderNumber: newOrderNumber,
         items: orderItems,
-        customerName: clientname,
+        customerName: clientName,
         selectedAddress: selectedAddress,
-        customerPhone: selectedAddress['phone'] ?? phone
+        customerPhone: selectedAddress['phone'] ?? phone,
       );
-
 
       // تفريغ السلة بعد نجاح الشراء
       final batch = _db.batch();
@@ -571,6 +573,7 @@ class _BasketWidgetState extends State<BasketWidget> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("${"An error occurred while confirming the order:".tr} $e"),
@@ -714,7 +717,6 @@ class _BasketWidgetState extends State<BasketWidget> {
     final quantity = (item['quantity'] ?? 1) as int;
     final image = item['image'] ?? '';
 
-    // تحديد أحجام مناسبة ومتناسبة مع الموبايل
     final double imgSize = screenWidth < 400 ? 60.0 : 75.0;
     final double titleFontSize = screenWidth < 400 ? 13.0 : 14.0;
     final double priceFontSize = screenWidth < 400 ? 13.0 : 14.0;

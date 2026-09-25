@@ -12,11 +12,14 @@ class AuthNotLoginWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 900;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : backgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -29,11 +32,11 @@ class AuthNotLoginWidget extends StatelessWidget {
                 vertical: isDesktop ? 48 : 36,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? theme.cardColor : Colors.white,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.06),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.06),
                     blurRadius: 25,
                     offset: const Offset(0, 10),
                   ),
@@ -51,7 +54,7 @@ class AuthNotLoginWidget extends StatelessWidget {
                         width: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: primaryColor.withOpacity(0.05),
+                          color: primaryColor.withOpacity(isDarkMode ? 0.12 : 0.05),
                         ),
                       ),
                       Container(
@@ -59,7 +62,7 @@ class AuthNotLoginWidget extends StatelessWidget {
                         width: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: primaryColor.withOpacity(0.12),
+                          color: primaryColor.withOpacity(isDarkMode ? 0.22 : 0.12),
                         ),
                       ),
                       Container(
@@ -92,7 +95,7 @@ class AuthNotLoginWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: darkText,
+                      color: isDarkMode ? Colors.white : darkText,
                       letterSpacing: -0.3,
                     ),
                     textAlign: TextAlign.center,
@@ -104,7 +107,7 @@ class AuthNotLoginWidget extends StatelessWidget {
                     "Please log in to access all features, track your orders, and easily manage your personal account.".tr,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,

@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-
 // ==================== DYNAMIC COUNTDOWN WIDGET ====================
 class DynamicCountdownWidget extends StatefulWidget {
   final Timestamp? untilTimestamp;
@@ -59,16 +58,32 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     if (_timeLeft == Duration.zero) {
+      final errorColor = theme.colorScheme.error;
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(6),
+          color: errorColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: errorColor.withOpacity(0.3)),
         ),
-        child:  Text(
-          "The offer has ended.".tr,
-          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer_off_outlined, size: 14, color: errorColor),
+            const SizedBox(width: 5),
+            Text(
+              "The offer has ended.".tr,
+              style: TextStyle(
+                color: errorColor,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -78,43 +93,71 @@ class _DynamicCountdownWidgetState extends State<DynamicCountdownWidget> {
     final minutes = _timeLeft.inMinutes.remainder(60);
     final seconds = _timeLeft.inSeconds.remainder(60);
 
+    final separatorColor = isDarkMode ? Colors.white70 : theme.colorScheme.onSurface.withOpacity(0.6);
+
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (days > 0) ...[
-          _buildTimeBox(_twoDigits(days), "day".tr),
-          const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          _buildTimeBox(context, _twoDigits(days), "day".tr),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(" : ", style: TextStyle(color: separatorColor, fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
         ],
-        _buildTimeBox(_twoDigits(hours), "hour".tr),
-        const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        _buildTimeBox(_twoDigits(minutes), "minute".tr),
-        const Text(" : ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        _buildTimeBox(_twoDigits(seconds), "second".tr),
+        _buildTimeBox(context, _twoDigits(hours), "hour".tr),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Text(" : ", style: TextStyle(color: separatorColor, fontWeight: FontWeight.bold, fontSize: 12)),
+        ),
+        _buildTimeBox(context, _twoDigits(minutes), "minute".tr),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Text(" : ", style: TextStyle(color: separatorColor, fontWeight: FontWeight.bold, fontSize: 12)),
+        ),
+        _buildTimeBox(context, _twoDigits(seconds), "second".tr),
       ],
     );
   }
 
-  Widget _buildTimeBox(String value, String label) {
+  Widget _buildTimeBox(BuildContext context, String value, String label) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    final boxBackgroundColor = isDarkMode
+        ? theme.primaryColor.withOpacity(0.15)
+        : theme.primaryColor.withOpacity(0.08);
+
+    final borderColor = isDarkMode
+        ? theme.primaryColor.withOpacity(0.3)
+        : theme.primaryColor.withOpacity(0.2);
+
+    final valueTextColor = theme.primaryColor;
+    final labelTextColor = isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
+        color: boxBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              color: valueTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
           ),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 7,
+            style: TextStyle(
+              color: labelTextColor,
+              fontSize: 8,
               fontWeight: FontWeight.w600,
             ),
           ),

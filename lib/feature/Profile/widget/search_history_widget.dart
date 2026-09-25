@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../Core/Utils/app.colors.dart'; //[cite: 5, 6]
+import '../../../Core/Utils/app.colors.dart';
 
 class SearchHistoryScreen extends StatefulWidget {
   const SearchHistoryScreen({super.key});
@@ -35,28 +35,37 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
         elevation: 10,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title:  Text(
+        title: Text(
           "Clear search history".tr,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: AppColors.textDark, //[cite: 5]
+            color: isDarkMode ? Colors.white : AppColors.textDark,
           ),
         ),
-        content:  Text(
+        content: Text(
           "Do you want to clear all recorded searches?".tr,
-          style: TextStyle(color: AppColors.textMuted, fontSize: 14), //[cite: 5]
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade400 : AppColors.textMuted,
+            fontSize: 14,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:  Text("cancellation".tr, style: TextStyle(color: Colors.grey)),
+            child: Text(
+              "cancellation".tr,
+              style: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -67,7 +76,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               ),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child:  Text("Delete".tr, style: TextStyle(color: Colors.white)),
+            child: Text("Delete".tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -128,9 +137,11 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUser?.uid;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.bgLight, //[cite: 5]
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : AppColors.bgLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -143,19 +154,19 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? theme.cardColor : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.textDark, //[cite: 5]
+                  color: isDarkMode ? Colors.white : AppColors.textDark,
                   size: 16,
                 ),
               ),
@@ -165,7 +176,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
         title: Text(
           "Search history".tr,
           style: TextStyle(
-            color: AppColors.textDark, //[cite: 5]
+            color: isDarkMode ? Colors.white : AppColors.textDark,
             fontWeight: FontWeight.bold,
             fontSize: 18,
             letterSpacing: -0.5,
@@ -180,11 +191,11 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? theme.cardColor : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -192,7 +203,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
                 ),
                 child: Icon(
                   Icons.delete_outline_rounded,
-                  color: AppColors.primaryPurple.withOpacity(0.8), //[cite: 5]
+                  color: AppColors.primaryPurple.withOpacity(0.8),
                   size: 20,
                 ),
               ),
@@ -201,7 +212,12 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
         ],
       ),
       body: uid == null
-          ?  Center(child: Text("Please log in to view the history.".tr))
+          ? Center(
+        child: Text(
+          "Please log in to view the history.".tr,
+          style: TextStyle(color: isDarkMode ? Colors.white70 : AppColors.textDark),
+        ),
+      )
           : StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('user')
@@ -213,7 +229,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(
-                color: AppColors.primaryPurple, //[cite: 5]
+                color: AppColors.primaryPurple,
                 strokeWidth: 2,
               ),
             );
@@ -222,7 +238,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
           final docs = snapshot.data?.docs ?? [];
 
           if (docs.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(isDarkMode);
           }
 
           final groupedDocs = _groupDocsByDate(docs);
@@ -234,7 +250,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               vertical: 16,
             ),
             children: groupedDocs.entries.map((entry) {
-              return _buildAnimatedTimeGroup(entry.key, entry.value);
+              return _buildAnimatedTimeGroup(entry.key, entry.value, isDarkMode, theme);
             }).toList(),
           );
         },
@@ -244,7 +260,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
 
   // تجميع الـ Groups مع أنيميشن سلس
   Widget _buildAnimatedTimeGroup(
-      String title, List<QueryDocumentSnapshot> docs) {
+      String title, List<QueryDocumentSnapshot> docs, bool isDarkMode, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,10 +270,10 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textDark, //[cite: 5]
+                  color: isDarkMode ? Colors.white : AppColors.textDark,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -265,7 +281,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryPurple.withOpacity(0.08), //[cite: 5]
+                  color: AppColors.primaryPurple.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -273,7 +289,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryPurple, //[cite: 5]
+                    color: AppColors.primaryPurple,
                   ),
                 ),
               ),
@@ -292,6 +308,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
             return _AnimatedSearchTile(
               index: index,
               query: query,
+              isDarkMode: isDarkMode,
+              theme: theme,
               onDelete: () => _deleteSingleItem(doc.id),
               onTap: () {
                 // تنفيذ عملية البحث بهذه الكلمة
@@ -304,7 +322,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDarkMode) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -315,28 +333,31 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
               height: 100,
               width: 100,
               decoration: BoxDecoration(
-                color: AppColors.primaryPurple.withOpacity(0.05), //[cite: 5]
+                color: AppColors.primaryPurple.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.search_rounded,
                 size: 42,
-                color: AppColors.primaryPurple.withOpacity(0.4), //[cite: 5]
+                color: AppColors.primaryPurple.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 20),
-             Text(
+            Text(
               "Search history is empty.".tr,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark, //[cite: 5]
+                color: isDarkMode ? Colors.white : AppColors.textDark,
               ),
             ),
             const SizedBox(height: 8),
-             Text(
+            Text(
               "You haven't performed any searches recently.".tr,
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted), //[cite: 5]
+              style: TextStyle(
+                fontSize: 13,
+                color: isDarkMode ? Colors.grey.shade400 : AppColors.textMuted,
+              ),
             ),
           ],
         ),
@@ -349,12 +370,16 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen>
 class _AnimatedSearchTile extends StatefulWidget {
   final int index;
   final String query;
+  final bool isDarkMode;
+  final ThemeData theme;
   final VoidCallback onDelete;
   final VoidCallback onTap;
 
   const _AnimatedSearchTile({
     required this.index,
     required this.query,
+    required this.isDarkMode,
+    required this.theme,
     required this.onDelete,
     required this.onTap,
   });
@@ -418,11 +443,11 @@ class _AnimatedSearchTileState extends State<_AnimatedSearchTile>
               margin: const EdgeInsets.symmetric(vertical: 5),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: widget.isDarkMode ? widget.theme.cardColor : Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.025),
+                    color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.025),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -433,12 +458,12 @@ class _AnimatedSearchTileState extends State<_AnimatedSearchTile>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryPurple.withOpacity(0.06), //[cite: 5]
+                      color: AppColors.primaryPurple.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.history_toggle_off_rounded,
-                      color: AppColors.primaryPurple, //[cite: 5]
+                      color: AppColors.primaryPurple,
                       size: 18,
                     ),
                   ),
@@ -446,10 +471,10 @@ class _AnimatedSearchTileState extends State<_AnimatedSearchTile>
                   Expanded(
                     child: Text(
                       widget.query,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textDark, //[cite: 5]
+                        color: widget.isDarkMode ? Colors.white : AppColors.textDark,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -462,7 +487,7 @@ class _AnimatedSearchTileState extends State<_AnimatedSearchTile>
                       child: Icon(
                         Icons.close_rounded,
                         size: 16,
-                        color: Colors.grey.shade400,
+                        color: widget.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
                       ),
                     ),
                   ),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../Login/view/login_view.dart';
+import 'order_details_bottom_sheet.dart'; // استيراد الـ Bottom Sheet الموحد
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -76,6 +77,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final int crossAxisCount = screenWidth >= 1200
         ? 5
@@ -92,14 +96,19 @@ class _ProductListWidgetState extends State<ProductListWidget> {
         : 0.62;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD),
+      backgroundColor: isDarkMode
+          ? theme.scaffoldBackgroundColor
+          : const Color(0xFFF8F9FD),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF2D3436), size: 18),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: StreamBuilder<DocumentSnapshot>(
@@ -108,8 +117,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
             if (!snapshot.hasData || !snapshot.data!.exists) {
               return Text(
                 "Category Products".tr,
-                style: const TextStyle(
-                  color: Color(0xFF2D3436),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -122,8 +131,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
             return Text(
               categoryTitle,
-              style: const TextStyle(
-                color: Color(0xFF2D3436),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
               ),
@@ -136,9 +145,14 @@ class _ProductListWidgetState extends State<ProductListWidget> {
           // ==================== SEARCH & SUBCATEGORIES SECTION ====================
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? theme.cardColor : Colors.white,
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                bottom: BorderSide(
+                  color: isDarkMode
+                      ? Colors.white10
+                      : Colors.grey.shade200,
+                  width: 1,
+                ),
               ),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -151,11 +165,17 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F2F6),
+                      color: isDarkMode
+                          ? Colors.grey.shade800
+                          : const Color(0xFFF1F2F6),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
                       controller: _searchController,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black,
+                        fontSize: 14,
+                      ),
                       onChanged: (val) {
                         setState(() {
                           _searchQuery = val.trim().toLowerCase();
@@ -177,7 +197,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         hintText: "Search in this category...".tr,
                         hintStyle: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade500,
+                          color: isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500,
                         ),
                         prefixIcon: const Icon(
                           Icons.search_rounded,
@@ -186,8 +208,13 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                          icon: const Icon(Icons.clear_rounded,
-                              size: 18, color: Colors.grey),
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            size: 18,
+                            color: isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -343,7 +370,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         Text(
                           "No products found in this category.".tr,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -399,6 +428,9 @@ class _ModernSubcategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: InkWell(
@@ -408,11 +440,17 @@ class _ModernSubcategoryChip extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF6C5CE7) : Colors.white,
+            color: isSelected
+                ? const Color(0xFF6C5CE7)
+                : isDarkMode
+                ? theme.cardColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
                   ? const Color(0xFF6C5CE7)
+                  : isDarkMode
+                  ? Colors.white24
                   : Colors.grey.shade300,
               width: 1.5,
             ),
@@ -446,8 +484,9 @@ class _ModernSubcategoryChip extends StatelessWidget {
                     errorWidget: (_, __, ___) => Icon(
                       Icons.category_outlined,
                       size: 18,
-                      color:
-                      isSelected ? Colors.white : const Color(0xFF6C5CE7),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF6C5CE7),
                     ),
                   ),
                 ),
@@ -463,7 +502,11 @@ class _ModernSubcategoryChip extends StatelessWidget {
               Text(
                 name,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFF2D3436),
+                  color: isSelected
+                      ? Colors.white
+                      : isDarkMode
+                      ? Colors.white
+                      : const Color(0xFF2D3436),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 13,
                 ),
@@ -496,12 +539,16 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final images = widget.productData['images'] as List<dynamic>?;
     final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
 
     final num originalPrice = widget.productData['price'] ?? 0;
-    final num discountPercentage =
-        widget.productData['discountPercentage'] ?? 0;
+    final num discountPercentage = widget.productData['discountPercentage'] ??
+        widget.productData['discount'] ??
+        0;
     final bool hasDiscount = discountPercentage > 0;
     final num finalPrice = hasDiscount
         ? (originalPrice * (1 - (discountPercentage / 100))).round()
@@ -528,11 +575,13 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
               ? (Matrix4.identity()..translate(0, -5, 0))
               : Matrix4.identity(),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDarkMode ? theme.cardColor : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isHovered
                   ? const Color(0xFF6C5CE7).withOpacity(0.4)
+                  : isDarkMode
+                  ? Colors.white10
                   : Colors.transparent,
               width: 1.5,
             ),
@@ -540,7 +589,7 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
               BoxShadow(
                 color: isHovered
                     ? const Color(0xFF6C5CE7).withOpacity(0.15)
-                    : Colors.black.withOpacity(0.04),
+                    : Colors.black.withOpacity(isDarkMode ? 0.2 : 0.04),
                 blurRadius: isHovered ? 14 : 6,
                 offset: const Offset(0, 4),
               ),
@@ -566,24 +615,36 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           height: double.infinity,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
-                            color:
-                            const Color(0xFF6C5CE7).withOpacity(0.04),
+                            color: isDarkMode
+                                ? Colors.grey.shade900
+                                : const Color(0xFF6C5CE7)
+                                .withOpacity(0.04),
                           ),
                           errorWidget: (context, url, error) =>
                               Container(
-                                color: Colors.grey.shade100,
-                                child: const Icon(
+                                color: isDarkMode
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade100,
+                                child: Icon(
                                   Icons.broken_image_outlined,
-                                  color: Colors.grey,
+                                  color: isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey,
                                 ),
                               ),
                         ),
                       )
                           : Container(
-                        color: Colors.grey.shade100,
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported_outlined,
-                              color: Colors.grey),
+                        color: isDarkMode
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade100,
+                        child: Center(
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey,
+                          ),
                         ),
                       ),
                     ),
@@ -624,10 +685,12 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                       widget.productData['title'] ?? 'Product Title'.tr,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Color(0xFF2D3436),
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF2D3436),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -661,29 +724,23 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                         ),
                         InkWell(
                           onTap: () async {
-                            await _firestore
-                                .collection('products')
-                                .doc(widget.productId)
-                                .get()
-                                .then((value) {
-                              final data = value.data() as Map<String, dynamic>;
-                              final double originalPrice = double.tryParse(
-                                  data['price']?.toString() ?? '0') ??
-                                  0.0;
+                            final double origPrice = double.tryParse(
+                                widget.productData['price']?.toString() ??
+                                    '0') ??
+                                0.0;
+                            final double discPercent = double.tryParse(
+                                (widget.productData['discount'] ??
+                                    widget.productData[
+                                    'discountPercentage'])
+                                    ?.toString() ??
+                                    '0') ??
+                                0.0;
+                            final double discountedPrice = discPercent > 0
+                                ? origPrice - (origPrice * (discPercent / 100))
+                                : origPrice;
 
-                              final double discountPercentage =
-                                  double.tryParse((data['discount'] ??
-                                      data['discountPercentage'])
-                                      ?.toString() ??
-                                      '0') ??
-                                      0.0;
-                              final double discountedPrice = discountPercentage > 0
-                                  ? originalPrice -
-                                  (originalPrice *
-                                      (discountPercentage / 100))
-                                  : originalPrice;
-                              _handleAddToCart(data, discountedPrice);
-                            });
+                            _handleAddToCart(
+                                widget.productData, discountedPrice);
                           },
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
@@ -724,282 +781,20 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
       return;
     }
     try {
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      final userData = userDoc.data() ?? {};
-      List<dynamic> addresses = userData['addresses'] ?? [];
       if (!mounted) return;
-      await _showOrderDetailsBottomSheet(
-          user.uid, productData, finalPrice, addresses);
+      await showOrderDetailsBottomSheet(
+        context: context,
+        uid: user.uid,
+        productId: widget.productId,
+        productData: productData,
+        finalPrice: finalPrice,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text("${"An error occurred during processing:".tr}$e")),
       );
     }
-  }
-
-  Future<void> _showOrderDetailsBottomSheet(
-      String uid,
-      Map<String, dynamic> productData,
-      double finalPrice,
-      List<dynamic> addresses,
-      ) async {
-    final notesController = TextEditingController();
-
-    // استخراج الحقول الديناميكية التي حددها الأدمن
-    final List<dynamic> customFieldsRaw =
-        productData['fields'] ?? productData['customFields'] ?? [];
-    final List<Map<String, dynamic>> customFields = customFieldsRaw
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-
-    // Controllers للحقول النصية ولينكات الدرايف
-    final Map<String, TextEditingController> customControllers = {};
-
-    // Map لتخزين قيم القوائم المنسدلة Dropdown
-    final Map<String, String?> dropdownValues = {};
-
-    for (var field in customFields) {
-      final String fieldName =
-      (field['name'] ?? 'field_${customFields.indexOf(field)}').toString();
-      final String fieldType = field['type'] ?? 'text';
-
-      if (fieldType == 'dropdown') {
-        dropdownValues[fieldName] = null;
-      } else {
-        customControllers[fieldName] = TextEditingController();
-      }
-    }
-
-    final formKey = GlobalKey<FormState>();
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setBottomSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                top: 20,
-                left: 20,
-                right: 20,
-              ),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Order and Design Details".tr,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      if (customFields.isNotEmpty) ...[
-                        const Divider(height: 24),
-                        Text(
-                          "Required Product Specifications".tr,
-                          style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6366F1)),
-                        ),
-                        const SizedBox(height: 12),
-                        ...customFields.map((field) {
-                          final String fieldName = field['name'] ?? '';
-                          final String fieldType = field['type'] ?? 'text';
-                          final bool isRequired = field['isRequired'] ?? false;
-
-                          final bool isDrive = fieldType == 'drive_link';
-                          final bool isDropdown = fieldType == 'dropdown';
-
-                          // 1. التعامل مع القوائم المنسدلة Dropdown
-                          if (isDropdown) {
-                            final List<dynamic> optionsRaw =
-                                field['options'] ?? [];
-                            final List<String> options =
-                            optionsRaw.map((e) => e.toString()).toList();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: DropdownButtonFormField<String>(
-                                value: dropdownValues[fieldName],
-                                decoration: InputDecoration(
-                                  labelText:
-                                  "$fieldName${isRequired ? ' *' : ''}",
-                                  border: const OutlineInputBorder(),
-                                  prefixIcon: const Icon(
-                                      Icons.arrow_drop_down_circle_outlined),
-                                ),
-                                items: options.map((String option) {
-                                  return DropdownMenuItem<String>(
-                                    value: option,
-                                    child: Text(option),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  setBottomSheetState(() {
-                                    dropdownValues[fieldName] = newValue;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (isRequired &&
-                                      (value == null || value.isEmpty)) {
-                                    return "${"Please select".tr} $fieldName";
-                                  }
-                                  return null;
-                                },
-                              ),
-                            );
-                          }
-
-                          // 2. التعامل مع الحقول النصية ولينكات الدرايف
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: TextFormField(
-                              controller: customControllers[fieldName],
-                              keyboardType: isDrive
-                                  ? TextInputType.url
-                                  : TextInputType.text,
-                              decoration: InputDecoration(
-                                labelText:
-                                "$fieldName${isRequired ? ' *' : ''}",
-                                hintText: isDrive
-                                    ? "https://drive.google.com/..."
-                                    : null,
-                                border: const OutlineInputBorder(),
-                                prefixIcon: Icon(isDrive
-                                    ? Icons.add_link
-                                    : Icons.edit_note),
-                              ),
-                              validator: (value) {
-                                final textVal = value?.trim() ?? '';
-
-                                // التحقق من الإلزامية بناءً على isRequired
-                                if (isRequired && textVal.isEmpty) {
-                                  return "${"Please enter".tr} $fieldName";
-                                }
-
-                                // التحقق من نوع drive_link لو كان مدخلاً
-                                if (isDrive && textVal.isNotEmpty) {
-                                  if (!textVal.startsWith('http://') &&
-                                      !textVal.startsWith('https://')) {
-                                    return "Please enter a valid link (e.g. https://...)"
-                                        .tr;
-                                  }
-                                }
-
-                                return null;
-                              },
-                            ),
-                          );
-                        }),
-                        const Divider(height: 24),
-                      ],
-                      TextFormField(
-                        controller: notesController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: "${"Additional notes on the request".tr} *",
-                          hintText:
-                          "Write down any specific details or modifications you would like to be implemented..."
-                              .tr,
-                          border: const OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return "Please enter the required notes for the order."
-                                .tr;
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: () async {
-                            // التحقق من كافة الحقول وفق شروط الأدمن والملاحظات
-                            if (!formKey.currentState!.validate()) {
-                              return;
-                            }
-
-                            // تجميع كافة الحقول الديناميكية المدخلة (نصوص + قوائم منسدلة)
-                            final Map<String, String> collectedCustomFields =
-                            {};
-
-                            customControllers.forEach((key, controller) {
-                              collectedCustomFields[key] =
-                                  controller.text.trim();
-                            });
-
-                            dropdownValues.forEach((key, value) {
-                              if (value != null) {
-                                collectedCustomFields[key] = value;
-                              }
-                            });
-
-                            await _firestore
-                                .collection('users')
-                                .doc(uid)
-                                .collection('cart')
-                                .add({
-                              'productId': widget.productId,
-                              'title': productData['title'] ?? '',
-                              'price': finalPrice,
-                              'originalPrice':
-                              (productData['price'] ?? 0.0).toDouble(),
-                              'image': (productData['images'] as List?)
-                                  ?.firstOrNull ??
-                                  '',
-                              'notes': notesController.text.trim(),
-                              'customFieldsData': collectedCustomFields,
-                              'selectedAddress': "",
-                              'createdAt': FieldValue.serverTimestamp(),
-                            });
-
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    "The product has been successfully added to your cart! 🎉"
-                                        .tr),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.shopping_cart,
-                              color: Colors.white),
-                          label: Text(
-                            "Confirm addition to cart".tr,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   void _showLoginDialog() {
@@ -1019,8 +814,8 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
             onPressed: () {
               Navigator.pushNamed(context, LoginView.id);
             },
-            child: Text("Log in".tr,
-                style: const TextStyle(color: Colors.white)),
+            child:
+            Text("Log in".tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

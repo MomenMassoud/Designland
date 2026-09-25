@@ -46,10 +46,14 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   void _showSnackBar(String message) {
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF6C5CE7),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: theme.primaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -66,14 +70,15 @@ class _AboutWidgetState extends State<AboutWidget> {
       String title,
       String content,
       ) {
-    final bool isDesktop =
-        MediaQuery.of(context).size.width > 800;
+    final theme = Theme.of(context);
+    final bool isDesktop = MediaQuery.of(context).size.width > 800;
 
     if (isDesktop) {
       showDialog(
         context: context,
         builder: (dialogContext) {
           return Dialog(
+            backgroundColor: theme.cardColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
@@ -84,47 +89,48 @@ class _AboutWidgetState extends State<AboutWidget> {
               ),
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3436),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
                       IconButton(
-                        onPressed: () =>
-                            Navigator.pop(dialogContext),
-                        icon: const Icon(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: Icon(
                           Icons.close_rounded,
-                          color: Colors.grey,
+                          color: theme.hintColor,
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 24),
+                  Divider(
+                    height: 24,
+                    color: theme.dividerColor,
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
-                      physics:
-                      const BouncingScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       child: Text(
                         content,
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.6,
-                          color: Colors.grey.shade600,
+                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
+                              theme.colorScheme.onSurface.withOpacity(0.8),
                         ),
                       ),
                     ),
@@ -142,50 +148,47 @@ class _AboutWidgetState extends State<AboutWidget> {
         backgroundColor: Colors.transparent,
         builder: (sheetContext) {
           return Container(
-            height:
-            MediaQuery.of(context).size.height * 0.75,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(28),
               ),
             ),
             padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius:
-                      BorderRadius.circular(10),
+                      color: theme.dividerColor,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3436),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
                   child: SingleChildScrollView(
-                    physics:
-                    const BouncingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     child: Text(
                       content,
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.6,
-                        color: Colors.grey.shade600,
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
+                            theme.colorScheme.onSurface.withOpacity(0.8),
                       ),
                     ),
                   ),
@@ -204,13 +207,14 @@ class _AboutWidgetState extends State<AboutWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FF),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints:
-            const BoxConstraints(maxWidth: 1300),
+            constraints: const BoxConstraints(maxWidth: 1300),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(
@@ -219,99 +223,64 @@ class _AboutWidgetState extends State<AboutWidget> {
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final bool isDesktop =
-                      constraints.maxWidth > 800;
+                  final bool isDesktop = constraints.maxWidth > 800;
 
                   if (isDesktop) {
                     return Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
                           width: 380,
                           child: Column(
                             children: [
                               _buildHeaderBanner(),
-
                               const SizedBox(height: 24),
-
-                              _buildSectionTitle(
-                                "Terms and Policies".tr,
-                              ),
-
+                              _buildSectionTitle("Terms and Policies".tr),
                               const SizedBox(height: 12),
-
                               _buildLegalCard(
                                 title: "terms of use".tr,
                                 icon: Icons.gavel_rounded,
-                                onTap: () =>
-                                    _showPolicyDialogOrSheet(
-                                      "terms of use".tr,
-                                      _termsOfUseText,
-                                    ),
+                                onTap: () => _showPolicyDialogOrSheet(
+                                  "terms of use".tr,
+                                  _termsOfUseText,
+                                ),
                               ),
-
                               const SizedBox(height: 10),
-
                               _buildLegalCard(
                                 title: "privacy policy".tr,
                                 icon: Icons.security_rounded,
-                                onTap: () =>
-                                    _showPolicyDialogOrSheet(
-                                      "privacy policy".tr,
-                                      _privacyPolicyText,
-                                    ),
+                                onTap: () => _showPolicyDialogOrSheet(
+                                  "privacy policy".tr,
+                                  _privacyPolicyText,
+                                ),
                               ),
-
                               const SizedBox(height: 24),
-
                               Text(
                                 "Version 1.0.0".tr,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color:
-                                  Colors.grey.shade500,
-                                  fontWeight:
-                                  FontWeight.w500,
+                                  color: theme.hintColor,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
-
                         const SizedBox(width: 32),
-
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildSectionTitle(
-                                "About Us".tr,
-                              ),
-
+                              _buildSectionTitle("About Us".tr),
                               const SizedBox(height: 12),
-
                               _buildAboutUsStream(),
-
                               const SizedBox(height: 24),
-
-                              _buildSectionTitle(
-                                "Contact us".tr,
-                              ),
-
+                              _buildSectionTitle("Contact us".tr),
                               const SizedBox(height: 12),
-
                               _buildContactInfoStream(),
-
                               const SizedBox(height: 24),
-
-                              _buildSectionTitle(
-                                "Frequently Asked Questions".tr,
-                              ),
-
+                              _buildSectionTitle("Frequently Asked Questions".tr),
                               const SizedBox(height: 12),
-
                               _buildFaqStream(),
                             ],
                           ),
@@ -325,84 +294,52 @@ class _AboutWidgetState extends State<AboutWidget> {
                   // ==================================================
 
                   return Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeaderBanner(),
-
                       const SizedBox(height: 24),
-
-                      _buildSectionTitle(
-                        "About Us".tr,
-                      ),
-
+                      _buildSectionTitle("About Us".tr),
                       const SizedBox(height: 12),
-
                       _buildAboutUsStream(),
-
                       const SizedBox(height: 24),
-
-                      _buildSectionTitle(
-                        "Contact us".tr,
-                      ),
-
+                      _buildSectionTitle("Contact us".tr),
                       const SizedBox(height: 12),
-
                       _buildContactInfoStream(),
-
                       const SizedBox(height: 24),
-
-                      _buildSectionTitle(
-                        "Frequently Asked Questions".tr,
-                      ),
-
+                      _buildSectionTitle("Frequently Asked Questions".tr),
                       const SizedBox(height: 12),
-
                       _buildFaqStream(),
-
                       const SizedBox(height: 24),
-
-                      _buildSectionTitle(
-                        "Terms and Policies".tr,
-                      ),
-
+                      _buildSectionTitle("Terms and Policies".tr),
                       const SizedBox(height: 12),
-
                       _buildLegalCard(
                         title: "terms of use".tr,
                         icon: Icons.gavel_rounded,
-                        onTap: () =>
-                            _showPolicyDialogOrSheet(
-                              "terms of use".tr,
-                              _termsOfUseText,
-                            ),
+                        onTap: () => _showPolicyDialogOrSheet(
+                          "terms of use".tr,
+                          _termsOfUseText,
+                        ),
                       ),
-
                       const SizedBox(height: 8),
-
                       _buildLegalCard(
                         title: "privacy policy".tr,
                         icon: Icons.security_rounded,
-                        onTap: () =>
-                            _showPolicyDialogOrSheet(
-                              "privacy policy".tr,
-                              _privacyPolicyText,
-                            ),
+                        onTap: () => _showPolicyDialogOrSheet(
+                          "privacy policy".tr,
+                          _privacyPolicyText,
+                        ),
                       ),
-
                       const SizedBox(height: 30),
-
                       Center(
                         child: Text(
                           "Version 1.0.0".tr,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: theme.hintColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
                     ],
                   );
@@ -420,14 +357,17 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   Widget _buildHeaderBanner() {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF6C5CE7),
-            const Color(0xFF6C5CE7).withOpacity(0.85),
+            primaryColor,
+            primaryColor.withOpacity(0.85),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -435,8 +375,7 @@ class _AboutWidgetState extends State<AboutWidget> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color:
-            const Color(0xFF6C5CE7).withOpacity(0.22),
+            color: primaryColor.withOpacity(0.22),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -456,9 +395,7 @@ class _AboutWidgetState extends State<AboutWidget> {
               size: 34,
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text(
             "Welcome to our platform.".tr,
             textAlign: TextAlign.center,
@@ -468,13 +405,9 @@ class _AboutWidgetState extends State<AboutWidget> {
               color: Colors.white,
             ),
           ),
-
           const SizedBox(height: 6),
-
           Text(
-            "Specially designed to provide the best experience "
-                "for custom designs and gifts."
-                .tr,
+            "Specially designed to provide the best experience for custom designs and gifts.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -492,12 +425,14 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
+
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w800,
-        color: Color(0xFF2D3436),
+        color: theme.colorScheme.onSurface,
         letterSpacing: -0.2,
       ),
     );
@@ -508,37 +443,35 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   Widget _buildAboutUsStream() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return StreamBuilder<DocumentSnapshot>(
-      stream: _db
-          .collection('app_info')
-          .doc('about_us')
-          .snapshots(),
+      stream: _db.collection('app_info').doc('about_us').snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState ==
-            ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildShimmerBox();
         }
 
-        final data =
-        snapshot.data?.data()
-        as Map<String, dynamic>?;
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
 
-        final String text =
-            data?['description'] ??
-                "We are pleased to provide the best services "
-                    "and custom designs of the highest quality."
-                    .tr;
+        final String text = data?['description'] ??
+            "We are pleased to provide the best services and custom designs of the highest quality.".tr;
 
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6C5CE7)
-                    .withOpacity(0.06),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.2)
+                    : theme.primaryColor.withOpacity(0.06),
                 blurRadius: 15,
                 offset: const Offset(0, 4),
               ),
@@ -549,7 +482,7 @@ class _AboutWidgetState extends State<AboutWidget> {
             style: TextStyle(
               fontSize: 13,
               height: 1.6,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurface.withOpacity(0.85),
             ),
           ),
         );
@@ -562,32 +495,21 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   Widget _buildContactInfoStream() {
+    final theme = Theme.of(context);
+
     return StreamBuilder<DocumentSnapshot>(
-      stream: _db
-          .collection('app_info')
-          .doc('contact')
-          .snapshots(),
+      stream: _db.collection('app_info').doc('contact').snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState ==
-            ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildShimmerBox();
         }
 
-        final data =
-        snapshot.data?.data()
-        as Map<String, dynamic>?;
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
 
-        final String email =
-            data?['email'] ?? "support@domain.com";
-
-        final String whatsapp =
-            data?['whatsapp'] ?? "+201000000000";
-
-        final String facebook =
-            data?['facebook'] ?? "";
-
-        final String insta =
-            data?['instegram'] ?? "";
+        final String email = data?['email'] ?? "support@domain.com";
+        final String whatsapp = data?['whatsapp'] ?? "+201000000000";
+        final String facebook = data?['facebook'] ?? "";
+        final String insta = data?['instegram'] ?? "";
 
         return Column(
           children: [
@@ -595,61 +517,39 @@ class _AboutWidgetState extends State<AboutWidget> {
               icon: Icons.wechat_outlined,
               title: "WhatsApp".tr,
               subtitle: whatsapp,
-              iconBgColor:
-              const Color(0xFF25D366)
-                  .withOpacity(0.1),
+              iconBgColor: const Color(0xFF25D366).withOpacity(0.12),
               iconColor: const Color(0xFF25D366),
               onTap: () {
-                final cleanPhone = whatsapp
-                    .replaceAll('+', '')
-                    .replaceAll(' ', '');
-
-                _launchAction(
-                  "https://wa.me/$cleanPhone",
-                );
+                final cleanPhone = whatsapp.replaceAll('+', '').replaceAll(' ', '');
+                _launchAction("https://wa.me/$cleanPhone");
               },
             ),
-
             const SizedBox(height: 10),
-
             _buildContactItem(
               icon: Icons.alternate_email_rounded,
               title: "e-mail".tr,
               subtitle: email,
-              iconBgColor:
-              const Color(0xFF6C5CE7)
-                  .withOpacity(0.08),
-              iconColor: const Color(0xFF6C5CE7),
-              onTap: () =>
-                  _launchAction("mailto:$email"),
+              iconBgColor: theme.primaryColor.withOpacity(0.12),
+              iconColor: theme.primaryColor,
+              onTap: () => _launchAction("mailto:$email"),
             ),
-
             const SizedBox(height: 10),
-
             _buildContactItem(
               icon: Icons.facebook,
               title: "FaceBook".tr,
               subtitle: "FaceBook Page",
-              iconBgColor:
-              const Color(0xFF1877F2)
-                  .withOpacity(0.1),
+              iconBgColor: const Color(0xFF1877F2).withOpacity(0.12),
               iconColor: const Color(0xFF1877F2),
-              onTap: () =>
-                  _launchAction(facebook),
+              onTap: () => _launchAction(facebook),
             ),
-
             const SizedBox(height: 10),
-
             _buildContactItem(
               icon: Icons.camera_alt_outlined,
               title: "Instagram".tr,
               subtitle: "Instagram page",
-              iconBgColor:
-              const Color(0xFFE1306C)
-                  .withOpacity(0.1),
+              iconBgColor: const Color(0xFFE1306C).withOpacity(0.12),
               iconColor: const Color(0xFFE1306C),
-              onTap: () =>
-                  _launchAction(insta),
+              onTap: () => _launchAction(insta),
             ),
           ],
         );
@@ -659,10 +559,6 @@ class _AboutWidgetState extends State<AboutWidget> {
 
   // ============================================================
   // Contact Item
-  //
-  // IMPORTANT:
-  // The ListTile is directly inside its own Material.
-  // There is NO Ink decoration around the ListTile.
   // ============================================================
 
   Widget _buildContactItem({
@@ -673,20 +569,27 @@ class _AboutWidgetState extends State<AboutWidget> {
     required Color iconColor,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-            color:
-            const Color(0xFF6C5CE7).withOpacity(0.05),
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.2)
+                : theme.primaryColor.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
@@ -712,23 +615,23 @@ class _AboutWidgetState extends State<AboutWidget> {
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3436),
+              color: theme.colorScheme.onSurface,
             ),
           ),
           subtitle: Text(
             subtitle,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade500,
+              color: theme.hintColor,
             ),
           ),
-          trailing: const Icon(
+          trailing: Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: Colors.grey,
+            color: theme.hintColor,
           ),
         ),
       ),
@@ -737,10 +640,6 @@ class _AboutWidgetState extends State<AboutWidget> {
 
   // ============================================================
   // Legal Card
-  //
-  // IMPORTANT:
-  // The ListTile is directly inside its own Material.
-  // There is NO Ink decoration around the ListTile.
   // ============================================================
 
   Widget _buildLegalCard({
@@ -748,20 +647,27 @@ class _AboutWidgetState extends State<AboutWidget> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-            color:
-            const Color(0xFF6C5CE7).withOpacity(0.05),
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.2)
+                : theme.primaryColor.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
@@ -776,28 +682,27 @@ class _AboutWidgetState extends State<AboutWidget> {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color:
-              const Color(0xFF6C5CE7).withOpacity(0.08),
+              color: theme.primaryColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF6C5CE7),
+              color: theme.primaryColor,
               size: 20,
             ),
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3436),
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          trailing: const Icon(
+          trailing: Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: Colors.grey,
+            color: theme.hintColor,
           ),
         ),
       ),
@@ -806,17 +711,16 @@ class _AboutWidgetState extends State<AboutWidget> {
 
   // ============================================================
   // FAQ
-  //
-  // ExpansionTile is also wrapped in Material to avoid
-  // decorated-parent ink/background conflicts.
   // ============================================================
 
   Widget _buildFaqStream() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return StreamBuilder<QuerySnapshot>(
       stream: _db.collection('faqs').snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState ==
-            ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildShimmerBox();
         }
 
@@ -826,16 +730,15 @@ class _AboutWidgetState extends State<AboutWidget> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(
-                "There are currently no frequently asked questions."
-                    .tr,
+                "There are currently no frequently asked questions.".tr,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade600,
+                  color: theme.hintColor,
                 ),
               ),
             ),
@@ -844,99 +747,84 @@ class _AboutWidgetState extends State<AboutWidget> {
 
         return Column(
           children: docs.map((doc) {
-            final data =
-            doc.data() as Map<String, dynamic>;
+            final data = doc.data() as Map<String, dynamic>;
 
-            final String question =
-                data['question'] ?? '';
-
-            final String answer =
-                data['answer'] ?? '';
+            final String question = data['question'] ?? '';
+            final String answer = data['answer'] ?? '';
 
             return Container(
-              margin:
-              const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                borderRadius:
-                BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.transparent,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6C5CE7)
-                        .withOpacity(0.05),
+                    color: isDarkMode
+                        ? Colors.black.withOpacity(0.2)
+                        : theme.primaryColor.withOpacity(0.05),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Material(
-                color: Colors.white,
-                borderRadius:
-                BorderRadius.circular(18),
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(18),
                 clipBehavior: Clip.antiAlias,
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor:
-                    Colors.transparent,
+                  data: theme.copyWith(
+                    dividerColor: Colors.transparent,
                   ),
                   child: ExpansionTile(
-                    tilePadding:
-                    const EdgeInsets.symmetric(
+                    tilePadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 4,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    collapsedShape:
-                    RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(18),
+                    collapsedShape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
+                    iconColor: theme.primaryColor,
+                    collapsedIconColor: theme.hintColor,
                     leading: Container(
-                      padding:
-                      const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color:
-                        const Color(0xFF6C5CE7)
-                            .withOpacity(0.08),
+                        color: theme.primaryColor.withOpacity(0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.help_outline_rounded,
-                        color:
-                        Color(0xFF6C5CE7),
+                        color: theme.primaryColor,
                         size: 18,
                       ),
                     ),
                     title: Text(
                       question,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                        FontWeight.bold,
-                        color:
-                        Color(0xFF2D3436),
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     children: [
                       Padding(
-                        padding:
-                        const EdgeInsets.only(
+                        padding: const EdgeInsets.only(
                           left: 16,
                           right: 16,
                           bottom: 16,
                         ),
                         child: Align(
-                          alignment:
-                          Alignment.centerLeft,
+                          alignment: Alignment.centerLeft,
                           child: Text(
                             answer,
                             style: TextStyle(
                               fontSize: 12,
                               height: 1.5,
-                              color:
-                              Colors.grey.shade600,
+                              color: theme.colorScheme.onSurface.withOpacity(0.75),
                             ),
                           ),
                         ),
@@ -957,20 +845,22 @@ class _AboutWidgetState extends State<AboutWidget> {
   // ============================================================
 
   Widget _buildShimmerBox() {
+    final theme = Theme.of(context);
+
     return Container(
       height: 70,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Center(
+      child: Center(
         child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Color(0xFF6C5CE7),
+            color: theme.primaryColor,
           ),
         ),
       ),

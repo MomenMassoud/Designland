@@ -24,7 +24,6 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
     super.dispose();
   }
 
-  // دالة إرسال رابط إعادة التعيين عبر Firebase Auth
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -36,6 +35,8 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: _emailController.text.trim(),
       );
+
+      if (!mounted) return;
 
       setState(() {
         _emailSent = true;
@@ -75,25 +76,35 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // إعداد الألوان الديناميكية
+    final cardBgColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
+    final scaffoldBgColor = isDark ? const Color(0xFF121212) : AppColors.bgLight;
+    final titleTextColor = isDark ? Colors.white : AppColors.textDark;
+    final mutedTextColor = isDark ? Colors.grey.shade400 : AppColors.textMuted;
+
     return Scaffold(
-      backgroundColor: AppColors.bgLight,
+      backgroundColor: scaffoldBgColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Container(
             padding: const EdgeInsets.all(32.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardBgColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: isDark ? Colors.black26 : Colors.black.withOpacity(0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
-            child: _emailSent ? _buildSuccessState() : _buildResetForm(),
+            child: _emailSent
+                ? _buildSuccessState(titleTextColor, mutedTextColor)
+                : _buildResetForm(isDark, titleTextColor, mutedTextColor),
           ),
         ),
       ),
@@ -101,7 +112,9 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
   }
 
   // واجهة إدخال البريد الإلكتروني
-  Widget _buildResetForm() {
+  Widget _buildResetForm(bool isDark, Color titleTextColor, Color mutedTextColor) {
+    final fieldFillColor = isDark ? const Color(0xFF2A2A3D) : Colors.white;
+
     return Form(
       key: _formKey,
       child: Column(
@@ -112,7 +125,7 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryPurple.withOpacity(0.1),
+              color: AppColors.primaryPurple.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -124,21 +137,21 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           const SizedBox(height: 24),
 
           // Title & Description
-           Text(
+          Text(
             "Forgot Password?".tr,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
+              color: titleTextColor,
             ),
           ),
           const SizedBox(height: 8),
-           Text(
+          Text(
             "No worries, enter your registered email and we'll send you a link to reset your password.".tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.textMuted,
+              color: mutedTextColor,
               height: 1.4,
             ),
           ),
@@ -148,22 +161,33 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            style: TextStyle(color: titleTextColor, fontSize: 14),
             decoration: InputDecoration(
               labelText: "Email Address".tr,
+              labelStyle: TextStyle(color: mutedTextColor, fontSize: 13),
               hintText: "example@domain.com",
-              prefixIcon: const Icon(Icons.email_outlined,
-                  color: AppColors.primaryPurple),
+              hintStyle: TextStyle(color: mutedTextColor.withOpacity(0.6)),
+              filled: true,
+              fillColor: fieldFillColor,
+              prefixIcon: const Icon(
+                Icons.email_outlined,
+                color: AppColors.primaryPurple,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                    color: AppColors.primaryPurple, width: 2),
+                  color: AppColors.primaryPurple,
+                  width: 2,
+                ),
               ),
             ),
             validator: (value) {
@@ -201,9 +225,9 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
                   strokeWidth: 2,
                 ),
               )
-                  :  Text(
+                  : Text(
                 "Send Reset Link".tr,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -218,12 +242,15 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded,
-                size: 18, color: AppColors.textMuted),
-            label:  Text(
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              size: 18,
+              color: mutedTextColor,
+            ),
+            label: Text(
               "Back to Login".tr,
               style: TextStyle(
-                color: AppColors.textMuted,
+                color: mutedTextColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -234,7 +261,7 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
   }
 
   // واجهة تأكيد إرسال البريد النجاح
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(Color titleTextColor, Color mutedTextColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -252,21 +279,21 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
           ),
         ),
         const SizedBox(height: 24),
-         Text(
+        Text(
           "Check Your Email".tr,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppColors.textDark,
+            color: titleTextColor,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           "${"We sent a password reset link to:".tr}\n${_emailController.text.trim()}",
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: AppColors.textMuted,
+            color: mutedTextColor,
             height: 1.4,
           ),
         ),
@@ -284,9 +311,9 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child:  Text(
+            child: Text(
               "Return to Login".tr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -301,9 +328,9 @@ class _ForgetPasswordWidgetState extends State<ForgetPasswordWidget> {
               _emailSent = false;
             });
           },
-          child:  Text(
+          child: Text(
             "Didn't receive the email? Try again".tr,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.primaryPurple,
               fontWeight: FontWeight.w600,
             ),

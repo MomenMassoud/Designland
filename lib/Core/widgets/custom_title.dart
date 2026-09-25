@@ -5,24 +5,30 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // جلب الثيم الحالي للتحكم بلون كلمة Design
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // كلمة Design باللون الداكن مع الخط المنحني الناعم
-          const Text(
+          // كلمة Design بتنسيق متكيف مع الثيم (Light & Dark)
+          Text(
             "Design",
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1E232A), // كحلي/أسود داكن شيك
+              color: isDarkMode
+                  ? const Color(0xFFF1F2F6) // لون فاتح مريح للعين في الـ Dark Mode
+                  : const Color(0xFF1E232A), // كحلي/أسود داكن شيك للـ Light Mode
               letterSpacing: -0.5,
-              fontFamily: "Lilitaone"
+              fontFamily: "Lilitaone",
             ),
           ),
 
-          // كلمة Land بأسلوب حروف ملونة ناعمة مطابقة للوجو
+          // كلمة Land بألوان مبهجة ومطابقة للهوية (بارزة في الوضعين)
           RichText(
             text: const TextSpan(
               children: [
@@ -32,7 +38,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFFF4880), // وردي القلعة
-                      fontFamily: "Lilitaone"
+                    fontFamily: "Lilitaone",
                   ),
                 ),
                 TextSpan(
@@ -41,7 +47,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFFFB800), // أصفر دافئ
-                      fontFamily: "Lilitaone"
+                    fontFamily: "Lilitaone",
                   ),
                 ),
                 TextSpan(
@@ -50,7 +56,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF00C4CC), // تركواز
-                      fontFamily: "Lilitaone"
+                    fontFamily: "Lilitaone",
                   ),
                 ),
                 TextSpan(
@@ -59,7 +65,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF9B51E0), // بنفسجي
-                      fontFamily: "Lilitaone"
+                    fontFamily: "Lilitaone",
                   ),
                 ),
               ],
@@ -67,7 +73,7 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
           ),
           const SizedBox(width: 4),
 
-          // لمسة شرارة صغيرة/أيقونة سحرية تعكس روح القلعة
+          // لمسة شرارة وأيقونة سحرية تعكس روح القلعة
           const Text(
             "✨",
             style: TextStyle(fontSize: 16),

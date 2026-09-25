@@ -7,21 +7,20 @@ class NotificationWidget extends StatefulWidget {
   const NotificationWidget({super.key});
 
   @override
-  State<StatefulWidget> me() => _NotificationWidgetState();
-
-  @override
   State<NotificationWidget> createState() => _NotificationWidgetState();
 }
 
 class _NotificationWidgetState extends State<NotificationWidget> {
   final Color primaryColor = const Color(0xFF6366F1);
-  final Color darkText = const Color(0xFF1E293B);
-  final Color backgroundColor = const Color(0xFFF8FAFC);
-  final FirebaseAuth _auth=FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   // تحديث حالة الإشعار إلى "تمت القراءة"
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await FirebaseFirestore.instance.collection('user').doc(_auth.currentUser!.uid)
+      if (_auth.currentUser == null) return;
+      await FirebaseFirestore.instance
+          .collection('user')
+          .doc(_auth.currentUser!.uid)
           .collection('notifications')
           .doc(notificationId)
           .update({'isRead': true});
@@ -32,31 +31,49 @@ class _NotificationWidgetState extends State<NotificationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final String? currentUserId = _auth.currentUser?.uid;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // إعداد الألوان الديناميكية بحسب حالة الثيم
+    final scaffoldBgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8FAFC);
+    final appBarBgColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
+    final titleTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final emptyStateTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: scaffoldBgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarBgColor,
         elevation: 0.5,
         title: Text(
           "Notifications".tr,
           style: TextStyle(
-            color: darkText,
+            color: titleTextColor,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: darkText, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: titleTextColor,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: currentUserId == null
-          ?  Center(child: Text("Please log in to view notifications.".tr))
+          ? Center(
+        child: Text(
+          "Please log in to view notifications.".tr,
+          style: TextStyle(color: titleTextColor),
+        ),
+      )
           : StreamBuilder<QuerySnapshot>(
         // جلب الإشعارات الخاصة بالعميل الحالي أو الإشعارات العامة لكل المستخدمين
-        stream: FirebaseFirestore.instance.collection('user').doc(_auth.currentUser!.uid)
+        stream: FirebaseFirestore.instance
+            .collection('user')
+            .doc(currentUserId)
             .collection('notifications')
             .where('targetUser', whereIn: [currentUserId, 'all'])
             .orderBy('createdAt', descending: true)
@@ -76,14 +93,14 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                   Icon(
                     Icons.notifications_off_outlined,
                     size: 64,
-                    color: Colors.grey.shade400,
+                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     "There are currently no notifications.".tr,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey.shade600,
+                      color: emptyStateTextColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -107,6 +124,27 @@ class _NotificationWidgetState extends State<NotificationWidget> {
               final bool isRead = data['isRead'] ?? false;
               final Timestamp? createdAt = data['createdAt'] as Timestamp?;
 
+              // ألوان العنصر الديناميكية بحسب (مقروء/غير مقروء + ثيم داكن/فاتح)
+              final cardBgColor = isRead
+                  ? (isDark ? const Color(0xFF1E1E2C) : Colors.white)
+                  : (isDark ? primaryColor.withOpacity(0.18) : primaryColor.withOpacity(0.05));
+
+              final cardBorderColor = isRead
+                  ? (isDark ? Colors.grey.shade800 : Colors.grey.shade200)
+                  : primaryColor.withOpacity(0.4);
+
+              final iconBgColor = isRead
+                  ? (isDark ? const Color(0xFF2A2A3D) : Colors.grey.shade100)
+                  : primaryColor.withOpacity(0.15);
+
+              final iconColor = isRead
+                  ? (isDark ? Colors.grey.shade400 : Colors.grey)
+                  : primaryColor;
+
+              final itemTitleColor = isDark ? Colors.white : const Color(0xFF1E293B);
+              final itemBodyColor = isDark ? Colors.grey.shade300 : Colors.grey.shade700;
+              final timeTextColor = isDark ? Colors.grey.shade500 : Colors.grey.shade400;
+
               return GestureDetector(
                 onTap: () {
                   if (!isRead) {
@@ -117,15 +155,15 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isRead ? Colors.white : primaryColor.withOpacity(0.05),
+                    color: cardBgColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isRead ? Colors.grey.shade200 : primaryColor.withOpacity(0.3),
+                      color: cardBorderColor,
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: isDark ? Colors.black26 : Colors.black.withOpacity(0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -138,14 +176,12 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isRead
-                              ? Colors.grey.shade100
-                              : primaryColor.withOpacity(0.12),
+                          color: iconBgColor,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.notifications_active_rounded,
-                          color: isRead ? Colors.grey : primaryColor,
+                          color: iconColor,
                           size: 22,
                         ),
                       ),
@@ -165,7 +201,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                                      color: darkText,
+                                      color: itemTitleColor,
                                     ),
                                   ),
                                 ),
@@ -185,7 +221,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                               body,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey.shade700,
+                                color: itemBodyColor,
                                 height: 1.4,
                               ),
                             ),
@@ -195,7 +231,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                                 _formatTimestamp(createdAt),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey.shade400,
+                                  color: timeTextColor,
                                 ),
                               ),
                             ],

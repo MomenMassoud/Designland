@@ -90,6 +90,11 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.primaryColor;
+    final textColor = theme.colorScheme.onSurface;
+
     final num originalPrice = widget.productData['price'] ?? 0;
     final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
     final Timestamp? discountUntil = widget.productData['discountUntil'] as Timestamp?;
@@ -124,11 +129,18 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
           width: 160,
           margin: const EdgeInsets.only(right: 14, bottom: 8, top: 4),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.grey.shade200,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_isHovered ? 0.08 : 0.04),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.black.withOpacity(_isHovered ? 0.08 : 0.04),
                 blurRadius: _isHovered ? 14 : 8,
                 offset: const Offset(0, 5),
               )
@@ -147,10 +159,19 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                       height: 130,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 130,
+                        color: primaryColor.withOpacity(0.05),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 130,
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                        child: const Icon(Icons.broken_image_outlined),
+                      ),
                     )
                         : Container(
                       height: 130,
-                      color: Colors.grey.shade100,
+                      color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
                       child: const Icon(Icons.image, color: Colors.grey),
                     ),
                   ),
@@ -161,11 +182,11 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF7675),
+                          color: const Color(0xFFFF4757),
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF7675).withOpacity(0.4),
+                              color: const Color(0xFFFF4757).withOpacity(0.4),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -185,16 +206,19 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(1),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: isDarkMode
+                            ? Colors.black.withOpacity(0.5)
+                            : Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(6),
                         icon: Icon(
                           _isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
                           size: 16,
-                          color: _isFavorite ? Colors.red : const Color(0xFF6C5CE7),
+                          color: _isFavorite ? Colors.red : primaryColor,
                         ),
                         onPressed: _toggleFavorite,
                       ),
@@ -211,10 +235,10 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                       widget.productData['title'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: Color(0xFF2D3436),
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -227,8 +251,8 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                           children: [
                             Text(
                               "$finalPrice ${"EGP".tr}",
-                              style: const TextStyle(
-                                color: Color(0xFF6C5CE7),
+                              style: TextStyle(
+                                color: primaryColor,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
                               ),
@@ -236,8 +260,8 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                             if (hasDiscount)
                               Text(
                                 "$originalPrice ${"EGP".tr}",
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
                                   fontSize: 11,
                                   decoration: TextDecoration.lineThrough,
                                 ),
@@ -247,13 +271,13 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6C5CE7).withOpacity(0.1),
+                            color: primaryColor.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.add_rounded,
                             size: 16,
-                            color: Color(0xFF6C5CE7),
+                            color: primaryColor,
                           ),
                         ),
                       ],

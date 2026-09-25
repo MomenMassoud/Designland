@@ -23,107 +23,158 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   // Palette & Theme Constants
   static const Color primaryColor = Color(0xFF6C5CE7);
   static const Color primaryGradient = Color(0xFF8172F8);
-  static const Color darkText = Color(0xFF2D3436);
-  static const Color backgroundColor = Color(0xFFFAF9FF);
 
   // 1. تعديل بيانات الحساب
-  Future<void> _showEditProfileDialog(String currentName, String currentPhone) async {
+  Future<void> _showEditProfileDialog(String currentName,
+      String currentPhone) async {
     final nameController = TextEditingController(text: currentName);
     final phoneController = TextEditingController(text: currentPhone);
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: 450,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) =>
+          Dialog(
+            backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24)),
+            child: Container(
+              width: 450,
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Edit personal information".tr,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Edit personal information".tr,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : const Color(
+                              0xFF2D3436),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close_rounded,
+                            color: isDarkMode ? Colors.grey.shade400 : Colors
+                                .grey),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
+                      labelText: "full name".tr,
+                      labelStyle: TextStyle(
+                          color: isDarkMode ? Colors.grey.shade400 : Colors.grey
+                              .shade700),
+                      prefixIcon: const Icon(
+                          Icons.person_outline_rounded, color: primaryColor),
+                      filled: true,
+                      fillColor: isDarkMode
+                          ? theme.scaffoldBackgroundColor
+                          : const Color(0xFFFAF9FF),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                            color: isDarkMode ? Colors.white12 : Colors.grey
+                                .shade200),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                            color: primaryColor, width: 1.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
+                      labelText: "phone number".tr,
+                      labelStyle: TextStyle(
+                          color: isDarkMode ? Colors.grey.shade400 : Colors.grey
+                              .shade700),
+                      prefixIcon: const Icon(
+                          Icons.phone_outlined, color: primaryColor),
+                      filled: true,
+                      fillColor: isDarkMode
+                          ? theme.scaffoldBackgroundColor
+                          : const Color(0xFFFAF9FF),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                            color: isDarkMode ? Colors.white12 : Colors.grey
+                                .shade200),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                            color: primaryColor, width: 1.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () async {
+                        final uid = _auth.currentUser!.uid;
+                        await _db.collection('users').doc(uid).set({
+                          'name': nameController.text.trim(),
+                          'phone': phoneController.text.trim(),
+                        }, SetOptions(merge: true));
+
+                        await _auth.currentUser?.updateDisplayName(
+                            nameController.text.trim());
+
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        Get.snackbar(
+                          "Success".tr,
+                          "The data has been successfully updated.".tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: primaryColor,
+                          colorText: Colors.white,
+                          margin: const EdgeInsets.all(16),
+                          borderRadius: 12,
+                        );
+                      },
+                      child: Text("Save changes".tr, style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: "full name".tr,
-                  prefixIcon: const Icon(Icons.person_outline_rounded, color: primaryColor),
-                  filled: true,
-                  fillColor: backgroundColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor, width: 1.8)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: "phone number".tr,
-                  prefixIcon: const Icon(Icons.phone_outlined, color: primaryColor),
-                  filled: true,
-                  fillColor: backgroundColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor, width: 1.8)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () async {
-                    final uid = _auth.currentUser!.uid;
-                    await _db.collection('users').doc(uid).set({
-                      'name': nameController.text.trim(),
-                      'phone': phoneController.text.trim(),
-                    }, SetOptions(merge: true));
-
-                    await _auth.currentUser?.updateDisplayName(nameController.text.trim());
-
-                    if (!mounted) return;
-                    Navigator.pop(context);
-                    Get.snackbar(
-                      "Success".tr,
-                      "The data has been successfully updated.".tr,
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: primaryColor,
-                      colorText: Colors.white,
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
-                  },
-                  child: Text("Save changes".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -142,241 +193,356 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
     final formKey = GlobalKey<FormState>();
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Container(
-              width: 550,
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (context, setModalState) {
+              return Dialog(
+                backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24)),
+                child: Container(
+                  width: 550,
+                  padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Address Management".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
-                        IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.grey)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Address Management".tr,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : const Color(
+                                    0xFF2D3436),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close_rounded, color: isDarkMode
+                                  ? Colors.grey.shade400
+                                  : Colors.grey),
+                            ),
+                          ],
+                        ),
+                        Divider(height: 20,
+                            color: isDarkMode ? Colors.white12 : Colors.grey
+                                .shade200),
+                        if (addresses.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: Text(
+                                "No addresses added yet.".tr,
+                                style: TextStyle(color: isDarkMode
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade500),
+                              ),
+                            ),
+                          ),
+                        ...addresses.map((addr) {
+                          final titleText = "${addr['fullName'] ??
+                              addr['title'] ?? ''} - ${addr['phone'] ?? ''}";
+                          final fullAddressText = addr['street'] != null
+                              ? "${addr['street']}, Bldg ${addr['building']}, Floor ${addr['floor']}, Apt ${addr['apartment']}, ${addr['city']}, ${addr['governorate']}"
+                              : (addr['details'] ?? '');
+                          final landmarkText = (addr['landmark'] != null &&
+                              addr['landmark'].isNotEmpty)
+                              ? "Landmark: ${addr['landmark']}"
+                              : null;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? theme.scaffoldBackgroundColor
+                                  : const Color(0xFFFAF9FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: isDarkMode ? Colors.white12 : Colors
+                                      .grey.shade200),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              child: ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                      color: primaryColor.withOpacity(0.1),
+                                      shape: BoxShape.circle),
+                                  child: const Icon(Icons.location_on_rounded,
+                                      color: primaryColor, size: 20),
+                                ),
+                                title: Text(
+                                  titleText,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: isDarkMode ? Colors.white : Colors
+                                        .black,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      fullAddressText,
+                                      style: TextStyle(fontSize: 12,
+                                          color: isDarkMode ? Colors.grey
+                                              .shade400 : Colors.grey.shade700),
+                                    ),
+                                    if (landmarkText != null)
+                                      Text(
+                                        landmarkText,
+                                        style: TextStyle(fontSize: 11,
+                                            color: isDarkMode ? Colors.grey
+                                                .shade500 : Colors.grey
+                                                .shade500),
+                                      ),
+                                  ],
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded,
+                                      color: Colors.redAccent, size: 20),
+                                  onPressed: () async {
+                                    final uid = _auth.currentUser!.uid;
+                                    await _db
+                                        .collection('users')
+                                        .doc(uid)
+                                        .update({
+                                      'addresses': FieldValue.arrayRemove(
+                                          [addr])
+                                    });
+                                    setModalState(() => addresses.remove(addr));
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        Divider(height: 28,
+                            color: isDarkMode ? Colors.white12 : Colors.grey
+                                .shade200),
+                        Text(
+                          "Add a new address:".tr,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: isDarkMode ? Colors.white : const Color(
+                                0xFF2D3436),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Form(
+                          key: formKey,
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: fullNameController,
+                                      label: "Full Name".tr,
+                                      icon: Icons.person_outline,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: phoneController,
+                                      label: "Mobile Number".tr,
+                                      icon: Icons.phone_outlined,
+                                      isDarkMode: isDarkMode,
+                                      keyboardType: TextInputType.phone,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: governorateController,
+                                      label: "Governorate".tr,
+                                      icon: Icons.map_outlined,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: cityController,
+                                      label: "City / Area".tr,
+                                      icon: Icons.location_city_outlined,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              _buildAddressTextField(
+                                controller: streetController,
+                                label: "Street Name".tr,
+                                icon: Icons.add_road_outlined,
+                                isDarkMode: isDarkMode,
+                                validator: (val) =>
+                                val == null || val.isEmpty
+                                    ? "Required".tr
+                                    : null,
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: buildingController,
+                                      label: "Building".tr,
+                                      icon: Icons.domain_outlined,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: floorController,
+                                      label: "Floor".tr,
+                                      icon: Icons.stairs_outlined,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildAddressTextField(
+                                      controller: apartmentController,
+                                      label: "Apartment No.".tr,
+                                      icon: Icons.door_front_door_outlined,
+                                      isDarkMode: isDarkMode,
+                                      validator: (val) =>
+                                      val == null || val.isEmpty
+                                          ? "Required".tr
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              _buildAddressTextField(
+                                controller: landmarkController,
+                                label: "Nearest Landmark (optional)".tr,
+                                icon: Icons.storefront_outlined,
+                                isDarkMode: isDarkMode,
+                              ),
+                              const SizedBox(height: 10),
+                              _buildAddressTextField(
+                                controller: instructionsController,
+                                label: "Additional Delivery Instructions (optional)"
+                                    .tr,
+                                icon: Icons.note_alt_outlined,
+                                isDarkMode: isDarkMode,
+                                maxLines: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            onPressed: () async {
+                              if (formKey.currentState!.validate()) {
+                                final newAddr = {
+                                  'fullName': fullNameController.text.trim(),
+                                  'phone': phoneController.text.trim(),
+                                  'governorate': governorateController.text
+                                      .trim(),
+                                  'city': cityController.text.trim(),
+                                  'street': streetController.text.trim(),
+                                  'building': buildingController.text.trim(),
+                                  'floor': floorController.text.trim(),
+                                  'apartment': apartmentController.text.trim(),
+                                  'landmark': landmarkController.text.trim(),
+                                  'instructions': instructionsController.text
+                                      .trim(),
+                                  'createdAt': DateTime.now().toIso8601String(),
+                                };
+
+                                final uid = _auth.currentUser!.uid;
+                                await _db.collection('users').doc(uid).set({
+                                  'addresses': FieldValue.arrayUnion([newAddr])
+                                }, SetOptions(merge: true));
+
+                                setModalState(() => addresses.add(newAddr));
+
+                                fullNameController.clear();
+                                phoneController.clear();
+                                governorateController.clear();
+                                cityController.clear();
+                                streetController.clear();
+                                buildingController.clear();
+                                floorController.clear();
+                                apartmentController.clear();
+                                landmarkController.clear();
+                                instructionsController.clear();
+                              }
+                            },
+                            icon: const Icon(Icons.add_location_alt_outlined,
+                                color: Colors.white, size: 20),
+                            label: Text("Add Address".tr,
+                                style: const TextStyle(color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        )
                       ],
                     ),
-                    const Divider(height: 20),
-                    if (addresses.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: Text("No addresses added yet.".tr, style: TextStyle(color: Colors.grey.shade500))),
-                      ),
-                    ...addresses.map((addr) {
-                      final titleText = "${addr['fullName'] ?? addr['title'] ?? ''} - ${addr['phone'] ?? ''}";
-                      final fullAddressText = addr['street'] != null
-                          ? "${addr['street']}, Bldg ${addr['building']}, Floor ${addr['floor']}, Apt ${addr['apartment']}, ${addr['city']}, ${addr['governorate']}"
-                          : (addr['details'] ?? '');
-                      final landmarkText = (addr['landmark'] != null && addr['landmark'].isNotEmpty) ? "Landmark: ${addr['landmark']}" : null;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: backgroundColor,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-                              child: const Icon(Icons.location_on_rounded, color: primaryColor, size: 20),
-                            ),
-                            title: Text(titleText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text(fullAddressText, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                                if (landmarkText != null)
-                                  Text(landmarkText, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                              onPressed: () async {
-                                final uid = _auth.currentUser!.uid;
-                                await _db.collection('users').doc(uid).update({
-                                  'addresses': FieldValue.arrayRemove([addr])
-                                });
-                                setModalState(() => addresses.remove(addr));
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    const Divider(height: 28),
-                    Text("Add a new address:".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText)),
-                    const SizedBox(height: 14),
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: fullNameController,
-                                  label: "Full Name".tr,
-                                  icon: Icons.person_outline,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: phoneController,
-                                  label: "Mobile Number".tr,
-                                  icon: Icons.phone_outlined,
-                                  keyboardType: TextInputType.phone,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: governorateController,
-                                  label: "Governorate".tr,
-                                  icon: Icons.map_outlined,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: cityController,
-                                  label: "City / Area".tr,
-                                  icon: Icons.location_city_outlined,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _buildAddressTextField(
-                            controller: streetController,
-                            label: "Street Name".tr,
-                            icon: Icons.add_road_outlined,
-                            validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: buildingController,
-                                  label: "Building".tr,
-                                  icon: Icons.domain_outlined,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: floorController,
-                                  label: "Floor".tr,
-                                  icon: Icons.stairs_outlined,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildAddressTextField(
-                                  controller: apartmentController,
-                                  label: "Apartment No.".tr,
-                                  icon: Icons.door_front_door_outlined,
-                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _buildAddressTextField(
-                            controller: landmarkController,
-                            label: "Nearest Landmark (optional)".tr,
-                            icon: Icons.storefront_outlined,
-                          ),
-                          const SizedBox(height: 10),
-                          _buildAddressTextField(
-                            controller: instructionsController,
-                            label: "Additional Delivery Instructions (optional)".tr,
-                            icon: Icons.note_alt_outlined,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            final newAddr = {
-                              'fullName': fullNameController.text.trim(),
-                              'phone': phoneController.text.trim(),
-                              'governorate': governorateController.text.trim(),
-                              'city': cityController.text.trim(),
-                              'street': streetController.text.trim(),
-                              'building': buildingController.text.trim(),
-                              'floor': floorController.text.trim(),
-                              'apartment': apartmentController.text.trim(),
-                              'landmark': landmarkController.text.trim(),
-                              'instructions': instructionsController.text.trim(),
-                              'createdAt': DateTime.now().toIso8601String(),
-                            };
-
-                            final uid = _auth.currentUser!.uid;
-                            await _db.collection('users').doc(uid).set({
-                              'addresses': FieldValue.arrayUnion([newAddr])
-                            }, SetOptions(merge: true));
-
-                            setModalState(() => addresses.add(newAddr));
-
-                            fullNameController.clear();
-                            phoneController.clear();
-                            governorateController.clear();
-                            cityController.clear();
-                            streetController.clear();
-                            buildingController.clear();
-                            floorController.clear();
-                            apartmentController.clear();
-                            landmarkController.clear();
-                            instructionsController.clear();
-                          }
-                        },
-                        icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white, size: 20),
-                        label: Text("Add Address".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    )
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     );
   }
 
@@ -384,6 +550,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    required bool isDarkMode,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     String? Function(String?)? validator,
@@ -393,18 +560,31 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
-      style: const TextStyle(fontSize: 13),
+      style: TextStyle(
+          fontSize: 13, color: isDarkMode ? Colors.white : Colors.black),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12,
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
         prefixIcon: Icon(icon, size: 18, color: primaryColor),
         filled: true,
-        fillColor: backgroundColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
+        fillColor: isDarkMode ? Theme
+            .of(context)
+            .scaffoldBackgroundColor : const Color(0xFFFAF9FF),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+              color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
       ),
     );
   }
@@ -414,123 +594,184 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     final email = _auth.currentUser?.email;
     if (email == null) return;
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text("Update password".tr, style: const TextStyle(fontWeight: FontWeight.bold, color: darkText)),
-        content: Text("${"A password reset link will be sent to the email address:".tr}\n\n$email", style: TextStyle(color: Colors.grey.shade700, fontSize: 13, height: 1.5)),
-        actionsPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("cancellation".tr, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (context) =>
+          AlertDialog(
+            backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24)),
+            title: Text(
+              "Update password".tr,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+              ),
             ),
-            onPressed: () async {
-              await _auth.sendPasswordResetEmail(email: email);
-              if (!mounted) return;
-              Navigator.pop(context);
-              Get.snackbar(
-                "Success".tr,
-                "A reset link has been sent to your email.".tr,
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: primaryColor,
-                colorText: Colors.white,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 12,
-              );
-            },
-            child: Text("Send the link".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          )
-        ],
-      ),
+            content: Text(
+              "${"A password reset link will be sent to the email address:"
+                  .tr}\n\n$email",
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            actionsPadding: const EdgeInsets.only(
+                left: 20, right: 20, bottom: 20),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("cancellation".tr, style: TextStyle(
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey
+                        .shade600, fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () async {
+                  await _auth.sendPasswordResetEmail(email: email);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  Get.snackbar(
+                    "Success".tr,
+                    "A reset link has been sent to your email.".tr,
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: primaryColor,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                    borderRadius: 12,
+                  );
+                },
+                child: Text("Send the link".tr, style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
     );
   }
 
   // 4. اختيار اللغة عبر Dialog
   void _showLanguageDialog() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("اختر اللغة / Select Language", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  child: ListTile(
-                    leading: const Text("🇪🇬", style: TextStyle(fontSize: 22)),
-                    title: const Text("العربية", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
-                    trailing: Get.locale?.languageCode == 'ar' ? const Icon(Icons.check_circle, color: primaryColor) : null,
-                    onTap: () {
-                      try {
-                        Locale locale = const Locale("ar");
-                        Intl.defaultLocale = locale.languageCode;
-                        Get.updateLocale(locale);
-                        Navigator.pop(context);
-                      } catch (e) {
-                        debugPrint(e.toString());
-                      }
-                    },
+      builder: (context) =>
+          Dialog(
+            backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24)),
+            child: Container(
+              width: 380,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "اختر اللغة / Select Language",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : const Color(
+                          0xFF2D3436),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  child: ListTile(
-                    leading: const Text("🇺🇸", style: TextStyle(fontSize: 22)),
-                    title: const Text("English", style: TextStyle(fontWeight: FontWeight.w600, color: darkText)),
-                    trailing: Get.locale?.languageCode == 'en' ? const Icon(Icons.check_circle, color: primaryColor) : null,
-                    onTap: () {
-                      try {
-                        Locale locale = const Locale("en");
-                        Intl.defaultLocale = locale.languageCode;
-                        Get.updateLocale(locale);
-                        Navigator.pop(context);
-                      } catch (e) {
-                        debugPrint(e.toString());
-                      }
-                    },
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? theme.scaffoldBackgroundColor
+                          : const Color(0xFFFAF9FF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      child: ListTile(
+                        leading: const Text(
+                            "🇪🇬", style: TextStyle(fontSize: 22)),
+                        title: Text(
+                          "العربية",
+                          style: TextStyle(fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : const Color(
+                                  0xFF2D3436)),
+                        ),
+                        trailing: Get.locale?.languageCode == 'ar' ? const Icon(
+                            Icons.check_circle, color: primaryColor) : null,
+                        onTap: () {
+                          try {
+                            Locale locale = const Locale("ar");
+                            Intl.defaultLocale = locale.languageCode;
+                            Get.updateLocale(locale);
+                            Navigator.pop(context);
+                          } catch (e) {
+                            debugPrint(e.toString());
+                          }
+                        },
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? theme.scaffoldBackgroundColor
+                          : const Color(0xFFFAF9FF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      child: ListTile(
+                        leading: const Text(
+                            "🇺🇸", style: TextStyle(fontSize: 22)),
+                        title: Text(
+                          "English",
+                          style: TextStyle(fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : const Color(
+                                  0xFF2D3436)),
+                        ),
+                        trailing: Get.locale?.languageCode == 'en' ? const Icon(
+                            Icons.check_circle, color: primaryColor) : null,
+                        onTap: () {
+                          try {
+                            Locale locale = const Locale("en");
+                            Intl.defaultLocale = locale.languageCode;
+                            Get.updateLocale(locale);
+                            Navigator.pop(context);
+                          } catch (e) {
+                            debugPrint(e.toString());
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : const Color(
+          0xFFFAF9FF),
       body: _auth.currentUser != null
           ? StreamBuilder<DocumentSnapshot>(
         stream: _db.collection('users').doc(user!.uid).snapshots(),
@@ -549,7 +790,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 constraints: const BoxConstraints(maxWidth: 1100),
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 28),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       bool isDesktop = constraints.maxWidth > 800;
@@ -563,23 +805,27 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildSectionTitle("Activity & Orders".tr),
+                                    _buildSectionTitle(
+                                        "Activity & Orders".tr, isDarkMode),
                                     const SizedBox(height: 10),
-                                    _buildActivityCard(addresses),
+                                    _buildActivityCard(
+                                        addresses, isDarkMode, theme),
                                     const SizedBox(height: 20),
-                                    _buildSectionTitle("Account & Settings".tr),
+                                    _buildSectionTitle(
+                                        "Account & Settings".tr, isDarkMode),
                                     const SizedBox(height: 10),
-                                    _buildSettingsCard(),
+                                    _buildSettingsCard(isDarkMode, theme),
                                     const Spacer(),
                                     const SizedBox(height: 20),
-                                    _buildLogoutButton(),
+                                    _buildLogoutButton(isDarkMode),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 28),
                               SizedBox(
                                 width: 350,
-                                child: _buildExpandedUserInfoCard(name, user.email, phone),
+                                child: _buildExpandedUserInfoCard(
+                                    name, user.email, phone),
                               ),
                             ],
                           ),
@@ -590,11 +836,11 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         children: [
                           _buildUserInfoCard(name, user.email, phone),
                           const SizedBox(height: 20),
-                          _buildActivityCard(addresses),
+                          _buildActivityCard(addresses, isDarkMode, theme),
                           const SizedBox(height: 16),
-                          _buildSettingsCard(),
+                          _buildSettingsCard(isDarkMode, theme),
                           const SizedBox(height: 24),
-                          _buildLogoutButton(),
+                          _buildLogoutButton(isDarkMode),
                         ],
                       );
                     },
@@ -609,10 +855,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDarkMode) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: darkText),
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+      ),
     );
   }
 
@@ -647,13 +897,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 12),
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.12), blurRadius: 12),
                   ],
                 ),
                 child: Center(
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: primaryColor),
+                    style: const TextStyle(fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor),
                   ),
                 ),
               ),
@@ -666,7 +919,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   onTap: () => _showEditProfileDialog(name, phone),
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.edit_rounded, color: primaryColor, size: 18),
+                    child: Icon(
+                        Icons.edit_rounded, color: primaryColor, size: 18),
                   ),
                 ),
               )
@@ -675,7 +929,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           const SizedBox(height: 24),
           Text(
             name,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
@@ -694,11 +949,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.phone_iphone_rounded, color: Colors.white, size: 16),
+                const Icon(
+                    Icons.phone_iphone_rounded, color: Colors.white, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   phone,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -739,13 +997,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.1), blurRadius: 10),
                   ],
                 ),
                 child: Center(
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: primaryColor),
+                    style: const TextStyle(fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor),
                   ),
                 ),
               ),
@@ -758,7 +1019,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   onTap: () => _showEditProfileDialog(name, phone),
                   child: const Padding(
                     padding: EdgeInsets.all(6.0),
-                    child: Icon(Icons.edit_rounded, color: primaryColor, size: 16),
+                    child: Icon(
+                        Icons.edit_rounded, color: primaryColor, size: 16),
                   ),
                 ),
               )
@@ -767,7 +1029,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           const SizedBox(height: 14),
           Text(
             name,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
@@ -786,14 +1049,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  Widget _buildActivityCard(List<dynamic> addresses) {
+  Widget _buildActivityCard(List<dynamic> addresses, bool isDarkMode, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? theme.cardColor : Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -804,6 +1067,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           _buildProfileTile(
             icon: Icons.shopping_bag_outlined,
             title: "Order List and Tracking".tr,
+            isDarkMode: isDarkMode,
             onTap: () {
               Navigator.push(
                 context,
@@ -811,26 +1075,38 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               );
             },
           ),
-          const Divider(height: 1, indent: 60, endIndent: 20),
+          Divider(height: 1,
+              indent: 60,
+              endIndent: 20,
+              color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
           _buildProfileTile(
             icon: Icons.favorite_border_rounded,
             title: "Favourite Product".tr,
+            isDarkMode: isDarkMode,
             onTap: () {
               Get.to(UserFavouriteProduct(UserId: _auth.currentUser!.uid));
             },
           ),
-          const Divider(height: 1, indent: 60, endIndent: 20),
+          Divider(height: 1,
+              indent: 60,
+              endIndent: 20,
+              color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
           _buildProfileTile(
             icon: Icons.history_rounded,
             title: "Search history".tr,
+            isDarkMode: isDarkMode,
             onTap: () {
               Get.to(const SearchHistoryScreen());
             },
           ),
-          const Divider(height: 1, indent: 60, endIndent: 20),
+          Divider(height: 1,
+              indent: 60,
+              endIndent: 20,
+              color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
           _buildProfileTile(
             icon: Icons.location_on_outlined,
             title: "${"My addresses (".tr}${addresses.length})",
+            isDarkMode: isDarkMode,
             onTap: () => _showAddressesDialog(addresses),
           ),
         ],
@@ -838,14 +1114,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  Widget _buildSettingsCard() {
+  Widget _buildSettingsCard(bool isDarkMode, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? theme.cardColor : Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -856,12 +1132,17 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           _buildProfileTile(
             icon: Icons.lock_outline_rounded,
             title: "Update password".tr,
+            isDarkMode: isDarkMode,
             onTap: _showChangePasswordDialog,
           ),
-          const Divider(height: 1, indent: 60, endIndent: 20),
+          Divider(height: 1,
+              indent: 60,
+              endIndent: 20,
+              color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
           _buildProfileTile(
             icon: Icons.language_rounded,
             title: "Change Language".tr,
+            isDarkMode: isDarkMode,
             onTap: _showLanguageDialog,
           ),
         ],
@@ -869,27 +1150,35 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(bool isDarkMode) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFFF0F0),
+          backgroundColor: isDarkMode ? const Color(0xFF3A1C1C) : const Color(
+              0xFFFFF0F0),
           foregroundColor: Colors.redAccent,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(
+              16)),
         ),
         onPressed: () async {
           LogoutMethod(context);
         },
         icon: const Icon(Icons.logout_rounded, size: 20),
-        label: Text("Log out".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        label: Text("Log out".tr,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
       ),
     );
   }
 
-  Widget _buildProfileTile({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildProfileTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required bool isDarkMode,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -906,7 +1195,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               color: primaryColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
+            child:  Icon(
               icon,
               color: primaryColor,
               size: 20,
@@ -914,19 +1203,19 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: darkText,
+              color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
             ),
           ),
-          trailing: const Icon(
+          trailing: Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: Colors.grey,
+            color: isDarkMode ? Colors.grey.shade500 : Colors.grey,
           ),
         ),
       ),
     );
   }
-}
+  }

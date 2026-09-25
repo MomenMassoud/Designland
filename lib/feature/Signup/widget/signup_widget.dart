@@ -67,8 +67,15 @@ class _SignUpWidgetState extends State<SignUpWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    final fieldBgColor = isDarkMode ? Colors.grey.shade900 : backgroundColor;
+    final cardBgColor = isDarkMode ? theme.cardColor : Colors.white;
+    final textColor = isDarkMode ? Colors.white : darkText;
+
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : backgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -78,11 +85,11 @@ class _SignUpWidgetState extends State<SignUpWidget> {
               clipBehavior: Clip.antiAlias, // قص الحواف الزائدة البنفسجية تلقائياً
               constraints: const BoxConstraints(maxWidth: 950),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBgColor,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.08),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.08),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   ),
@@ -96,14 +103,14 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Expanded(child: _SignUpBrandingSide()),
-                        Expanded(child: _buildSignUpForm()),
+                        Expanded(child: _buildSignUpForm(isDarkMode, fieldBgColor, textColor)),
                       ],
                     );
                   }
                   return Column(
                     children: [
                       const _SignUpMobileHeader(),
-                      _buildSignUpForm(),
+                      _buildSignUpForm(isDarkMode, fieldBgColor, textColor),
                     ],
                   );
                 },
@@ -115,7 +122,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     );
   }
 
-  Widget _buildSignUpForm() {
+  Widget _buildSignUpForm(bool isDarkMode, Color fieldBgColor, Color textColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
       child: Form(
@@ -126,10 +133,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
           children: [
             Text(
               "Sign Up".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: darkText,
+                color: textColor,
                 letterSpacing: -0.3,
               ),
             ),
@@ -138,7 +145,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
               "Please fill in your information to register".tr,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade600,
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
             ),
             const SizedBox(height: 24),
@@ -146,13 +153,16 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             // Full Name Field
             TextFormField(
               controller: _nameController,
-              style: const TextStyle(color: darkText, fontSize: 14),
+              style: TextStyle(color: textColor, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Full Name".tr,
-                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                labelStyle: TextStyle(
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+                  fontSize: 13,
+                ),
                 prefixIcon: const Icon(Icons.person_outline_rounded, color: primaryColor, size: 20),
                 filled: true,
-                fillColor: backgroundColor,
+                fillColor: fieldBgColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -160,7 +170,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(
+                    color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -175,13 +187,16 @@ class _SignUpWidgetState extends State<SignUpWidget> {
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: darkText, fontSize: 14),
+              style: TextStyle(color: textColor, fontSize: 14),
               decoration: InputDecoration(
                 labelText: "Email Address".tr,
-                labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                labelStyle: TextStyle(
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+                  fontSize: 13,
+                ),
                 prefixIcon: const Icon(Icons.email_outlined, color: primaryColor, size: 20),
                 filled: true,
-                fillColor: backgroundColor,
+                fillColor: fieldBgColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -189,7 +204,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(
+                    color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -207,21 +224,24 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                 return TextFormField(
                   controller: _passwordController,
                   obscureText: isObscure,
-                  style: const TextStyle(color: darkText, fontSize: 14),
+                  style: TextStyle(color: textColor, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Password".tr,
-                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    labelStyle: TextStyle(
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+                      fontSize: 13,
+                    ),
                     prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: Colors.grey.shade500,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
                         size: 20,
                       ),
                       onPressed: () => _isPasswordObscure.value = !_isPasswordObscure.value,
                     ),
                     filled: true,
-                    fillColor: backgroundColor,
+                    fillColor: fieldBgColor,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -229,7 +249,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -249,21 +271,24 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                 return TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: isConfirmObscure,
-                  style: const TextStyle(color: darkText, fontSize: 14),
+                  style: TextStyle(color: textColor, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: "Confirm Password".tr,
-                    labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    labelStyle: TextStyle(
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+                      fontSize: 13,
+                    ),
                     prefixIcon: const Icon(Icons.lock_reset_rounded, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         isConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: Colors.grey.shade500,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
                         size: 20,
                       ),
                       onPressed: () => _isConfirmPasswordObscure.value = !_isConfirmPasswordObscure.value,
                     ),
                     filled: true,
-                    fillColor: backgroundColor,
+                    fillColor: fieldBgColor,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -271,7 +296,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -320,19 +347,27 @@ class _SignUpWidgetState extends State<SignUpWidget> {
 
                     Row(
                       children: [
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Expanded(
+                          child: Divider(
+                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+                          ),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
                             "OR".tr,
                             style: TextStyle(
-                              color: Colors.grey.shade400,
+                              color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Expanded(
+                          child: Divider(
+                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -344,8 +379,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                         onPressed: isLoading ? null : _handleGoogleSignUp,
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: Colors.grey.shade200),
-                          backgroundColor: Colors.white,
+                          side: BorderSide(
+                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                          ),
+                          backgroundColor: isDarkMode ? fieldBgColor : Colors.white,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -356,10 +393,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                             const SizedBox(width: 8),
                             Text(
                               "Sign up with Google".tr,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: darkText,
+                                color: textColor,
                               ),
                             ),
                           ],
@@ -377,7 +414,10 @@ class _SignUpWidgetState extends State<SignUpWidget> {
               children: [
                 Text(
                   "Already have an account?".tr,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),

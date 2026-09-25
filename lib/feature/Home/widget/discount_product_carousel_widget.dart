@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -49,6 +50,10 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.primaryColor;
+
     final productsStream = FirebaseFirestore.instance
         .collection('products')
         .where('discountPercentage', isGreaterThan: 0)
@@ -128,7 +133,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
 
                       if (item['type'] == 'banner') {
                         final data = item['data'] as Map<String, dynamic>;
-                        final String imageUrl = data['image'] ?? '';
+                        final String imageUrl = data['image'] ?? data['imageUrl'] ?? '';
                         final bool canClick = data['onclick'] ?? false;
                         final String categoryId = data['category'] ?? '';
 
@@ -149,7 +154,9 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                               borderRadius: BorderRadius.circular(22),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
+                                  color: isDarkMode
+                                      ? Colors.black.withOpacity(0.4)
+                                      : Colors.black.withOpacity(0.08),
                                   blurRadius: 12,
                                   offset: const Offset(0, 6),
                                 ),
@@ -158,14 +165,21 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(22),
                               child: imageUrl.isNotEmpty
-                                  ? Image.network(
-                                imageUrl,
+                                  ? CachedNetworkImage(
+                                imageUrl: imageUrl,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: double.infinity,
+                                placeholder: (context, url) => Container(
+                                  color: primaryColor.withOpacity(0.05),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                                  child: const Icon(Icons.broken_image_outlined),
+                                ),
                               )
                                   : Container(
-                                color: Colors.grey.shade300,
+                                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
                                 child: const Icon(Icons.image, color: Colors.grey),
                               ),
                             ),
@@ -186,6 +200,18 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                       final String imageUrl = images.isNotEmpty ? images[0] : '';
                       final Timestamp? discountUntilTimestamp = data['discountUntil'] as Timestamp?;
 
+                      // تخصيص الخلفية والتدرج حسب الـ Theme
+                      final List<Color> cardGradientColors = isDarkMode
+                          ? const [Color(0xFF1E232A), Color(0xFF121519)]
+                          : [
+                        primaryColor.withOpacity(0.08),
+                        theme.cardColor,
+                      ];
+
+                      final Color cardBorderColor = isDarkMode
+                          ? Colors.white.withOpacity(0.08)
+                          : primaryColor.withOpacity(0.12);
+
                       return GestureDetector(
                         onTap: () {
                           AnalyticsService.logProductOpen(
@@ -203,14 +229,17 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(22),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF2D3436), Color(0xFF111111)],
+                            gradient: LinearGradient(
+                              colors: cardGradientColors,
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
+                            border: Border.all(color: cardBorderColor),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
+                                color: isDarkMode
+                                    ? Colors.black.withOpacity(0.3)
+                                    : primaryColor.withOpacity(0.06),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -222,22 +251,33 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                 right: 0,
                                 top: 0,
                                 bottom: 0,
-                                width: 200,
+                                width: 190,
                                 child: ClipRRect(
                                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(22)),
                                   child: Stack(
                                     children: [
                                       if (imageUrl.isNotEmpty)
-                                        Image.network(
-                                          imageUrl,
+                                        CachedNetworkImage(
+                                          imageUrl: imageUrl,
                                           fit: BoxFit.cover,
                                           width: double.infinity,
                                           height: double.infinity,
+                                          placeholder: (context, url) => Container(
+                                            color: primaryColor.withOpacity(0.05),
+                                          ),
+                                          errorWidget: (context, url, error) => Container(
+                                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                                            child: const Icon(Icons.broken_image_outlined),
+                                          ),
                                         ),
                                       Container(
-                                        decoration: const BoxDecoration(
+                                        decoration: BoxDecoration(
                                           gradient: LinearGradient(
-                                            colors: [Color(0xFF2D3436), Colors.transparent],
+                                            colors: [
+                                              cardGradientColors.first,
+                                              cardGradientColors.first.withOpacity(0.8),
+                                              Colors.transparent,
+                                            ],
                                             begin: Alignment.centerLeft,
                                             end: Alignment.centerRight,
                                           ),
@@ -259,7 +299,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFF7675),
+                                            color: const Color(0xFFFF4757),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Text(
@@ -273,14 +313,14 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                         ),
                                         const SizedBox(height: 8),
                                         SizedBox(
-                                          width: 170,
+                                          width: 160,
                                           child: Text(
                                             title,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
+                                            style: TextStyle(
+                                              color: theme.colorScheme.onSurface,
+                                              fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -290,18 +330,18 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                                           children: [
                                             Text(
                                               "$finalPrice ${"EGP".tr}",
-                                              style: const TextStyle(
-                                                color: Color(0xFF55E6C1),
-                                                fontSize: 18,
+                                              style: TextStyle(
+                                                color: primaryColor,
+                                                fontSize: 17,
                                                 fontWeight: FontWeight.w900,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: 6),
                                             Text(
-                                              "$originalPrice ${"EGP".tr}",
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 13,
+                                              "$originalPrice",
+                                              style: TextStyle(
+                                                color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
+                                                fontSize: 12,
                                                 decoration: TextDecoration.lineThrough,
                                               ),
                                             ),
@@ -328,7 +368,7 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                     },
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
@@ -339,7 +379,9 @@ class _DiscountProductsCarouselState extends State<DiscountProductsCarousel> {
                       height: 5,
                       width: _activePage == index ? 18 : 5,
                       decoration: BoxDecoration(
-                        color: _activePage == index ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                        color: _activePage == index
+                            ? primaryColor
+                            : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),

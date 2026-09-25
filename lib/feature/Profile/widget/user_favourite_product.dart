@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/feature/Product/view/product_view.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class UserFavouriteProduct extends StatefulWidget {
   final String UserId;
@@ -88,17 +90,22 @@ class _UserFavouriteProduct extends State<UserFavouriteProduct> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'المنتجات المفضلة',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'Favourite Products',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
         ),
-        centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+        foregroundColor: isDarkMode ? Colors.white : Colors.black87,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _getFavouriteProducts(),
@@ -109,22 +116,32 @@ class _UserFavouriteProduct extends State<UserFavouriteProduct> {
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('حدث خطأ أثناء تحميل المفضلة: ${snapshot.error}'),
+              child: Text(
+                'حدث خطأ أثناء تحميل المفضلة: ${snapshot.error}',
+                style: TextStyle(color: isDarkMode ? Colors.grey.shade300 : Colors.black87),
+              ),
             );
           }
 
           final products = snapshot.data ?? [];
 
           if (products.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 70, color: Colors.grey),
-                  SizedBox(height: 12),
+                  Icon(
+                    Icons.favorite_border,
+                    size: 70,
+                    color: isDarkMode ? Colors.grey.shade600 : Colors.grey,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'لا توجد منتجات مفضلة لهذا العميل',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                    ),
                   ),
                 ],
               ),
@@ -149,127 +166,156 @@ class _UserFavouriteProduct extends State<UserFavouriteProduct> {
                   ? price - (price * (discount / 100))
                   : price;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      // صورة المنتج
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: imageUrl.isNotEmpty
-                            ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          width: 85,
-                          height: 85,
-                          fit: BoxFit.cover,
-                          errorListener: (error) =>
-                              Container(
-                                width: 85,
-                                height: 85,
-                                color: Colors.grey.shade200,
-                                child: const Icon(Icons.image_not_supported),
-                              ),
-                        )
-                            : Container(
-                          width: 85,
-                          height: 85,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // تفاصيل المنتج
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              description,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-
-                            // عرض الأسعار والخصم
-                            Row(
-                              children: [
-                                Text(
-                                  '${finalPrice.toStringAsFixed(0)} ج.م',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                if (discount > 0) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${price.toStringAsFixed(0)} ج.م',
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade50,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '%$discount-',
-                                      style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // زر إزالة المنتج من المفضلة
-                      IconButton(
-                        icon: const Icon(Icons.favorite, color: Colors.red),
-                        onPressed: () => _removeFromFav(product['id']),
-                        tooltip: 'حذف من المفضلة',
+              return InkWell(
+                onTap: () {
+                  Get.to(ProductView(ProductDoc: product['id']));
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? theme.cardColor : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        // صورة المنتج
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: imageUrl.isNotEmpty
+                              ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width: 85,
+                            height: 85,
+                            fit: BoxFit.cover,
+                            errorListener: (error) => Container(
+                              width: 85,
+                              height: 85,
+                              color: isDarkMode
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: isDarkMode
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          )
+                              : Container(
+                            width: 85,
+                            height: 85,
+                            color: isDarkMode
+                                ? Colors.grey.shade800
+                                : Colors.grey.shade200,
+                            child: Icon(
+                              Icons.image,
+                              color: isDarkMode
+                                  ? Colors.grey.shade500
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // تفاصيل المنتج
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                description,
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+
+                              // عرض الأسعار والخصم
+                              Row(
+                                children: [
+                                  Text(
+                                    '${finalPrice.toStringAsFixed(0)} ج.م',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isDarkMode
+                                          ? Colors.blue.shade300
+                                          : Colors.blue,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  if (discount > 0) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${price.toStringAsFixed(0)} ج.م',
+                                      style: TextStyle(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: isDarkMode
+                                            ? Colors.grey.shade500
+                                            : Colors.grey,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? Colors.red.shade900.withOpacity(0.4)
+                                            : Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '-%$discount',
+                                        style: TextStyle(
+                                          color: isDarkMode
+                                              ? Colors.red.shade300
+                                              : Colors.red.shade700,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // زر إزالة المنتج من المفضلة
+                        IconButton(
+                          icon: const Icon(Icons.favorite, color: Colors.red),
+                          onPressed: () => _removeFromFav(product['id']),
+                          tooltip: 'حذف من المفضلة',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

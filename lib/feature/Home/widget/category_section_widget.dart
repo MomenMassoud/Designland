@@ -24,6 +24,10 @@ class CategorySectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final textColor = theme.colorScheme.onSurface;
+
     Query query = productsRef.where('categoryId', isEqualTo: categoryId);
 
     if (selectedSubcategoryId != null) {
@@ -71,17 +75,17 @@ class CategorySectionWidget extends StatelessWidget {
                               width: 4,
                               height: 20,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6C5CE7),
+                                color: primaryColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               categoryTitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3436),
+                                color: textColor,
                               ),
                             ),
                           ],
@@ -99,17 +103,17 @@ class CategorySectionWidget extends StatelessWidget {
                             children: [
                               Text(
                                 "See All".tr,
-                                style: const TextStyle(
-                                  color: Color(0xFF6C5CE7),
+                                style: TextStyle(
+                                  color: primaryColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(
+                              Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 12,
-                                color: Color(0xFF6C5CE7),
+                                color: primaryColor,
                               ),
                             ],
                           ),

@@ -119,19 +119,30 @@ class _ProductWidgetState extends State<ProductWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode ? theme.scaffoldBackgroundColor : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1E293B), size: 18),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Product Details".tr,
-          style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         actions: [
           ValueListenableBuilder<int>(
@@ -141,7 +152,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF2D3436)),
+                    icon: Icon(
+                      Icons.shopping_cart_outlined,
+                      color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+                    ),
                     onPressed: () => Navigator.pushNamed(context, BasketView.id),
                   ),
                   if (count > 0)
@@ -207,11 +221,11 @@ class _ProductWidgetState extends State<ProductWidget> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDarkMode ? theme.cardColor : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           )
@@ -223,23 +237,37 @@ class _ProductWidgetState extends State<ProductWidget> {
                         children: [
                           Expanded(
                             flex: 5,
-                            child: _buildImageGallery(images),
+                            child: _buildImageGallery(images, isDarkMode),
                           ),
                           const SizedBox(width: 32),
                           Expanded(
                             flex: 6,
                             child: _buildMainProductHeader(
-                                title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
+                                title,
+                                avgRate,
+                                originalPrice,
+                                discountedPrice,
+                                discountPercentage,
+                                description,
+                                data,
+                                isDarkMode),
                           ),
                         ],
                       )
                           : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildImageGallery(images),
+                          _buildImageGallery(images, isDarkMode),
                           const SizedBox(height: 20),
                           _buildMainProductHeader(
-                              title, avgRate, originalPrice, discountedPrice, discountPercentage, description, data),
+                              title,
+                              avgRate,
+                              originalPrice,
+                              discountedPrice,
+                              discountPercentage,
+                              description,
+                              data,
+                              isDarkMode),
                         ],
                       ),
                     ),
@@ -250,20 +278,20 @@ class _ProductWidgetState extends State<ProductWidget> {
                       children: [
                         Expanded(
                           flex: 5,
-                          child: _buildDetailsCard(description, data),
+                          child: _buildDetailsCard(description, data, isDarkMode, theme),
                         ),
                         const SizedBox(width: 24),
                         Expanded(
                           flex: 7,
-                          child: _buildReviewsCard(avgRate),
+                          child: _buildReviewsCard(avgRate, isDarkMode, theme),
                         ),
                       ],
                     )
                         : Column(
                       children: [
-                        _buildDetailsCard(description, data),
+                        _buildDetailsCard(description, data, isDarkMode, theme),
                         const SizedBox(height: 20),
-                        _buildReviewsCard(avgRate),
+                        _buildReviewsCard(avgRate, isDarkMode, theme),
                       ],
                     ),
                   ],
@@ -276,7 +304,7 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  Widget _buildImageGallery(List<String> images) {
+  Widget _buildImageGallery(List<String> images, bool isDarkMode) {
     final String currentImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
 
     return Column(
@@ -289,7 +317,7 @@ class _ProductWidgetState extends State<ProductWidget> {
             height: 340,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(16),
               image: currentImage.isNotEmpty
                   ? DecorationImage(
@@ -299,7 +327,11 @@ class _ProductWidgetState extends State<ProductWidget> {
                   : null,
             ),
             child: currentImage.isEmpty
-                ? const Icon(Icons.image_not_supported_outlined, size: 50, color: Colors.grey)
+                ? Icon(
+              Icons.image_not_supported_outlined,
+              size: 50,
+              color: isDarkMode ? Colors.grey.shade600 : Colors.grey,
+            )
                 : null,
           ),
         ),
@@ -345,7 +377,8 @@ class _ProductWidgetState extends State<ProductWidget> {
       double discountedPrice,
       double discountPercentage,
       String description,
-      Map<String, dynamic> data) {
+      Map<String, dynamic> data,
+      bool isDarkMode) {
     final bool hasDiscount = discountPercentage > 0;
 
     return Column(
@@ -353,10 +386,10 @@ class _ProductWidgetState extends State<ProductWidget> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 10),
@@ -374,9 +407,9 @@ class _ProductWidgetState extends State<ProductWidget> {
                   const SizedBox(width: 4),
                   Text(
                     avgRate.toStringAsFixed(1),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFB45309),
+                      color: isDarkMode ? Colors.amber.shade300 : const Color(0xFFB45309),
                       fontSize: 13,
                     ),
                   ),
@@ -402,9 +435,9 @@ class _ProductWidgetState extends State<ProductWidget> {
               const SizedBox(width: 12),
               Text(
                 "${originalPrice.toStringAsFixed(2)}${"EGP".tr}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
-                  color: Color(0xFF94A3B8),
+                  color: isDarkMode ? Colors.grey.shade500 : const Color(0xFF94A3B8),
                   decoration: TextDecoration.lineThrough,
                   fontWeight: FontWeight.bold,
                 ),
@@ -433,7 +466,11 @@ class _ProductWidgetState extends State<ProductWidget> {
           description,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xFF64748B), height: 1.5, fontSize: 14),
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF64748B),
+            height: 1.5,
+            fontSize: 14,
+          ),
         ),
         const SizedBox(height: 24),
         ElevatedButton.icon(
@@ -463,15 +500,15 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  Widget _buildDetailsCard(String description, Map<String, dynamic> data) {
+  Widget _buildDetailsCard(String description, Map<String, dynamic> data, bool isDarkMode, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? theme.cardColor : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -482,31 +519,37 @@ class _ProductWidgetState extends State<ProductWidget> {
         children: [
           Text(
             "Detailed product information".tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
-          const Divider(height: 24),
+          Divider(height: 24, color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
           Text(
-            description.isNotEmpty ? description : "There is no additional description for the product.".tr,
-            style: const TextStyle(color: Color(0xFF475569), height: 1.6, fontSize: 14),
+            description.isNotEmpty
+                ? description
+                : "There is no additional description for the product.".tr,
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey.shade300 : const Color(0xFF475569),
+              height: 1.6,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReviewsCard(double avgRate) {
+  Widget _buildReviewsCard(double avgRate, bool isDarkMode, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? theme.cardColor : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -517,10 +560,10 @@ class _ProductWidgetState extends State<ProductWidget> {
         children: [
           Text(
             "Customer Ratings and Reviews".tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 16),
@@ -550,7 +593,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                   child: Center(
                     child: Text(
                       "There are currently no ratings. Be the first to rate this product!".tr,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 );
@@ -560,14 +606,15 @@ class _ProductWidgetState extends State<ProductWidget> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: reviews.length,
-                separatorBuilder: (_, __) => const Divider(height: 20),
+                separatorBuilder: (_, __) =>
+                    Divider(height: 20, color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
                 itemBuilder: (context, index) {
                   final rev = reviews[index].data() as Map<String, dynamic>;
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
-                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.15),
                         child: Text(
                           (rev['userName'] ?? 'U')[0].toUpperCase(),
                           style: const TextStyle(
@@ -586,9 +633,10 @@ class _ProductWidgetState extends State<ProductWidget> {
                               children: [
                                 Text(
                                   rev['userName'] ?? 'client'.tr,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
+                                    color: isDarkMode ? Colors.white : Colors.black,
                                   ),
                                 ),
                                 Row(
@@ -598,6 +646,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                                       size: 14,
                                       color: starIdx < (rev['rating'] ?? 0)
                                           ? Colors.amber
+                                          : isDarkMode
+                                          ? Colors.grey.shade700
                                           : Colors.grey.shade300,
                                     );
                                   }),
@@ -607,8 +657,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                             const SizedBox(height: 4),
                             Text(
                               rev['comment'] ?? '',
-                              style: const TextStyle(
-                                color: Color(0xFF64748B),
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF64748B),
                                 fontSize: 13,
                               ),
                             ),
@@ -658,14 +708,16 @@ class _AddReviewSectionState extends State<AddReviewSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDarkMode ? Colors.white12 : const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,14 +725,25 @@ class _AddReviewSectionState extends State<AddReviewSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Add your rating".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(
+                "Add your rating".tr,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
               DropdownButton<double>(
                 value: _userRating,
+                dropdownColor: isDarkMode ? Colors.grey.shade800 : Colors.white,
                 underline: const SizedBox(),
                 items: [1.0, 2.0, 3.0, 4.0, 5.0].map((r) {
                   return DropdownMenuItem(
                     value: r,
-                    child: Text("$r ★", style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      "$r ★",
+                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {
@@ -697,9 +760,13 @@ class _AddReviewSectionState extends State<AddReviewSection> {
               focusNode: _focusNode,
               keyboardType: TextInputType.multiline,
               maxLines: null,
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 13),
               decoration: InputDecoration(
                 hintText: "Write your opinion about the product here...".tr,
-                hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey,
+                ),
                 border: InputBorder.none,
               ),
             ),

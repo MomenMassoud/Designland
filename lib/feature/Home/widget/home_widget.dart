@@ -131,8 +131,13 @@ class _HomeWidgetState extends State<HomeWidget> {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 900;
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.primaryColor;
+    final textColor = theme.colorScheme.onSurface;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FF),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: ValueListenableBuilder<String>(
           valueListenable: _searchNotifier,
@@ -157,11 +162,18 @@ class _HomeWidgetState extends State<HomeWidget> {
                                 width: isDesktop ? 450 : 250,
                                 height: 46,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: theme.cardColor,
                                   borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? Colors.white.withOpacity(0.12)
+                                        : Colors.grey.shade200,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF6C5CE7).withOpacity(0.08),
+                                      color: isDarkMode
+                                          ? Colors.black.withOpacity(0.3)
+                                          : primaryColor.withOpacity(0.08),
                                       blurRadius: 15,
                                       offset: const Offset(0, 4),
                                     ),
@@ -169,19 +181,24 @@ class _HomeWidgetState extends State<HomeWidget> {
                                 ),
                                 child: TextField(
                                   controller: _searchController,
+                                  style: TextStyle(color: textColor, fontSize: 14),
                                   onSubmitted: (value) {
                                     _saveSearchToFirebase(value);
                                   },
                                   decoration: InputDecoration(
                                     hintText: 'Search custom gifts, bags, items...'.tr,
                                     hintStyle: TextStyle(
-                                      color: Colors.grey.shade400,
+                                      color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
                                       fontSize: 13,
                                     ),
-                                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6C5CE7)),
+                                    prefixIcon: Icon(Icons.search_rounded, color: primaryColor),
                                     suffixIcon: isSearching
                                         ? IconButton(
-                                      icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 18),
+                                      icon: Icon(
+                                        Icons.clear_rounded,
+                                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                                        size: 18,
+                                      ),
                                       onPressed: () {
                                         _searchController.clear();
                                       },
@@ -257,7 +274,9 @@ class _HomeWidgetState extends State<HomeWidget> {
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
+                                          color: isDarkMode
+                                              ? Colors.black.withOpacity(0.4)
+                                              : Colors.black.withOpacity(0.08),
                                           blurRadius: 20,
                                           offset: const Offset(0, 6),
                                         ),
@@ -269,7 +288,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                                         imageUrl: bannerUrl,
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => Container(
-                                          color: const Color(0xFF6C5CE7).withOpacity(0.05),
+                                          color: primaryColor.withOpacity(0.05),
                                         ),
                                         errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
                                       ),
@@ -309,10 +328,10 @@ class _HomeWidgetState extends State<HomeWidget> {
                                       children: [
                                         Text(
                                           "Special Offers ⚡".tr,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFF2D3436),
+                                            color: textColor,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -373,10 +392,10 @@ class _HomeWidgetState extends State<HomeWidget> {
                                       children: [
                                         Text(
                                           "Explore Categories ✨".tr,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFF2D3436),
+                                            color: textColor,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -384,7 +403,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                                           "Find personalized items crafted just for you".tr,
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.grey.shade600,
+                                            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                                           ),
                                         ),
                                       ],
@@ -542,7 +561,7 @@ class _DiscountTimerWidgetState extends State<_DiscountTimerWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4757).withOpacity(0.1),
+        color: const Color(0xFFFF4757).withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFF4757).withOpacity(0.3)),
       ),
@@ -589,6 +608,10 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
     final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
     final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.primaryColor;
+
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
@@ -607,16 +630,18 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
           width: 150,
           margin: const EdgeInsets.only(right: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isHovered ? const Color(0xFF6C5CE7) : Colors.grey.shade200,
+              color: isHovered
+                  ? primaryColor
+                  : (isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.shade200),
             ),
             boxShadow: [
               BoxShadow(
                 color: isHovered
-                    ? const Color(0xFF6C5CE7).withOpacity(0.15)
-                    : Colors.black.withOpacity(0.04),
+                    ? primaryColor.withOpacity(0.18)
+                    : (isDarkMode ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.04)),
                 blurRadius: isHovered ? 12 : 6,
                 offset: const Offset(0, 4),
               ),
@@ -637,7 +662,9 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
                         height: double.infinity,
                         fit: BoxFit.cover,
                       )
-                          : Container(color: Colors.grey.shade100),
+                          : Container(
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                      ),
                     ),
                     Positioned(
                       top: 8,
@@ -670,10 +697,10 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
                       widget.productData['title'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: Color(0xFF2D3436),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -681,8 +708,8 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
                       children: [
                         Text(
                           "$finalPrice ${"EGP".tr}",
-                          style: const TextStyle(
-                            color: Color(0xFF6C5CE7),
+                          style: TextStyle(
+                            color: primaryColor,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                           ),
@@ -691,7 +718,7 @@ class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
                         Text(
                           "$originalPrice",
                           style: TextStyle(
-                            color: Colors.grey.shade400,
+                            color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
                             fontSize: 10,
                             decoration: TextDecoration.lineThrough,
                           ),
@@ -731,6 +758,9 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
@@ -743,14 +773,14 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: widget.isSelected ? const Color(0xFF6C5CE7) : Colors.transparent,
+              color: widget.isSelected ? primaryColor : Colors.transparent,
               width: 2.5,
             ),
             boxShadow: [
               BoxShadow(
                 color: isHovered
-                    ? const Color(0xFF6C5CE7).withOpacity(0.2)
-                    : Colors.black.withOpacity(0.05),
+                    ? primaryColor.withOpacity(0.25)
+                    : Colors.black.withOpacity(0.08),
                 blurRadius: isHovered ? 15 : 8,
                 offset: const Offset(0, 5),
               ),
@@ -766,16 +796,16 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
                     imageUrl: widget.imageUrl!,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      color: const Color(0xFF6C5CE7).withOpacity(0.05),
+                      color: primaryColor.withOpacity(0.05),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: const Color(0xFF6C5CE7).withOpacity(0.1),
-                      child: const Icon(Icons.category, color: Color(0xFF6C5CE7)),
+                      color: primaryColor.withOpacity(0.1),
+                      child: Icon(Icons.category, color: primaryColor),
                     ),
                   )
                       : Container(
-                    color: const Color(0xFF6C5CE7).withOpacity(0.1),
-                    child: const Icon(Icons.category, color: Color(0xFF6C5CE7)),
+                    color: primaryColor.withOpacity(0.1),
+                    child: Icon(Icons.category, color: primaryColor),
                   ),
                 ),
                 Positioned.fill(
@@ -787,7 +817,7 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(isHovered ? 0.75 : 0.55),
+                          Colors.black.withOpacity(isHovered ? 0.8 : 0.6),
                         ],
                       ),
                     ),
@@ -819,7 +849,7 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: widget.isSelected
-                              ? const Color(0xFF6C5CE7)
+                              ? primaryColor
                               : Colors.white.withOpacity(0.25),
                         ),
                         child: Icon(
