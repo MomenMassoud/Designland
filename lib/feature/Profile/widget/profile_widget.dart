@@ -127,10 +127,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // 2. إدارة العناوين عبر Dialog
+  // 2. إدارة العناوين عبر Dialog مع كل حقول Delivery Address
   Future<void> _showAddressesDialog(List<dynamic> addresses) async {
-    final titleController = TextEditingController();
-    final detailsController = TextEditingController();
+    final fullNameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final governorateController = TextEditingController();
+    final cityController = TextEditingController();
+    final streetController = TextEditingController();
+    final buildingController = TextEditingController();
+    final floorController = TextEditingController();
+    final apartmentController = TextEditingController();
+    final landmarkController = TextEditingController();
+    final instructionsController = TextEditingController();
+
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -139,8 +149,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Container(
-              width: 500,
-              padding: const EdgeInsets.all(28),
+              width: 550,
+              padding: const EdgeInsets.all(24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -153,73 +163,168 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.grey)),
                       ],
                     ),
-                    const Divider(height: 24),
+                    const Divider(height: 20),
                     if (addresses.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Center(child: Text("No addresses added yet.".tr, style: TextStyle(color: Colors.grey.shade500))),
                       ),
-                    ...addresses.map((addr) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        child: ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-                            child: const Icon(Icons.location_on_rounded, color: primaryColor, size: 20),
-                          ),
-                          title: Text(addr['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          subtitle: Text(addr['details'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                            onPressed: () async {
-                              final uid = _auth.currentUser!.uid;
-                              await _db.collection('users').doc(uid).update({
-                                'addresses': FieldValue.arrayRemove([addr])
-                              });
-                              setModalState(() => addresses.remove(addr));
-                            },
+                    ...addresses.map((addr) {
+                      final titleText = "${addr['fullName'] ?? addr['title'] ?? ''} - ${addr['phone'] ?? ''}";
+                      final fullAddressText = addr['street'] != null
+                          ? "${addr['street']}, Bldg ${addr['building']}, Floor ${addr['floor']}, Apt ${addr['apartment']}, ${addr['city']}, ${addr['governorate']}"
+                          : (addr['details'] ?? '');
+                      final landmarkText = (addr['landmark'] != null && addr['landmark'].isNotEmpty) ? "Landmark: ${addr['landmark']}" : null;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: backgroundColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                          child: ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                              child: const Icon(Icons.location_on_rounded, color: primaryColor, size: 20),
+                            ),
+                            title: Text(titleText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(fullAddressText, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                if (landmarkText != null)
+                                  Text(landmarkText, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                              onPressed: () async {
+                                final uid = _auth.currentUser!.uid;
+                                await _db.collection('users').doc(uid).update({
+                                  'addresses': FieldValue.arrayRemove([addr])
+                                });
+                                setModalState(() => addresses.remove(addr));
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    )),
+                      );
+                    }),
                     const Divider(height: 28),
-                    Text("Add a new address:".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: darkText)),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: "Address Name (e.g., Home)".tr,
-                        filled: true,
-                        fillColor: backgroundColor,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: primaryColor, width: 1.8)),
+                    Text("Add a new address:".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText)),
+                    const SizedBox(height: 14),
+                    Form(
+                      key: formKey,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: fullNameController,
+                                  label: "Full Name".tr,
+                                  icon: Icons.person_outline,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: phoneController,
+                                  label: "Mobile Number".tr,
+                                  icon: Icons.phone_outlined,
+                                  keyboardType: TextInputType.phone,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: governorateController,
+                                  label: "Governorate".tr,
+                                  icon: Icons.map_outlined,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: cityController,
+                                  label: "City / Area".tr,
+                                  icon: Icons.location_city_outlined,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildAddressTextField(
+                            controller: streetController,
+                            label: "Street Name".tr,
+                            icon: Icons.add_road_outlined,
+                            validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: buildingController,
+                                  label: "Building".tr,
+                                  icon: Icons.domain_outlined,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: floorController,
+                                  label: "Floor".tr,
+                                  icon: Icons.stairs_outlined,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildAddressTextField(
+                                  controller: apartmentController,
+                                  label: "Apartment No.".tr,
+                                  icon: Icons.door_front_door_outlined,
+                                  validator: (val) => val == null || val.isEmpty ? "Required".tr : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildAddressTextField(
+                            controller: landmarkController,
+                            label: "Nearest Landmark (optional)".tr,
+                            icon: Icons.storefront_outlined,
+                          ),
+                          const SizedBox(height: 10),
+                          _buildAddressTextField(
+                            controller: instructionsController,
+                            label: "Additional Delivery Instructions (optional)".tr,
+                            icon: Icons.note_alt_outlined,
+                            maxLines: 2,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: detailsController,
-                      decoration: InputDecoration(
-                        labelText: "Full details".tr,
-                        filled: true,
-                        fillColor: backgroundColor,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: primaryColor, width: 1.8)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,
-                      height: 46,
+                      height: 48,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
@@ -227,15 +332,39 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         onPressed: () async {
-                          if (titleController.text.isEmpty || detailsController.text.isEmpty) return;
-                          final newAddr = {'title': titleController.text.trim(), 'details': detailsController.text.trim()};
-                          final uid = _auth.currentUser!.uid;
-                          await _db.collection('users').doc(uid).set({
-                            'addresses': FieldValue.arrayUnion([newAddr])
-                          }, SetOptions(merge: true));
-                          setModalState(() => addresses.add(newAddr));
-                          titleController.clear();
-                          detailsController.clear();
+                          if (formKey.currentState!.validate()) {
+                            final newAddr = {
+                              'fullName': fullNameController.text.trim(),
+                              'phone': phoneController.text.trim(),
+                              'governorate': governorateController.text.trim(),
+                              'city': cityController.text.trim(),
+                              'street': streetController.text.trim(),
+                              'building': buildingController.text.trim(),
+                              'floor': floorController.text.trim(),
+                              'apartment': apartmentController.text.trim(),
+                              'landmark': landmarkController.text.trim(),
+                              'instructions': instructionsController.text.trim(),
+                              'createdAt': DateTime.now().toIso8601String(),
+                            };
+
+                            final uid = _auth.currentUser!.uid;
+                            await _db.collection('users').doc(uid).set({
+                              'addresses': FieldValue.arrayUnion([newAddr])
+                            }, SetOptions(merge: true));
+
+                            setModalState(() => addresses.add(newAddr));
+
+                            fullNameController.clear();
+                            phoneController.clear();
+                            governorateController.clear();
+                            cityController.clear();
+                            streetController.clear();
+                            buildingController.clear();
+                            floorController.clear();
+                            apartmentController.clear();
+                            landmarkController.clear();
+                            instructionsController.clear();
+                          }
                         },
                         icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white, size: 20),
                         label: Text("Add Address".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -247,6 +376,35 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildAddressTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      validator: validator,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12),
+        prefixIcon: Icon(icon, size: 18, color: primaryColor),
+        filled: true,
+        fillColor: backgroundColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
       ),
     );
   }
@@ -397,12 +555,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       bool isDesktop = constraints.maxWidth > 800;
 
                       if (isDesktop) {
-                        // ======= تصميم الويب (IntrinsicHeight لموازنة الطول بين الجانبين) =======
                         return IntrinsicHeight(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // الجانب الأيسر: كل الخيارات والإعدادات + زر تسجيل الخروج
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,8 +577,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 ),
                               ),
                               const SizedBox(width: 28),
-
-                              // الجانب الأيمن: كارت البيانات الشخصية الممتد رأسياً
                               SizedBox(
                                 width: 350,
                                 child: _buildExpandedUserInfoCard(name, user.email, phone),
@@ -432,7 +586,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         );
                       }
 
-                      // ======= تصميم الموبايل =======
                       return Column(
                         children: [
                           _buildUserInfoCard(name, user.email, phone),
@@ -456,8 +609,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // --- Elements البناء المخصصة ---
-
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -465,7 +616,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // كارت الويب الممتد طوليًا جهة اليمين
   Widget _buildExpandedUserInfoCard(String name, String? email, String phone) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
@@ -558,7 +708,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  // كارت الموبايل الهيدر
   Widget _buildUserInfoCard(String name, String? email, String phone) {
     return Container(
       width: double.infinity,

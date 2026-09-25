@@ -12,22 +12,10 @@ Future<void> setupWeb() async {
     final permission =
     await html.Notification.requestPermission();
 
-    print('Web Notification Permission: $permission');
-
     if (permission != 'granted') {
-      print('Web Notification Permission NOT granted');
       return;
     }
-
-    print('Web Notification Permission Granted!');
-
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      print('======================================');
-      print('FCM Web Message Received');
-      print('Data: ${message.data}');
-      print('Notification: ${message.notification}');
-      print('======================================');
-
       final notification = message.notification;
 
       final String title =
@@ -39,26 +27,14 @@ Future<void> setupWeb() async {
           notification?.body ??
               message.data['body'] ??
               '';
-
-      print('Title: $title');
-      print('Body: $body');
-
       try {
         final registrations =
         await html.window.navigator.serviceWorker
             ?.getRegistrations();
 
-        print('FCM: Getting Service Worker registrations...');
-
         if (registrations == null || registrations.isEmpty) {
-          print('❌ FCM: No Service Worker registrations found');
           return;
         }
-
-        print(
-          'FCM: Found ${registrations.length} Service Worker(s)',
-        );
-
         for (final registration in registrations) {
           print('SW Scope: ${registration.scope}');
         }
@@ -75,16 +51,8 @@ Future<void> setupWeb() async {
         }
 
         if (fcmRegistration == null) {
-          print(
-            '❌ FCM: Firebase Messaging Service Worker NOT found',
-          );
           return;
         }
-
-        print('✅ FCM: Firebase Messaging Service Worker found');
-
-        print('FCM: Calling showNotification...');
-
         await fcmRegistration.showNotification(
           title,
           {
@@ -92,18 +60,12 @@ Future<void> setupWeb() async {
             'requireInteraction': true,
           },
         );
-
-        print(
-          '✅ FCM: Web notification displayed successfully',
-        );
       } catch (e, stackTrace) {
-        print('❌ FCM: Failed to show notification');
         print(e);
         print(stackTrace);
       }
     });
   } catch (e, stackTrace) {
-    print('❌ FCM Web Setup ERROR: $e');
     print(stackTrace);
   }
 }

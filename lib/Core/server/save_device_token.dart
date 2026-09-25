@@ -37,8 +37,6 @@ Future<void> saveDeviceTokenToFirestore() async {
           .set({
         'devices': FieldValue.arrayUnion([token]),
       }, SetOptions(merge: true));
-
-      print("Device Token Saved/Updated Successfully!");
     }
   }
 

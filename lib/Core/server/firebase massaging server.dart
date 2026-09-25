@@ -13,20 +13,10 @@ class FirebaseMessagingService {
         badge: true,
         sound: true,
       );
-
-      // Get FCM token
       final token = await _messaging.getToken();
-
-      debugPrint('==============================');
-      debugPrint('FCM TOKEN: $token');
-      debugPrint('==============================');
-
-      // Listen for token refresh
       _messaging.onTokenRefresh.listen((newToken) {
-        debugPrint('FCM TOKEN REFRESHED: $newToken');
       });
     } catch (e, stackTrace) {
-      debugPrint('FCM ERROR: $e');
       debugPrint('$stackTrace');
     }
   }

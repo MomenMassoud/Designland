@@ -134,343 +134,368 @@ class _HomeWidgetState extends State<HomeWidget> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9FF),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1300),
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+        child: ValueListenableBuilder<String>(
+          valueListenable: _searchNotifier,
+          builder: (context, searchQuery, child) {
+            final bool isSearching = searchQuery.isNotEmpty;
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // شريط البحث (يظل دائماً في الأعلى)
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 1300),
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                      child: Column(
                         children: [
-                          Container(
-                            width: isDesktop ? 450 : 250,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF6C5CE7).withOpacity(0.08),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: isDesktop ? 450 : 250,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(30),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF6C5CE7).withOpacity(0.08),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onSubmitted: (value) {
-                                _saveSearchToFirebase(value);
-                              },
-                              decoration: InputDecoration(
-                                hintText: 'Search custom gifts, bags, items...'.tr,
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 13,
+                                child: TextField(
+                                  controller: _searchController,
+                                  onSubmitted: (value) {
+                                    _saveSearchToFirebase(value);
+                                  },
+                                  decoration: InputDecoration(
+                                    hintText: 'Search custom gifts, bags, items...'.tr,
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 13,
+                                    ),
+                                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6C5CE7)),
+                                    suffixIcon: isSearching
+                                        ? IconButton(
+                                      icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 18),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                      },
+                                    )
+                                        : null,
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
                                 ),
-                                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6C5CE7)),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _bannersRef.snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
 
-                  final bannerDocs = snapshot.data!.docs;
+                // إخفاء البانرات، العروض، واستكشاف الأقسام عند البحث
+                if (!isSearching) ...[
+                  // 1. البانرات
+                  SliverToBoxAdapter(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _bannersRef.snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
 
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) _startBannerAutoScroll(bannerDocs.length);
-                  });
+                        final bannerDocs = snapshot.data!.docs;
 
-                  return Center(
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 1300),
-                      height: isDesktop ? 280 : 180,
-                      margin: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: PageView.builder(
-                        controller: _bannerPageController,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: bannerDocs.length,
-                        onPageChanged: (index) {
-                          _currentBannerPage = index;
-                        },
-                        itemBuilder: (context, index) {
-                          final bannerData = bannerDocs[index].data() as Map<String, dynamic>;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) _startBannerAutoScroll(bannerDocs.length);
+                        });
 
-                          final String bannerUrl = bannerData['image'] ?? bannerData['imageUrl'] ?? '';
-                          final bool onClickable = bannerData['onclick'] ?? false;
-                          final String? categoryId = bannerData['category'];
+                        return Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 1300),
+                            height: isDesktop ? 280 : 180,
+                            margin: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: PageView.builder(
+                              controller: _bannerPageController,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: bannerDocs.length,
+                              onPageChanged: (index) {
+                                _currentBannerPage = index;
+                              },
+                              itemBuilder: (context, index) {
+                                final bannerData = bannerDocs[index].data() as Map<String, dynamic>;
 
-                          if (bannerUrl.isEmpty) return const SizedBox.shrink();
+                                final String bannerUrl = bannerData['image'] ?? bannerData['imageUrl'] ?? '';
+                                final bool onClickable = bannerData['onclick'] ?? false;
+                                final String? categoryId = bannerData['category'];
 
-                          return GestureDetector(
-                            onTap: () {
-                              if (onClickable && categoryId != null && categoryId.isNotEmpty) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProductListWidget(
-                                      categoryDoc: categoryId,
+                                if (bannerUrl.isEmpty) return const SizedBox.shrink();
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (onClickable && categoryId != null && categoryId.isNotEmpty) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ProductListWidget(
+                                            categoryDoc: categoryId,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.08),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: CachedNetworkImage(
+                                        imageUrl: bannerUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: const Color(0xFF6C5CE7).withOpacity(0.05),
+                                        ),
+                                        errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+                                      ),
                                     ),
                                   ),
                                 );
-                              }
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: CachedNetworkImage(
-                                  imageUrl: bannerUrl,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: const Color(0xFF6C5CE7).withOpacity(0.05),
-                                  ),
-                                  errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // 2. العروض الخاصة
+                  SliverToBoxAdapter(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _productsRef.where('discountPercentage', isGreaterThan: 0).snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final discountProducts = snapshot.data!.docs;
+
+                        return Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 1300),
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          "Special Offers ⚡".tr,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF2D3436),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        _DiscountTimerWidget(
+                                          duration: _getRemainingDiscountTime(),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 220,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: discountProducts.length,
+                                    itemBuilder: (context, index) {
+                                      final productData = discountProducts[index].data() as Map<String, dynamic>;
+                                      final String productId = discountProducts[index].id;
+
+                                      return _FlashSaleCardWidget(
+                                        productData: productData,
+                                        productId: productId,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // 3. استكشاف الأقسام
+                  SliverToBoxAdapter(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _categoriesRef.snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox.shrink();
+
+                        final categories = snapshot.data!.docs;
+
+                        return Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 1300),
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Explore Categories ✨".tr,
+                                          style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF2D3436),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Find personalized items crafted just for you".tr,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (_selectedCategoryId != null)
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedCategoryId = null;
+                                          });
+                                        },
+                                        icon: const Icon(Icons.clear_all_rounded, size: 18),
+                                        label: const Text("Show All Categories"),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: isDesktop ? 4 : 2,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                    childAspectRatio: isDesktop ? 1.8 : 1.4,
+                                  ),
+                                  itemCount: categories.length,
+                                  itemBuilder: (context, index) {
+                                    final categoryData = categories[index].data() as Map<String, dynamic>;
+                                    final String categoryId = categories[index].id;
+                                    final String name = Get.locale?.languageCode == "en"
+                                        ? (categoryData['nameEn'] ?? '')
+                                        : (categoryData['nameAr'] ?? '');
+                                    final String? imageUrl = categoryData['imageUrl'] ?? categoryData['image'];
+
+                                    final bool isSelected = _selectedCategoryId == categoryId;
+
+                                    return _CategoryCardWidget(
+                                      name: name,
+                                      imageUrl: imageUrl,
+                                      isSelected: isSelected,
+                                      onTap: () {
+                                        Get.to(ProductListWidget(categoryDoc: categoryId));
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
+                // عرض نتايج المنتجات المطابقة للبحث أو الأقسام بشكل طبيعي
+                StreamBuilder<QuerySnapshot>(
+                  stream: _categoriesRef.snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      );
+                    }
+
+                    var categoryDocs = snapshot.data!.docs;
+
+                    if (_selectedCategoryId != null) {
+                      categoryDocs = categoryDocs.where((doc) => doc.id == _selectedCategoryId).toList();
+                    }
+
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                          final categoryDoc = categoryDocs[index];
+                          final categoryData = categoryDoc.data() as Map<String, dynamic>;
+                          final String categoryTitle = Get.locale?.languageCode == "en"
+                              ? (categoryData['nameEn'] ?? '')
+                              : (categoryData['nameAr'] ?? '');
+
+                          return Center(
+                            child: Container(
+                              constraints: const BoxConstraints(maxWidth: 1300),
+                              child: CategorySectionWidget(
+                                productsRef: _productsRef,
+                                categoryId: categoryDoc.id,
+                                categoryTitle: categoryTitle,
+                                selectedSubcategoryId: _selectedSubcategoryId,
+                                priceRange: _priceRange,
+                                searchQueryNotifier: _searchNotifier,
                               ),
                             ),
                           );
                         },
+                        childCount: categoryDocs.length,
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _productsRef.where('discountPercentage', isGreaterThan: 0).snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final discountProducts = snapshot.data!.docs;
-
-                  return Center(
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 1300),
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    "Special Offers ⚡".tr,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF2D3436),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _DiscountTimerWidget(
-                                    duration: _getRemainingDiscountTime(),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            height: 220,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: discountProducts.length,
-                              itemBuilder: (context, index) {
-                                final productData = discountProducts[index].data() as Map<String, dynamic>;
-                                final String productId = discountProducts[index].id;
-
-                                return _FlashSaleCardWidget(
-                                  productData: productData,
-                                  productId: productId,
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _categoriesRef.snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
-
-                  final categories = snapshot.data!.docs;
-
-                  return Center(
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 1300),
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Explore Categories ✨".tr,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF2D3436),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Find personalized items crafted just for you".tr,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (_selectedCategoryId != null)
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedCategoryId = null;
-                                    });
-                                  },
-                                  icon: const Icon(Icons.clear_all_rounded, size: 18),
-                                  label: const Text("Show All Categories"),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: isDesktop ? 4 : 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: isDesktop ? 1.8 : 1.4,
-                            ),
-                            itemCount: categories.length,
-                            itemBuilder: (context, index) {
-                              final categoryData = categories[index].data() as Map<String, dynamic>;
-                              final String categoryId = categories[index].id;
-                              final String name = Get.locale?.languageCode == "en"
-                                  ? (categoryData['nameEn'] ?? '')
-                                  : (categoryData['nameAr'] ?? '');
-                              final String? imageUrl = categoryData['imageUrl'] ?? categoryData['image'];
-
-                              final bool isSelected = _selectedCategoryId == categoryId;
-
-                              return _CategoryCardWidget(
-                                name: name,
-                                imageUrl: imageUrl,
-                                isSelected: isSelected,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCategoryId = isSelected ? null : categoryId;
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            StreamBuilder<QuerySnapshot>(
-              stream: _categoriesRef.snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                  );
-                }
-
-                var categoryDocs = snapshot.data!.docs;
-
-                if (_selectedCategoryId != null) {
-                  categoryDocs = categoryDocs.where((doc) => doc.id == _selectedCategoryId).toList();
-                }
-
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      final categoryDoc = categoryDocs[index];
-                      final categoryData = categoryDoc.data() as Map<String, dynamic>;
-                      final String categoryTitle = Get.locale?.languageCode == "en"
-                          ? (categoryData['nameEn'] ?? '')
-                          : (categoryData['nameAr'] ?? '');
-
-                      return Center(
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 1300),
-                          child: CategorySectionWidget(
-                            productsRef: _productsRef,
-                            categoryId: categoryDoc.id,
-                            categoryTitle: categoryTitle,
-                            selectedSubcategoryId: _selectedSubcategoryId,
-                            priceRange: _priceRange,
-                            searchQueryNotifier: _searchNotifier,
-                          ),
-                        ),
-                      );
-                    },
-                    childCount: categoryDocs.length,
-                  ),
-                );
-              },
-            ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 40),
-            ),
-          ],
+                    );
+                  },
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 40),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

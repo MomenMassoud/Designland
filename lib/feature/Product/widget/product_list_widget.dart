@@ -8,9 +8,8 @@ import 'package:get/get.dart';
 
 import '../../Login/view/login_view.dart';
 
-final FirebaseAuth _auth=FirebaseAuth.instance;
-final FirebaseFirestore _firestore=FirebaseFirestore.instance;
-
+final FirebaseAuth _auth = FirebaseAuth.instance;
+final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class ProductListWidget extends StatefulWidget {
   final String categoryDoc;
@@ -198,7 +197,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        contentPadding:
+                        const EdgeInsets.symmetric(vertical: 10),
                       ),
                     ),
                   ),
@@ -220,7 +220,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 2),
                           child: Text(
                             "Subcategories".tr,
                             style: const TextStyle(
@@ -240,7 +241,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             itemCount: subdocs.length + 1,
                             itemBuilder: (context, index) {
                               if (index == 0) {
-                                final isSelected = _selectedSubcategoryId == null;
+                                final isSelected =
+                                    _selectedSubcategoryId == null;
                                 return _ModernSubcategoryChip(
                                   name: "All Items".tr,
                                   imageUrl: null,
@@ -254,12 +256,15 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                               }
 
                               final subdoc = subdocs[index - 1];
-                              final subData = subdoc.data() as Map<String, dynamic>;
-                              final isSelected = _selectedSubcategoryId == subdoc.id;
+                              final subData =
+                              subdoc.data() as Map<String, dynamic>;
+                              final isSelected =
+                                  _selectedSubcategoryId == subdoc.id;
                               final String subName = lang == "en"
                                   ? (subData['nameEn'] ?? 'Subcategory'.tr)
                                   : (subData['nameAr'] ?? 'Subcategory'.tr);
-                              final String? imageUrl = subData['imageUrl'] ?? subData['image'];
+                              final String? imageUrl =
+                                  subData['imageUrl'] ?? subData['image'];
 
                               return _ModernSubcategoryChip(
                                 name: subName,
@@ -288,7 +293,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
               stream: _selectedSubcategoryId != null
                   ? _productsRef
                   .where('categoryId', isEqualTo: widget.categoryDoc)
-                  .where('subcategoryId', isEqualTo: _selectedSubcategoryId)
+                  .where('subcategoryId',
+                  isEqualTo: _selectedSubcategoryId)
                   .snapshots()
                   : _productsRef
                   .where('categoryId', isEqualTo: widget.categoryDoc)
@@ -358,7 +364,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                   ),
                   itemCount: products.length,
                   itemBuilder: (context, index) {
-                    final productData = products[index].data() as Map<String, dynamic>;
+                    final productData =
+                    products[index].data() as Map<String, dynamic>;
                     final productId = products[index].id;
 
                     return _InteractiveProductCard(
@@ -404,7 +411,9 @@ class _ModernSubcategoryChip extends StatelessWidget {
             color: isSelected ? const Color(0xFF6C5CE7) : Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+              color: isSelected
+                  ? const Color(0xFF6C5CE7)
+                  : Colors.grey.shade300,
               width: 1.5,
             ),
             boxShadow: isSelected
@@ -437,7 +446,8 @@ class _ModernSubcategoryChip extends StatelessWidget {
                     errorWidget: (_, __, ___) => Icon(
                       Icons.category_outlined,
                       size: 18,
-                      color: isSelected ? Colors.white : const Color(0xFF6C5CE7),
+                      color:
+                      isSelected ? Colors.white : const Color(0xFF6C5CE7),
                     ),
                   ),
                 ),
@@ -477,7 +487,8 @@ class _InteractiveProductCard extends StatefulWidget {
   });
 
   @override
-  State<_InteractiveProductCard> createState() => _InteractiveProductCardState();
+  State<_InteractiveProductCard> createState() =>
+      _InteractiveProductCardState();
 }
 
 class _InteractiveProductCardState extends State<_InteractiveProductCard> {
@@ -489,7 +500,8 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
     final imageUrl = images != null && images.isNotEmpty ? images[0] : '';
 
     final num originalPrice = widget.productData['price'] ?? 0;
-    final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
+    final num discountPercentage =
+        widget.productData['discountPercentage'] ?? 0;
     final bool hasDiscount = discountPercentage > 0;
     final num finalPrice = hasDiscount
         ? (originalPrice * (1 - (discountPercentage / 100))).round()
@@ -512,12 +524,16 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          transform: isHovered ? (Matrix4.identity()..translate(0, -5, 0)) : Matrix4.identity(),
+          transform: isHovered
+              ? (Matrix4.identity()..translate(0, -5, 0))
+              : Matrix4.identity(),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isHovered ? const Color(0xFF6C5CE7).withOpacity(0.4) : Colors.transparent,
+              color: isHovered
+                  ? const Color(0xFF6C5CE7).withOpacity(0.4)
+                  : Colors.transparent,
               width: 1.5,
             ),
             boxShadow: [
@@ -538,7 +554,8 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                      borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(15)),
                       child: imageUrl.isNotEmpty
                           ? AnimatedScale(
                         scale: isHovered ? 1.05 : 1.0,
@@ -549,21 +566,24 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           height: double.infinity,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
-                            color: const Color(0xFF6C5CE7).withOpacity(0.04),
+                            color:
+                            const Color(0xFF6C5CE7).withOpacity(0.04),
                           ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey.shade100,
-                            child: const Icon(
-                              Icons.broken_image_outlined,
-                              color: Colors.grey,
-                            ),
-                          ),
+                          errorWidget: (context, url, error) =>
+                              Container(
+                                color: Colors.grey.shade100,
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: Colors.grey,
+                                ),
+                              ),
                         ),
                       )
                           : Container(
                         color: Colors.grey.shade100,
                         child: const Center(
-                          child: Icon(Icons.image_not_supported_outlined, color: Colors.grey),
+                          child: Icon(Icons.image_not_supported_outlined,
+                              color: Colors.grey),
                         ),
                       ),
                     ),
@@ -574,7 +594,8 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                         top: 10,
                         left: 10,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFF4757),
                             borderRadius: BorderRadius.circular(8),
@@ -639,16 +660,27 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           ),
                         ),
                         InkWell(
-                          onTap: ()async{
-                            await _firestore.collection('products').doc(widget.productId).get().then((value){
-                              final data=value.data() as Map<String, dynamic>;
-                              final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
+                          onTap: () async {
+                            await _firestore
+                                .collection('products')
+                                .doc(widget.productId)
+                                .get()
+                                .then((value) {
+                              final data = value.data() as Map<String, dynamic>;
+                              final double originalPrice = double.tryParse(
+                                  data['price']?.toString() ?? '0') ??
+                                  0.0;
 
-                              final double discountPercentage = double.tryParse(
-                                  (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
-                              ) ?? 0.0;
+                              final double discountPercentage =
+                                  double.tryParse((data['discount'] ??
+                                      data['discountPercentage'])
+                                      ?.toString() ??
+                                      '0') ??
+                                      0.0;
                               final double discountedPrice = discountPercentage > 0
-                                  ? originalPrice - (originalPrice * (discountPercentage / 100))
+                                  ? originalPrice -
+                                  (originalPrice *
+                                      (discountPercentage / 100))
                                   : originalPrice;
                               _handleAddToCart(data, discountedPrice);
                             });
@@ -665,7 +697,9 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                             child: Icon(
                               Icons.add_shopping_cart_rounded,
                               size: 16,
-                              color: isHovered ? Colors.white : const Color(0xFF6C5CE7),
+                              color: isHovered
+                                  ? Colors.white
+                                  : const Color(0xFF6C5CE7),
                             ),
                           ),
                         ),
@@ -692,17 +726,18 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
     try {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data() ?? {};
-      String? phone = userData['phone'];
       List<dynamic> addresses = userData['addresses'] ?? [];
       if (!mounted) return;
       await _showOrderDetailsBottomSheet(
           user.uid, productData, finalPrice, addresses);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
+        SnackBar(
+            content: Text("${"An error occurred during processing:".tr}$e")),
       );
     }
   }
+
   Future<void> _showOrderDetailsBottomSheet(
       String uid,
       Map<String, dynamic> productData,
@@ -710,17 +745,31 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
       List<dynamic> addresses,
       ) async {
     final notesController = TextEditingController();
-    int selectedAddressIndex = 0;
 
     // استخراج الحقول الديناميكية التي حددها الأدمن
-    final List<dynamic> customFieldsRaw = productData['fields'] ?? productData['customFields'] ?? [];
-    final List<Map<String, dynamic>> customFields = customFieldsRaw.map((e) => Map<String, dynamic>.from(e)).toList();
+    final List<dynamic> customFieldsRaw =
+        productData['fields'] ?? productData['customFields'] ?? [];
+    final List<Map<String, dynamic>> customFields = customFieldsRaw
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
 
-    // إنشاء Controllers لكل حقل قادم من الأدمن
-    final Map<String, TextEditingController> customControllers = {
-      for (var field in customFields)
-        (field['name'] ?? 'field_${customFields.indexOf(field)}').toString(): TextEditingController()
-    };
+    // Controllers للحقول النصية ولينكات الدرايف
+    final Map<String, TextEditingController> customControllers = {};
+
+    // Map لتخزين قيم القوائم المنسدلة Dropdown
+    final Map<String, String?> dropdownValues = {};
+
+    for (var field in customFields) {
+      final String fieldName =
+      (field['name'] ?? 'field_${customFields.indexOf(field)}').toString();
+      final String fieldType = field['type'] ?? 'text';
+
+      if (fieldType == 'dropdown') {
+        dropdownValues[fieldName] = null;
+      } else {
+        customControllers[fieldName] = TextEditingController();
+      }
+    }
 
     final formKey = GlobalKey<FormState>();
 
@@ -749,14 +798,18 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                     children: [
                       Text(
                         "Order and Design Details".tr,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       if (customFields.isNotEmpty) ...[
                         const Divider(height: 24),
                         Text(
                           "Required Product Specifications".tr,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6366F1)),
                         ),
                         const SizedBox(height: 12),
                         ...customFields.map((field) {
@@ -765,30 +818,81 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           final bool isRequired = field['isRequired'] ?? false;
 
                           final bool isDrive = fieldType == 'drive_link';
+                          final bool isDropdown = fieldType == 'dropdown';
 
+                          // 1. التعامل مع القوائم المنسدلة Dropdown
+                          if (isDropdown) {
+                            final List<dynamic> optionsRaw =
+                                field['options'] ?? [];
+                            final List<String> options =
+                            optionsRaw.map((e) => e.toString()).toList();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: DropdownButtonFormField<String>(
+                                value: dropdownValues[fieldName],
+                                decoration: InputDecoration(
+                                  labelText:
+                                  "$fieldName${isRequired ? ' *' : ''}",
+                                  border: const OutlineInputBorder(),
+                                  prefixIcon: const Icon(
+                                      Icons.arrow_drop_down_circle_outlined),
+                                ),
+                                items: options.map((String option) {
+                                  return DropdownMenuItem<String>(
+                                    value: option,
+                                    child: Text(option),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setBottomSheetState(() {
+                                    dropdownValues[fieldName] = newValue;
+                                  });
+                                },
+                                validator: (value) {
+                                  if (isRequired &&
+                                      (value == null || value.isEmpty)) {
+                                    return "${"Please select".tr} $fieldName";
+                                  }
+                                  return null;
+                                },
+                              ),
+                            );
+                          }
+
+                          // 2. التعامل مع الحقول النصية ولينكات الدرايف
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12.0),
                             child: TextFormField(
                               controller: customControllers[fieldName],
-                              keyboardType: isDrive ? TextInputType.url : TextInputType.text,
+                              keyboardType: isDrive
+                                  ? TextInputType.url
+                                  : TextInputType.text,
                               decoration: InputDecoration(
-                                labelText: "$fieldName${isRequired ? ' *' : ''}",
-                                hintText: isDrive ? "https://drive.google.com/..." : null,
+                                labelText:
+                                "$fieldName${isRequired ? ' *' : ''}",
+                                hintText: isDrive
+                                    ? "https://drive.google.com/..."
+                                    : null,
                                 border: const OutlineInputBorder(),
-                                prefixIcon: Icon(isDrive ? Icons.add_link : Icons.edit_note),
+                                prefixIcon: Icon(isDrive
+                                    ? Icons.add_link
+                                    : Icons.edit_note),
                               ),
                               validator: (value) {
                                 final textVal = value?.trim() ?? '';
 
-                                // 1. التحقق من الإلزامية بناءً على isRequired
+                                // التحقق من الإلزامية بناءً على isRequired
                                 if (isRequired && textVal.isEmpty) {
                                   return "${"Please enter".tr} $fieldName";
                                 }
 
-                                // 2. التحقق من نوع drive_link لو كان مدخلاً
+                                // التحقق من نوع drive_link لو كان مدخلاً
                                 if (isDrive && textVal.isNotEmpty) {
-                                  if (!textVal.startsWith('http://') && !textVal.startsWith('https://')) {
-                                    return "Please enter a valid link (e.g. https://...)".tr;
+                                  if (!textVal.startsWith('http://') &&
+                                      !textVal.startsWith('https://')) {
+                                    return "Please enter a valid link (e.g. https://...)"
+                                        .tr;
                                   }
                                 }
 
@@ -804,13 +908,16 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                         maxLines: 3,
                         decoration: InputDecoration(
                           labelText: "${"Additional notes on the request".tr} *",
-                          hintText: "Write down any specific details or modifications you would like to be implemented...".tr,
+                          hintText:
+                          "Write down any specific details or modifications you would like to be implemented..."
+                              .tr,
                           border: const OutlineInputBorder(),
                           alignLabelWithHint: true,
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return "Please enter the required notes for the order.".tr;
+                            return "Please enter the required notes for the order."
+                                .tr;
                           }
                           return null;
                         },
@@ -829,18 +936,34 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                               return;
                             }
 
-                            // تجميع كافة الحقول الديناميكية المدخلة
-                            final Map<String, String> collectedCustomFields = {};
+                            // تجميع كافة الحقول الديناميكية المدخلة (نصوص + قوائم منسدلة)
+                            final Map<String, String> collectedCustomFields =
+                            {};
+
                             customControllers.forEach((key, controller) {
-                              collectedCustomFields[key] = controller.text.trim();
+                              collectedCustomFields[key] =
+                                  controller.text.trim();
                             });
 
-                            await _firestore.collection('users').doc(uid).collection('cart').add({
+                            dropdownValues.forEach((key, value) {
+                              if (value != null) {
+                                collectedCustomFields[key] = value;
+                              }
+                            });
+
+                            await _firestore
+                                .collection('users')
+                                .doc(uid)
+                                .collection('cart')
+                                .add({
                               'productId': widget.productId,
                               'title': productData['title'] ?? '',
                               'price': finalPrice,
-                              'originalPrice': (productData['price'] ?? 0.0).toDouble(),
-                              'image': (productData['images'] as List?)?.firstOrNull ?? '',
+                              'originalPrice':
+                              (productData['price'] ?? 0.0).toDouble(),
+                              'image': (productData['images'] as List?)
+                                  ?.firstOrNull ??
+                                  '',
                               'notes': notesController.text.trim(),
                               'customFieldsData': collectedCustomFields,
                               'selectedAddress': "",
@@ -851,15 +974,20 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text("The product has been successfully added to your cart! 🎉".tr),
+                                content: Text(
+                                    "The product has been successfully added to your cart! 🎉"
+                                        .tr),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           },
-                          icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                          icon: const Icon(Icons.shopping_cart,
+                              color: Colors.white),
                           label: Text(
                             "Confirm addition to cart".tr,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -873,6 +1001,7 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
       },
     );
   }
+
   void _showLoginDialog() {
     showDialog(
       context: context,
@@ -885,11 +1014,13 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
             child: Text("cancellation".tr),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1)),
             onPressed: () {
               Navigator.pushNamed(context, LoginView.id);
             },
-            child: Text("Log in".tr, style: const TextStyle(color: Colors.white)),
+            child: Text("Log in".tr,
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

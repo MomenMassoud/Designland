@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../../Core/Utils/app.colors.dart';
-
-
+import '../../../Core/server/email_server.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -93,44 +92,15 @@ class OrdersListWidget extends StatelessWidget {
     }
   }
 
-  // دالة إرسال إيميل إلغاء الطلب عبر سيرفر Vercel
-  Future<void> _sendCancelInvoiceEmail({
-    required String customerEmail,
+  Future<void> _cancelOrder({
+    required BuildContext context,
     required String orderId,
-    required double total,
+    required Map<String, dynamic> orderData,
   }) async {
-    const String apiUrl = 'https://designland-backend.vercel.app/api/cancel-email';
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'customerEmail': customerEmail,
-          'orderId': orderId,
-          'total': total,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        debugPrint('🎉 تم إرسال إيميل إلغاء الفاتورة بنجاح!');
-      } else {
-        debugPrint('فشل إرسال إيميل الإلغاء: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('Error sending cancel email: $e');
-    }
-  }
-
-  Future<void> _cancelOrder(BuildContext context, String orderId, double totalPrice) async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final currentUser = auth.currentUser;
     if (currentUser == null) return;
-    
-    
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -165,13 +135,6 @@ class OrdersListWidget extends StatelessWidget {
 
     if (confirm == true) {
       try {
-        await firestore.collection('user').doc(auth.currentUser!.uid).collection('notifications').doc().set({
-          'isRead':false,
-          'title':"Order Cancel",
-          'body':'تم إرسال إيميل إلغاء الفاتورة بنجاح!',
-          'createdAt':FieldValue.serverTimestamp(),
-          'targetUser':auth.currentUser!.uid
-        });
         // 1. تحديث حالة الطلب في الفايربيز إلى ملغي
         await firestore
             .collection('users')
@@ -180,21 +143,45 @@ class OrdersListWidget extends StatelessWidget {
             .doc(orderId)
             .update({'status': 'cancelled'});
 
-        // 2. جلب إيميل المستخدم الحالي
+        // 2. حفظ الإشعار في Firestore للمستخدم
+        await firestore.collection('users').doc(currentUser.uid).collection('notifications').doc().set({
+          'isRead': false,
+          'title': "Order Cancel",
+          'body': 'تم إرسال إيميل إلغاء الفاتورة بنجاح!',
+          'createdAt': FieldValue.serverTimestamp(),
+          'targetUser': currentUser.uid,
+        });
+
+        // 3. جلب بيانات المستخدم لضمان الإيميل والاسم
         String userEmail = currentUser.email ?? '';
-        if (userEmail.isEmpty) {
-          final userDoc = await firestore.collection('users').doc(currentUser.uid).get();
-          if (userDoc.exists) {
-            userEmail = userDoc.data()?['email'] ?? '';
-          }
+        String username = currentUser.displayName ?? '';
+
+        final userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() ?? {};
+          if (userEmail.isEmpty) userEmail = userData['email'] ?? '';
+          if (username.isEmpty) username = userData['name'] ?? userData['fullName'] ?? '';
         }
 
-        // 3. إرسال إيميل الإلغاء أوتوماتيكياً
+        // 4. استخراج تفاصيل الطلب لإرسال الإيميل
+        final num priceRaw = orderData['totalPrice'] ?? orderData['price'] ?? 0;
+        final double totalPrice = priceRaw.toDouble();
+        final dynamic orderNumber = orderData['orderNumber'] ?? (orderId.length > 6 ? orderId.substring(0, 6) : orderId);
+
+        final List<Map<String, dynamic>> itemsList = (orderData['items'] as List<dynamic>?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+            [];
+
+        // 5. إرسال إيميل الإلغاء
         if (userEmail.isNotEmpty) {
-          _sendCancelInvoiceEmail(
+          await EmailServer().sendCancelInvoiceEmail(
             customerEmail: userEmail,
-            orderId: orderId.length > 6 ? orderId.substring(0, 6) : orderId,
+            customerName: username,
+            orderId: orderId,
+            orderNumber: orderNumber,
             total: totalPrice,
+            items: itemsList,
           );
         }
 
@@ -268,6 +255,7 @@ class OrdersListWidget extends StatelessWidget {
             final num priceRaw = orderData['totalPrice'] ?? orderData['price'] ?? 0;
             final double totalPrice = priceRaw.toDouble();
             final items = List<dynamic>.from(orderData['items'] ?? []);
+            final int orderNumber=orderData['orderNumber']??0;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 14),
@@ -291,7 +279,7 @@ class OrdersListWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "${"Order no".tr} #${doc.id.substring(0, doc.id.length > 6 ? 6 : doc.id.length)}",
+                          "${"Order no".tr} $orderNumber",
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -371,7 +359,11 @@ class OrdersListWidget extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          onPressed: () => _cancelOrder(context, doc.id, totalPrice),
+                          onPressed: () => _cancelOrder(
+                            context: context,
+                            orderId: doc.id,
+                            orderData: orderData,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [

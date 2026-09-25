@@ -8,11 +8,14 @@ class EmailServer {
 
   Future<void> sendCancelInvoiceEmail({
     required String customerEmail,
+    required String customerName,
     required String orderId,
+    required dynamic orderNumber,
     required double total,
+    required List<Map<String, dynamic>> items,
     String? reason,
   }) async {
-    const String apiUrl = '${baseUrl}/cancel-email';
+    const String apiUrl = '$baseUrl/cancel-email';
 
     try {
       final response = await http.post(
@@ -22,8 +25,11 @@ class EmailServer {
         },
         body: jsonEncode({
           'customerEmail': customerEmail,
+          'customerName': customerName,
           'orderId': orderId,
+          'orderNumber': orderNumber,
           'total': total,
+          'items': items,
           if (reason != null) 'reason': reason,
         }),
       );
@@ -41,38 +47,39 @@ class EmailServer {
 
   Future<void> sendInvoiceEmail({
     required String customerEmail,
+    required String customerName,
+    required int orderNumber,
     required String orderId,
     required double total,
+    required List<Map<String, dynamic>> items,
   }) async {
-    const String apiUrl = '${baseUrl}/send-email';
-
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('$baseUrl/send-email'), // استبدل بالرابط الخاص بك
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'customerEmail': customerEmail,
+          'customerName': customerName,
+          'orderNumber': orderNumber,
           'orderId': orderId,
           'total': total,
+          'items': items,
         }),
       );
-
-      if (response.statusCode == 200) {
-        debugPrint('🎉 تم إرسال الفاتورة بنجاح باستخدام http!');
-      } else {
-        debugPrint('فشل الإرسال: ${response.body}');
-      }
     } catch (e) {
-      debugPrint('Error: $e');
+      print("Error sending email: $e");
     }
   }
 
   Future<bool> notifyAdmins({
     required String orderId,
+    required int orderNumber,
     required double total,
     required String customerEmail,
+    required String customerName,
+    required String customerPhone,
+    required List<Map<String, dynamic>> items,
+    required Map<String, dynamic> selectedAddress,
   }) async {
     final url = Uri.parse('$baseUrl/notify-admins');
     try {
@@ -81,8 +88,13 @@ class EmailServer {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'orderId': orderId,
+          'orderNumber': orderNumber,
           'total': total,
           'customerEmail': customerEmail,
+          'customerName': customerName,
+          'customerPhone': customerPhone,
+          'items': items,
+          'selectedAddress': selectedAddress,
         }),
       );
 
@@ -92,7 +104,6 @@ class EmailServer {
       }
       return false;
     } catch (e) {
-      print('Error notifying admins: $e');
       return false;
     }
   }
@@ -139,14 +150,11 @@ class EmailServer {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("Notification sent successfully: ${data['notificationsSent']}");
         return true;
       } else {
-        print("Failed to send notification. Status Code: ${response.statusCode}");
         return false;
       }
     } catch (e) {
-      print("Error sending comment notification: $e");
       return false;
     }
   }

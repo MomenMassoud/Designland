@@ -350,7 +350,9 @@ class _SignUpWidgetState extends State<SignUpWidget> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.g_mobiledata_rounded, size: 30, color: Color(0xFFEA4335)),
+                            CircleAvatar(
+                              backgroundImage: AssetImage(AppImages.google),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               "Sign up with Google".tr,

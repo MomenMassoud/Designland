@@ -62,7 +62,7 @@ class _BasketWidgetState extends State<BasketWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("The product has been removed from the cart.".tr),
-        backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+        backgroundColor: const Color(0xFF6C5CE7),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -145,11 +145,20 @@ class _BasketWidgetState extends State<BasketWidget> {
     });
   }
 
+  // دالة إضافة عنوان ورقم هاتف في حال عدم وجودهما
   Future<void> _showAddAddressAndPhoneDialog(
       String uid, String? existingPhone, List<dynamic> existingAddresses) async {
     final phoneController = TextEditingController(text: existingPhone ?? '');
-    final addressTitleController = TextEditingController();
-    final addressDetailsController = TextEditingController();
+    final fullNameController = TextEditingController();
+    final governorateController = TextEditingController();
+    final cityController = TextEditingController();
+    final streetController = TextEditingController();
+    final buildingController = TextEditingController();
+    final floorController = TextEditingController();
+    final apartmentController = TextEditingController();
+    final landmarkController = TextEditingController();
+
+    final formKey = GlobalKey<FormState>();
 
     await showModalBottomSheet(
       context: context,
@@ -166,83 +175,159 @@ class _BasketWidgetState extends State<BasketWidget> {
             right: 20,
           ),
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Complete contact and address details".tr,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                if (existingPhone == null || existingPhone.isEmpty) ...[
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Complete contact and address details".tr,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  if (existingPhone == null || existingPhone.isEmpty) ...[
+                    TextFormField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                      decoration: InputDecoration(
+                        labelText: "Contact phone number".tr,
+                        prefixIcon: const Icon(Icons.phone),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextFormField(
+                    controller: fullNameController,
+                    validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                     decoration: InputDecoration(
-                      labelText: "Contact phone number".tr,
-                      prefixIcon: const Icon(Icons.phone),
+                      labelText: "Full Name".tr,
+                      prefixIcon: const Icon(Icons.person_outline),
                       border: const OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                ],
-                TextField(
-                  controller: addressTitleController,
-                  decoration: InputDecoration(
-                    labelText: "Address name (e.g., Home, Work)".tr,
-                    prefixIcon: const Icon(Icons.label_outline),
-                    border: const OutlineInputBorder(),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: governorateController,
+                          validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                          decoration: InputDecoration(
+                            labelText: "Governorate".tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: cityController,
+                          validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                          decoration: InputDecoration(
+                            labelText: "City / Area".tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: addressDetailsController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: "Full address details".tr,
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: streetController,
+                    validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                    decoration: InputDecoration(
+                      labelText: "Street Name".tr,
+                      border: const OutlineInputBorder(),
                     ),
-                    onPressed: () async {
-                      if (phoneController.text.trim().isEmpty ||
-                          addressTitleController.text.trim().isEmpty ||
-                          addressDetailsController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Please fill in all the details.".tr)),
-                        );
-                        return;
-                      }
-
-                      final newAddress = {
-                        'title': addressTitleController.text.trim(),
-                        'details': addressDetailsController.text.trim(),
-                      };
-
-                      await _db.collection('users').doc(uid).set({
-                        'phone': phoneController.text.trim(),
-                        'addresses': FieldValue.arrayUnion([newAddress]),
-                      }, SetOptions(merge: true));
-
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Data saved successfully! Order now.".tr)),
-                      );
-                    },
-                    child: Text("Save and track the order".tr, style: const TextStyle(color: Colors.white)),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: buildingController,
+                          validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                          decoration: InputDecoration(
+                            labelText: "Building".tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: TextFormField(
+                          controller: floorController,
+                          validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                          decoration: InputDecoration(
+                            labelText: "Floor".tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: TextFormField(
+                          controller: apartmentController,
+                          validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
+                          decoration: InputDecoration(
+                            labelText: "Apt No.".tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: landmarkController,
+                    decoration: InputDecoration(
+                      labelText: "Nearest Landmark (optional)".tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6C5CE7),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        final newAddress = {
+                          'fullName': fullNameController.text.trim(),
+                          'phone': phoneController.text.trim(),
+                          'governorate': governorateController.text.trim(),
+                          'city': cityController.text.trim(),
+                          'street': streetController.text.trim(),
+                          'building': buildingController.text.trim(),
+                          'floor': floorController.text.trim(),
+                          'apartment': apartmentController.text.trim(),
+                          'landmark': landmarkController.text.trim(),
+                          'createdAt': DateTime.now().toIso8601String(),
+                        };
+
+                        await _db.collection('users').doc(uid).set({
+                          'phone': phoneController.text.trim(),
+                          'addresses': FieldValue.arrayUnion([newAddress]),
+                        }, SetOptions(merge: true));
+
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Data saved successfully! Order now.".tr)),
+                        );
+                      },
+                      child: Text("Save Address".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -250,14 +335,13 @@ class _BasketWidgetState extends State<BasketWidget> {
     );
   }
 
-  // 4. تأكيد الطلب وتحويله لحالة "تحت التنفيذ"
+  // 4. تأكيد الطلب وتوليد رقم الطلب وسحب العنوان المختار
   Future<void> _confirmOrder(
       List<QueryDocumentSnapshot> items, double subtotal) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
     try {
-      int selectedAddressIndex = 0;
       final userDoc = await _db.collection('users').doc(uid).get();
       final userData = userDoc.data() ?? {};
 
@@ -269,76 +353,114 @@ class _BasketWidgetState extends State<BasketWidget> {
         return;
       }
 
+      int selectedAddressIndex = 0;
+      bool isAddressSelected = false;
 
+      // اختيار العنوان المفضل للتوصيل
       await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-          builder: (context){
-            return StatefulBuilder(
-                builder: (context, setBottomSheetState){
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                      top: 20,
-                      left: 20,
-                      right: 20,
-                    ),
-                      child: SingleChildScrollView(
-                        child: Form(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<int>(
-                                value: selectedAddressIndex,
-                                items: List.generate(addresses.length, (index) {
-                                  final addr = addresses[index];
-                                  return DropdownMenuItem(
-                                    value: index,
-                                    child: Text("${addr['title']} - ${addr['details']}"),
-                                  );
-                                }),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setBottomSheetState(() => selectedAddressIndex = val);
-                                  }
-                                },
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                    ),
-                                    onPressed: (){Navigator.pop(context);},
-                                    icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                                    label: Text("Order")),
-                              )
-                            ],
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setBottomSheetState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  top: 20,
+                  left: 20,
+                  right: 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<int>(
+                        value: selectedAddressIndex,
+                        isExpanded: true,
+                        items: List.generate(addresses.length, (index) {
+                          final addr = addresses[index];
+                          final label = addr['street'] != null
+                              ? "${addr['fullName'] ?? ''} - ${addr['street']}, Bldg ${addr['building']}, ${addr['city']}"
+                              : "${addr['title'] ?? 'Address'} - ${addr['details'] ?? ''}";
+                          return DropdownMenuItem(
+                            value: index,
+                            child: Text(
+                              label,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          );
+                        }),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setBottomSheetState(() => selectedAddressIndex = val);
+                          }
+                        },
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          fillColor: Colors.grey.shade50,
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
+                          onPressed: () {
+                            isAddressSelected = true;
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.shopping_cart_checkout, color: Colors.white),
+                          label: Text("Confirm & Checkout".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         ),
                       )
-                  );
-                }
-            );
-          }
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       );
 
-      String userEmail = "";
-      if (userDoc.exists) {
-        userEmail = userDoc.data()?['email'] ?? _auth.currentUser?.email ?? '';
-      }
+      if (!isAddressSelected) return;
+
+      final selectedAddress = addresses[selectedAddressIndex];
+
+      // زيادة رقم الطلب أوتوماتيكياً وقراءته من app_info/const
+      int newOrderNumber = 1;
+      final constDocRef = _db.collection('app_info').doc('const');
+
+      await _db.runTransaction((transaction) async {
+        final constSnapshot = await transaction.get(constDocRef);
+        if (constSnapshot.exists && constSnapshot.data()!.containsKey('order_number')) {
+          final currentNum = constSnapshot.data()?['order_number'];
+          if (currentNum is int) {
+            newOrderNumber = currentNum;
+          } else if (currentNum is num) {
+            newOrderNumber = currentNum.toInt();
+          }
+        }
+        transaction.set(constDocRef, {'order_number': newOrderNumber + 1}, SetOptions(merge: true));
+      });
+
+      String userEmail = userData['email'] ?? _auth.currentUser?.email ?? '';
+      String clientname="";
+      await _db.collection('user').doc(_auth.currentUser!.uid).get().then((value){
+        clientname=value.get('name');
+      });
 
       final double discountAmount = subtotal * (_discountPercentage / 100);
       final double finalTotalPrice = subtotal - discountAmount;
@@ -355,27 +477,14 @@ class _BasketWidgetState extends State<BasketWidget> {
           'image': data['image'] ?? '',
           'notes': data['notes'] ?? '',
           'customFieldsData': data['customFieldsData'] ?? {},
-          'selectedAddress': addresses[selectedAddressIndex]?? {},
         };
       }).toList();
 
-      String orderID = "";
-
-      await _db
-          .collection('user')
-          .doc(uid)
-          .collection('notifications')
-          .doc()
-          .set({
-        'isRead': false,
-        'title': "Order Done",
-        'body': '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'targetUser': uid
-      });
-
+      // إنشاء مستند الأوردر مع الـ Order Number والعنوان المحدد
       final orderRef = await _db.collection('users').doc(uid).collection('orders').add({
+        'orderNumber': newOrderNumber,
         'items': orderItems,
+        'selectedAddress': selectedAddress,
         'subtotal': subtotal,
         'discountPercentage': _discountPercentage,
         'discountAmount': discountAmount,
@@ -386,28 +495,45 @@ class _BasketWidgetState extends State<BasketWidget> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      orderID = orderRef.id;
+      final String orderID = orderRef.id;
 
+      // إرسال الإشعار
+      await _db.collection('user').doc(uid).collection('notifications').add({
+        'isRead': false,
+        'title': "Order Received!",
+        'body': 'Thank you for choosing DesignLand',
+        'createdAt': FieldValue.serverTimestamp(),
+        'targetUser': uid,
+      });
+
+      // إرسال الإيميل
       EmailServer().sendInvoiceEmail(
-          customerEmail: _auth.currentUser!.email.toString(),
-          orderId: orderID,
-          total: finalTotalPrice);
+        customerEmail: _auth.currentUser!.email.toString(),
+        orderId: orderID,
+        total: finalTotalPrice,
+        customerName: clientname,
+        items: orderItems,
+        orderNumber: newOrderNumber
+      );
 
       EmailServer().notifyAdmins(
-          orderId: orderID,
-          total: finalTotalPrice,
-          customerEmail: _auth.currentUser!.email.toString());
+        orderId: orderID,
+        total: finalTotalPrice,
+        customerEmail: _auth.currentUser!.email.toString(),
+        orderNumber: newOrderNumber,
+        items: orderItems,
+        customerName: clientname,
+        selectedAddress: selectedAddress,
+        customerPhone: selectedAddress['phone'] ?? phone
+      );
 
+
+      // تفريغ السلة بعد نجاح الشراء
       final batch = _db.batch();
       for (var doc in items) {
         batch.delete(doc.reference);
       }
       await batch.commit();
-
-      if (userEmail.isNotEmpty && userEmail != _auth.currentUser?.email) {
-        await EmailServer().sendInvoiceEmail(
-            customerEmail: userEmail, orderId: orderID, total: finalTotalPrice);
-      }
 
       if (!mounted) return;
       showDialog(
@@ -415,21 +541,31 @@ class _BasketWidgetState extends State<BasketWidget> {
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 60),
-          content: Text(
-            "Your order has been successfully confirmed and is now being processed!".tr,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF2D3436)), //[cite: 7]
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Order #$newOrderNumber Placed Successfully!".tr,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3436)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Your order has been confirmed and is now being processed.".tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
           ),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
+                backgroundColor: const Color(0xFF6C5CE7),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () => Navigator.pop(context),
-              child: Text("Good".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text("Done".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -452,9 +588,9 @@ class _BasketWidgetState extends State<BasketWidget> {
 
     if (uid == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFAF9FF), //[cite: 7]
+        backgroundColor: const Color(0xFFFAF9FF),
         appBar: AppBar(
-          title: Text("Shopping Cart".tr, style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold)), //[cite: 7]
+          title: Text("Shopping Cart".tr, style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0,
         ),
@@ -465,11 +601,11 @@ class _BasketWidgetState extends State<BasketWidget> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FF), //[cite: 7]
+      backgroundColor: const Color(0xFFFAF9FF),
       appBar: AppBar(
         title: Text(
           "Shopping Cart".tr,
-          style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.w800, fontSize: 20), //[cite: 7]
+          style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.w800, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -479,7 +615,7 @@ class _BasketWidgetState extends State<BasketWidget> {
         stream: _db.collection('users').doc(uid).collection('cart').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6C5CE7))); //[cite: 7]
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF6C5CE7)));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -490,15 +626,15 @@ class _BasketWidgetState extends State<BasketWidget> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
+                      color: const Color(0xFF6C5CE7).withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.shopping_bag_outlined, size: 70, color: Color(0xFF6C5CE7)), //[cite: 7]
+                    child: const Icon(Icons.shopping_bag_outlined, size: 70, color: Color(0xFF6C5CE7)),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     "The cart is currently empty.".tr,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)), //[cite: 7]
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -526,24 +662,22 @@ class _BasketWidgetState extends State<BasketWidget> {
           return Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1300),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: isDesktop
                   ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // قائمة منتجات السلة للويب (الجانب الأيسر/الأكبر)
                   Expanded(
                     flex: 3,
                     child: ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       itemCount: cartDocs.length,
                       itemBuilder: (context, index) {
-                        return _buildCartItemCard(cartDocs[index]);
+                        return _buildCartItemCard(cartDocs[index], screenWidth);
                       },
                     ),
                   ),
                   const SizedBox(width: 24),
-                  // بطاقة ملخص الحساب للويب (الجانب الأيمن)
                   Expanded(
                     flex: 2,
                     child: _buildSummaryCard(cartDocs, subtotal, discountAmount, finalTotalPrice),
@@ -552,18 +686,16 @@ class _BasketWidgetState extends State<BasketWidget> {
               )
                   : Column(
                 children: [
-                  // قائمة المنتجات للموبايل
                   Expanded(
                     child: ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       itemCount: cartDocs.length,
                       itemBuilder: (context, index) {
-                        return _buildCartItemCard(cartDocs[index]);
+                        return _buildCartItemCard(cartDocs[index], screenWidth);
                       },
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // بطاقة الملخص للموبايل
                   _buildSummaryCard(cartDocs, subtotal, discountAmount, finalTotalPrice),
                 ],
               ),
@@ -574,104 +706,109 @@ class _BasketWidgetState extends State<BasketWidget> {
     );
   }
 
-  // كارت مفصل ومصمم لكل منتج داخل السلة
-  Widget _buildCartItemCard(QueryDocumentSnapshot doc) {
+  // كارت المنتجات متجاوب الحجم وتصغير الخطوط والصورة للشاشات الصغيرة
+  Widget _buildCartItemCard(QueryDocumentSnapshot doc, double screenWidth) {
     final item = doc.data() as Map<String, dynamic>;
     final title = item['title'] ?? 'منتج';
     final price = (item['price'] ?? 0).toDouble();
     final quantity = (item['quantity'] ?? 1) as int;
     final image = item['image'] ?? '';
 
+    // تحديد أحجام مناسبة ومتناسبة مع الموبايل
+    final double imgSize = screenWidth < 400 ? 60.0 : 75.0;
+    final double titleFontSize = screenWidth < 400 ? 13.0 : 14.0;
+    final double priceFontSize = screenWidth < 400 ? 13.0 : 14.0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5CE7).withOpacity(0.06), //[cite: 7]
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF6C5CE7).withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         child: Row(
           children: [
-            // صورة المنتج
             ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               child: image.isNotEmpty
-                  ? Image.network(image, width: 80, height: 80, fit: BoxFit.cover)
+                  ? Image.network(image, width: imgSize, height: imgSize, fit: BoxFit.cover)
                   : Container(
-                width: 80,
-                height: 80,
-                color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
-                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFF6C5CE7)), //[cite: 7]
+                width: imgSize,
+                height: imgSize,
+                color: const Color(0xFF6C5CE7).withOpacity(0.08),
+                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFF6C5CE7), size: 20),
               ),
             ),
-            const SizedBox(width: 16),
-            // تفاصيل الاسم والسعر
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3436)), //[cite: 7]
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize, color: const Color(0xFF2D3436)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     "${price.toStringAsFixed(2)} ${"EGP".tr}",
-                    style: const TextStyle(
-                      color: Color(0xFF6C5CE7), //[cite: 7]
-                      fontWeight: FontWeight.w900,
-                      fontSize: 15,
+                    style: TextStyle(
+                      color: const Color(0xFF6C5CE7),
+                      fontWeight: FontWeight.w800,
+                      fontSize: priceFontSize,
                     ),
                   ),
                 ],
               ),
             ),
-            // أزرار التحكم بالكمية
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF9FF), //[cite: 7]
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFFAF9FF),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.remove, size: 16, color: Color(0xFF2D3436)), //[cite: 7]
+                        icon: const Icon(Icons.remove, size: 14, color: Color(0xFF2D3436)),
                         onPressed: () => _updateQuantity(doc.id, quantity, -1),
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: EdgeInsets.zero,
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
                           "$quantity",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2D3436)), //[cite: 7]
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3436)),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add, size: 16, color: Color(0xFF6C5CE7)), //[cite: 7]
+                        icon: const Icon(Icons.add, size: 14, color: Color(0xFF6C5CE7)),
                         onPressed: () => _updateQuantity(doc.id, quantity, 1),
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: EdgeInsets.zero,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF4757), size: 22),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF4757), size: 20),
                   onPressed: () => _removeItem(doc.id),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
                 ),
               ],
             ),
@@ -681,18 +818,18 @@ class _BasketWidgetState extends State<BasketWidget> {
     );
   }
 
-  // بطاقة الحساب والخصومات والأزرار الناتجة
+  // بطاقة الحساب والخصومات والأزرار
   Widget _buildSummaryCard(List<QueryDocumentSnapshot> items, double subtotal, double discountAmount, double finalTotalPrice) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5CE7).withOpacity(0.08), //[cite: 7]
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF6C5CE7).withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -702,11 +839,10 @@ class _BasketWidgetState extends State<BasketWidget> {
         children: [
           Text(
             "Order Summary".tr,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)), //[cite: 7]
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // قسم أدخال الكوبون
           if (_appliedPromoCode == null) ...[
             Row(
               children: [
@@ -714,16 +850,16 @@ class _BasketWidgetState extends State<BasketWidget> {
                   child: TextField(
                     controller: _promoController,
                     textCapitalization: TextCapitalization.characters,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
                       hintText: "Enter promo code".tr,
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                      prefixIcon: const Icon(Icons.local_offer_outlined, color: Color(0xFF6C5CE7), size: 18), //[cite: 7]
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                      prefixIcon: const Icon(Icons.local_offer_outlined, color: Color(0xFF6C5CE7), size: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                       filled: true,
-                      fillColor: const Color(0xFFFAF9FF), //[cite: 7]
+                      fillColor: const Color(0xFFFAF9FF),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
                       ),
                       errorText: _promoErrorMsg,
@@ -733,43 +869,43 @@ class _BasketWidgetState extends State<BasketWidget> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    backgroundColor: const Color(0xFF6C5CE7),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: _isApplyingPromo ? null : _applyPromoCode,
                   child: _isApplyingPromo
                       ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                      : Text("Apply".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      : Text("Apply".tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const Divider(height: 20),
           ] else ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       "${"Promo code applied:".tr} $_appliedPromoCode (-$_discountPercentage%)",
-                      style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.red, size: 18),
+                    icon: const Icon(Icons.close_rounded, color: Colors.red, size: 16),
                     onPressed: _removePromoCode,
                     constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     padding: EdgeInsets.zero,
@@ -777,55 +913,54 @@ class _BasketWidgetState extends State<BasketWidget> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
 
-          // التفاصيل المالية
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Subtotal:".tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+              Text("Subtotal:".tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
               Text("${subtotal.toStringAsFixed(2)} ${"EGP".tr}",
-                  style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold, fontSize: 14)), //[cite: 7]
+                  style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           if (_discountPercentage > 0) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Discount:".tr, style: const TextStyle(color: Color(0xFF10B981), fontSize: 14)),
+                Text("Discount:".tr, style: const TextStyle(color: Color(0xFF10B981), fontSize: 13)),
                 Text("-${discountAmount.toStringAsFixed(2)} ${"EGP".tr}",
-                    style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14)),
+                    style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           ],
-          const Divider(height: 24),
+          const Divider(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Total:".tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF2D3436))), //[cite: 7]
+              Text("Total:".tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF2D3436))),
               Text(
                 "${finalTotalPrice.toStringAsFixed(2)} ${"EGP".tr}",
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF6C5CE7)), //[cite: 7]
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF6C5CE7)),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C5CE7), //[cite: 7]
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 4,
-                shadowColor: const Color(0xFF6C5CE7).withOpacity(0.3), //[cite: 7]
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                backgroundColor: const Color(0xFF6C5CE7),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 3,
+                shadowColor: const Color(0xFF6C5CE7).withOpacity(0.3),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _confirmOrder(items, subtotal),
               child: Text(
                 "Confirm Order".tr,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
