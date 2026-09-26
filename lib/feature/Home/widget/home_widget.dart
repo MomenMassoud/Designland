@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/services/guest_cart_service.dart';
+import 'package:desginland/feature/Basket/view/basket_view.dart';
 import 'package:desginland/feature/Product/view/product_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +97,23 @@ class _HomeWidgetState extends State<HomeWidget> {
     }
   }
 
+  // 👈 Stream مخصص للسلة حسب حالة المستخدم
+  Stream<int> _getCartCountStream() {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      // للمستخدم المسجل: Stream من Firestore
+      return _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('cart')
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length);
+    } else {
+      // للزائر: استخدام Stream الجديد الخاص بـ GuestCartService
+      return GuestCartService().cartCountStream;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -147,19 +166,19 @@ class _HomeWidgetState extends State<HomeWidget> {
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // شريط البحث (يظل دائماً في الأعلى)
+                // شريط البحث وأيقونة السلة
                 SliverToBoxAdapter(
                   child: Center(
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 1300),
                       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: isDesktop ? 450 : 250,
+                          Expanded(
+                            child: Center(
+                              child: Container(
+                                width: isDesktop ? 450 : double.infinity,
                                 height: 46,
                                 decoration: BoxDecoration(
                                   color: theme.cardColor,
@@ -209,15 +228,15 @@ class _HomeWidgetState extends State<HomeWidget> {
                                   ),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                         ],
                       ),
                     ),
                   ),
                 ),
 
-                // إخفاء البانرات، العروض، واستكشاف الأقسام عند البحث
                 if (!isSearching) ...[
                   // 1. البانرات
                   SliverToBoxAdapter(
@@ -460,7 +479,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                   ),
                 ],
 
-                // عرض نتايج المنتجات المطابقة للبحث أو الأقسام بشكل طبيعي
+                // قائمة المنتجات
                 StreamBuilder<QuerySnapshot>(
                   stream: _categoriesRef.snapshots(),
                   builder: (context, snapshot) {
@@ -864,6 +883,36 @@ class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgeCounter extends StatelessWidget {
+  final int count;
+  const _BadgeCounter({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      constraints: const BoxConstraints(
+        minWidth: 16,
+        minHeight: 16,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF7675),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        "$count",
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          height: 1.1,
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/services/guest_cart_service.dart';
 import 'package:desginland/Core/widgets/custom_title.dart';
 import 'package:desginland/Core/widgets/staff_block_widget.dart';
 import 'package:desginland/feature/About/view/about_view.dart';
@@ -34,6 +35,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
   bool _isStaff = false;
 
   StreamSubscription<QuerySnapshot>? _cartSubscription;
+  StreamSubscription<int>? _guestCartSubscription;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
 
   static final List<Widget> _screens = [
@@ -53,6 +55,10 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     AnalyticsService.startSession();
+
+    // 👈 إعداد الاستماع لعدد عناصر السلة (للزائر والمستخدم المسجل)
+    _setupCartListener();
+
     _fetchInitialUserData();
     _getToken();
   }
@@ -75,7 +81,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     if (user == null) return;
 
     try {
-      _listenToCartCount(user.uid);
       _listenToNotificationCount(user.uid);
 
       final userDoc = await _firestore.collection('user').doc(user.uid).get();
@@ -113,26 +118,44 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     );
   }
 
-  void _listenToCartCount(String uid) {
+  void _setupCartListener() {
+    final user = _auth.currentUser;
+
     _cartSubscription?.cancel();
-    _cartSubscription = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('cart')
-        .snapshots()
-        .listen(
-          (snapshot) {
-        _cartCount.value = snapshot.size;
-      },
-      onError: (e) {
-        debugPrint("Error listening to cart count: $e");
-      },
-    );
+    _guestCartSubscription?.cancel();
+
+    if (user != null) {
+      // 1. للمستخدم المسجل: الاستماع من Firestore
+      _cartSubscription = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('cart')
+          .snapshots()
+          .listen(
+            (snapshot) {
+          _cartCount.value = snapshot.docs.length;
+        },
+        onError: (e) {
+          debugPrint("Error listening to user cart count: $e");
+        },
+      );
+    } else {
+      // 2. للزائر (Guest): الاستماع من GuestCartService
+      _guestCartSubscription = GuestCartService().cartCountStream.listen(
+            (count) {
+          _cartCount.value = count;
+        },
+        onError: (e) {
+          debugPrint("Error listening to guest cart count: $e");
+        },
+      );
+    }
   }
 
   @override
   void dispose() {
     _cartSubscription?.cancel();
+    _guestCartSubscription?.cancel();
     _notificationSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     AnalyticsService.endSession();
@@ -198,7 +221,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
-                // عداد السلة
+                // عداد السلة (شغال تلقائياً للـ Guest والـ User)
                 ValueListenableBuilder<int>(
                   valueListenable: _cartCount,
                   builder: (context, count, _) {
@@ -219,7 +242,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
-                // 🌙/☀️ زر التبديل بين الـ Light والـ Dark Theme
+                // زر التبديل بين الـ Light والـ Dark Theme
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),

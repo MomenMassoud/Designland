@@ -776,49 +776,20 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
       Map<String, dynamic> productData, double finalPrice) async {
     final user = _auth.currentUser;
 
-    if (user == null) {
-      _showLoginDialog();
-      return;
-    }
     try {
       if (!mounted) return;
+
       await showOrderDetailsBottomSheet(
         context: context,
-        uid: user.uid,
+        uid: user?.uid,
         productId: widget.productId,
         productData: productData,
         finalPrice: finalPrice,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("${"An error occurred during processing:".tr}$e")),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
+        );
+      }
     }
   }
-
-  void _showLoginDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Login required".tr),
-        content: Text("Please log in first to add products to the cart.".tr),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("cancellation".tr),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1)),
-            onPressed: () {
-              Navigator.pushNamed(context, LoginView.id);
-            },
-            child:
-            Text("Log in".tr, style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-}

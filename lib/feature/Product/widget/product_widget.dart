@@ -8,9 +8,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
-import '../../../Core/widgets/error_dailog_custom.dart';
+import '../../../Core/services/guest_cart_service.dart';
 import '../../Basket/view/basket_view.dart';
-import 'order_details_bottom_sheet.dart'; // تأكد من استيراد الـ Bottom Sheet الموحد
+import 'order_details_bottom_sheet.dart';
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -22,54 +22,34 @@ class ProductWidget extends StatefulWidget {
 }
 
 class _ProductWidgetState extends State<ProductWidget> {
-  final ValueNotifier<int> _cartCount = ValueNotifier<int>(0);
   final CollectionReference _productsRef =
   FirebaseFirestore.instance.collection('products');
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  StreamSubscription<QuerySnapshot>? _cartSubscription;
   int _selectedImageIndex = 0;
   bool _isAddingToCart = false;
   bool _hasLoggedAnalytics = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (_auth.currentUser != null) {
-      _listenToCartCount(_auth.currentUser!.uid);
+  // 👈 Stream مخصص للسلة حسب حالة المستخدم
+  Stream<int> _getCartCountStream() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      // للمستخدم المسجل: Stream من Firestore
+      return _db
+          .collection('users')
+          .doc(user.uid)
+          .collection('cart')
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length);
+    } else {
+      // للزائر: Stream الخاص بـ GuestCartService
+      return GuestCartService().cartCountStream;
     }
-  }
-
-  void _listenToCartCount(String uid) {
-    _cartSubscription = _db
-        .collection('users')
-        .doc(uid)
-        .collection('cart')
-        .snapshots()
-        .listen(
-          (snapshot) {
-        _cartCount.value = snapshot.size;
-      },
-      onError: (e) => showErrorDialog(context, "Error".tr, e.toString()),
-    );
-  }
-
-  @override
-  void dispose() {
-    _cartSubscription?.cancel();
-    _cartCount.dispose();
-    super.dispose();
   }
 
   Future<void> _handleAddToCart(
       Map<String, dynamic> productData, double finalPrice) async {
     final user = _auth.currentUser;
-
-    if (user == null) {
-      _showLoginDialog();
-      return;
-    }
 
     setState(() => _isAddingToCart = true);
 
@@ -79,16 +59,18 @@ class _ProductWidgetState extends State<ProductWidget> {
 
       await showOrderDetailsBottomSheet(
         context: context,
-        uid: user.uid,
+        uid: user?.uid,
         productId: widget.productDoc,
         productData: productData,
         finalPrice: finalPrice,
       );
     } catch (e) {
-      setState(() => _isAddingToCart = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
-      );
+      if (mounted) {
+        setState(() => _isAddingToCart = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
+        );
+      }
     }
   }
 
@@ -145,9 +127,11 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
         ),
         actions: [
-          ValueListenableBuilder<int>(
-            valueListenable: _cartCount,
-            builder: (context, count, child) {
+          // 👈 استخدام StreamBuilder لاستهلاك الـ Stream الجديد مباشرة
+          StreamBuilder<int>(
+            stream: _getCartCountStream(),
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
               return Stack(
                 alignment: Alignment.center,
                 children: [
@@ -160,14 +144,15 @@ class _ProductWidgetState extends State<ProductWidget> {
                   ),
                   if (count > 0)
                     Positioned(
-                      right: 6,
-                      top: 6,
+                      right: 4,
+                      top: 4,
                       child: _BadgeCounter(count: count),
                     ),
                 ],
               );
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: LayoutBuilder(
@@ -828,17 +813,23 @@ class _BadgeCounter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFF7675),
-        shape: BoxShape.circle,
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      constraints: const BoxConstraints(
+        minWidth: 16,
+        minHeight: 16,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF7675),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         "$count",
+        textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
+          height: 1.1,
         ),
       ),
     );
