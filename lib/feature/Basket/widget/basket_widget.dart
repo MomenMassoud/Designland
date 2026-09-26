@@ -62,7 +62,7 @@ class _BasketWidgetState extends State<BasketWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("The product has been removed from the cart.".tr),
-        backgroundColor: const Color(0xFF6C5CE7),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -123,7 +123,7 @@ class _BasketWidgetState extends State<BasketWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("${"Promo code applied successfully! Discount:".tr} $percentage% 🎉"),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -163,6 +163,7 @@ class _BasketWidgetState extends State<BasketWidget> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -183,7 +184,11 @@ class _BasketWidgetState extends State<BasketWidget> {
                 children: [
                   Text(
                     "Complete contact and address details".tr,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (existingPhone == null || existingPhone.isEmpty) ...[
@@ -194,7 +199,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                       decoration: InputDecoration(
                         labelText: "Contact phone number".tr,
                         prefixIcon: const Icon(Icons.phone),
-                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -205,7 +209,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                     decoration: InputDecoration(
                       labelText: "Full Name".tr,
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -217,7 +220,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                           validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                           decoration: InputDecoration(
                             labelText: "Governorate".tr,
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -228,7 +230,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                           validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                           decoration: InputDecoration(
                             labelText: "City / Area".tr,
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -240,7 +241,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                     validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                     decoration: InputDecoration(
                       labelText: "Street Name".tr,
-                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -252,7 +252,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                           validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                           decoration: InputDecoration(
                             labelText: "Building".tr,
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -263,7 +262,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                           validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                           decoration: InputDecoration(
                             labelText: "Floor".tr,
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -274,7 +272,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                           validator: (v) => v == null || v.isEmpty ? "Required".tr : null,
                           decoration: InputDecoration(
                             labelText: "Apt No.".tr,
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -285,7 +282,6 @@ class _BasketWidgetState extends State<BasketWidget> {
                     controller: landmarkController,
                     decoration: InputDecoration(
                       labelText: "Nearest Landmark (optional)".tr,
-                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -293,8 +289,9 @@ class _BasketWidgetState extends State<BasketWidget> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6C5CE7),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () async {
                         if (!formKey.currentState!.validate()) return;
@@ -360,6 +357,7 @@ class _BasketWidgetState extends State<BasketWidget> {
       await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        backgroundColor: Theme.of(context).cardColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -378,10 +376,18 @@ class _BasketWidgetState extends State<BasketWidget> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Select a delivery address:".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        "Select a delivery address:".tr,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<int>(
                         value: selectedAddressIndex,
+                        dropdownColor: Theme.of(context).cardColor,
                         isExpanded: true,
                         items: List.generate(addresses.length, (index) {
                           final addr = addresses[index];
@@ -393,7 +399,10 @@ class _BasketWidgetState extends State<BasketWidget> {
                             child: Text(
                               label,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                             ),
                           );
                         }),
@@ -402,11 +411,8 @@ class _BasketWidgetState extends State<BasketWidget> {
                             setBottomSheetState(() => selectedAddressIndex = val);
                           }
                         },
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          fillColor: Colors.grey.shade50,
-                          filled: true,
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -415,7 +421,7 @@ class _BasketWidgetState extends State<BasketWidget> {
                         height: 48,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
+                            backgroundColor: Theme.of(context).colorScheme.secondary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
@@ -439,7 +445,6 @@ class _BasketWidgetState extends State<BasketWidget> {
 
       final selectedAddress = addresses[selectedAddressIndex];
 
-      // زيادة رقم الطلب أوتوماتيكياً وقراءته من app_info/const
       int newOrderNumber = 1;
       final constDocRef = _db.collection('app_info').doc('const');
 
@@ -482,7 +487,6 @@ class _BasketWidgetState extends State<BasketWidget> {
         };
       }).toList();
 
-      // إنشاء مستند الأوردر مع الـ Order Number والعنوان المحدد
       final orderRef = await _db.collection('users').doc(uid).collection('orders').add({
         'orderNumber': newOrderNumber,
         'items': orderItems,
@@ -499,7 +503,6 @@ class _BasketWidgetState extends State<BasketWidget> {
 
       final String orderID = orderRef.id;
 
-      // إرسال الإشعار
       await _db.collection('user').doc(uid).collection('notifications').add({
         'isRead': false,
         'title': "Order Received!",
@@ -508,7 +511,6 @@ class _BasketWidgetState extends State<BasketWidget> {
         'targetUser': uid,
       });
 
-      // إرسال الإيميل
       final userEmail = _auth.currentUser?.email ?? '';
       EmailServer().sendInvoiceEmail(
         customerEmail: userEmail,
@@ -530,7 +532,6 @@ class _BasketWidgetState extends State<BasketWidget> {
         customerPhone: selectedAddress['phone'] ?? phone,
       );
 
-      // تفريغ السلة بعد نجاح الشراء
       final batch = _db.batch();
       for (var doc in items) {
         batch.delete(doc.reference);
@@ -541,20 +542,28 @@ class _BasketWidgetState extends State<BasketWidget> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 60),
+          title: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.secondary, size: 60),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 "Order #$newOrderNumber Placed Successfully!".tr,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3436)),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 "Your order has been confirmed and is now being processed.".tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -562,7 +571,7 @@ class _BasketWidgetState extends State<BasketWidget> {
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C5CE7),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
@@ -588,37 +597,32 @@ class _BasketWidgetState extends State<BasketWidget> {
     final uid = _auth.currentUser?.uid;
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 900;
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (uid == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFAF9FF),
         appBar: AppBar(
-          title: Text("Shopping Cart".tr, style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
-          elevation: 0,
+          title: Text("Shopping Cart".tr, style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
         ),
         body: Center(
-          child: Text("Please log in to view the shopping cart.".tr, style: TextStyle(color: Colors.grey.shade600)),
+          child: Text("Please log in to view the shopping cart.".tr, style: TextStyle(color: colorScheme.onSurfaceVariant)),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FF),
       appBar: AppBar(
         title: Text(
           "Shopping Cart".tr,
-          style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.w800, fontSize: 20),
+          style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w800, fontSize: 20),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
         centerTitle: false,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _db.collection('users').doc(uid).collection('cart').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6C5CE7)));
+            return Center(child: CircularProgressIndicator(color: colorScheme.primary));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -629,20 +633,20 @@ class _BasketWidgetState extends State<BasketWidget> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6C5CE7).withOpacity(0.08),
+                      color: colorScheme.primary.withOpacity(0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.shopping_bag_outlined, size: 70, color: Color(0xFF6C5CE7)),
+                    child: Icon(Icons.shopping_bag_outlined, size: 70, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     "The cart is currently empty.".tr,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "Explore products and add your choices to the cart!".tr,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -709,7 +713,7 @@ class _BasketWidgetState extends State<BasketWidget> {
     );
   }
 
-  // كارت المنتجات متجاوب الحجم وتصغير الخطوط والصورة للشاشات الصغيرة
+  // كارت المنتجات متجاوب الحجم وديناميكي مع الثيم
   Widget _buildCartItemCard(QueryDocumentSnapshot doc, double screenWidth) {
     final item = doc.data() as Map<String, dynamic>;
     final title = item['title'] ?? 'منتج';
@@ -717,6 +721,7 @@ class _BasketWidgetState extends State<BasketWidget> {
     final quantity = (item['quantity'] ?? 1) as int;
     final image = item['image'] ?? '';
 
+    final colorScheme = Theme.of(context).colorScheme;
     final double imgSize = screenWidth < 400 ? 60.0 : 75.0;
     final double titleFontSize = screenWidth < 400 ? 13.0 : 14.0;
     final double priceFontSize = screenWidth < 400 ? 13.0 : 14.0;
@@ -724,11 +729,11 @@ class _BasketWidgetState extends State<BasketWidget> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5CE7).withOpacity(0.05),
+            color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -745,8 +750,8 @@ class _BasketWidgetState extends State<BasketWidget> {
                   : Container(
                 width: imgSize,
                 height: imgSize,
-                color: const Color(0xFF6C5CE7).withOpacity(0.08),
-                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFF6C5CE7), size: 20),
+                color: colorScheme.primary.withOpacity(0.12),
+                child: Icon(Icons.image_not_supported_outlined, color: colorScheme.primary, size: 20),
               ),
             ),
             const SizedBox(width: 12),
@@ -756,7 +761,7 @@ class _BasketWidgetState extends State<BasketWidget> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize, color: const Color(0xFF2D3436)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize, color: colorScheme.onSurface),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -764,7 +769,7 @@ class _BasketWidgetState extends State<BasketWidget> {
                   Text(
                     "${price.toStringAsFixed(2)} ${"EGP".tr}",
                     style: TextStyle(
-                      color: const Color(0xFF6C5CE7),
+                      color: colorScheme.primary,
                       fontWeight: FontWeight.w800,
                       fontSize: priceFontSize,
                     ),
@@ -777,14 +782,14 @@ class _BasketWidgetState extends State<BasketWidget> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF9FF),
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: colorScheme.onSurfaceVariant.withOpacity(0.15)),
                   ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.remove, size: 14, color: Color(0xFF2D3436)),
+                        icon: Icon(Icons.remove, size: 14, color: colorScheme.onSurface),
                         onPressed: () => _updateQuantity(doc.id, quantity, -1),
                         constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: EdgeInsets.zero,
@@ -793,11 +798,11 @@ class _BasketWidgetState extends State<BasketWidget> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
                           "$quantity",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3436)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: colorScheme.onSurface),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add, size: 14, color: Color(0xFF6C5CE7)),
+                        icon: Icon(Icons.add, size: 14, color: colorScheme.primary),
                         onPressed: () => _updateQuantity(doc.id, quantity, 1),
                         constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: EdgeInsets.zero,
@@ -820,16 +825,18 @@ class _BasketWidgetState extends State<BasketWidget> {
     );
   }
 
-  // بطاقة الحساب والخصومات والأزرار
+  // بطاقة الحساب والخصومات للألوان الديناميكية
   Widget _buildSummaryCard(List<QueryDocumentSnapshot> items, double subtotal, double discountAmount, double finalTotalPrice) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5CE7).withOpacity(0.08),
+            color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -841,7 +848,7 @@ class _BasketWidgetState extends State<BasketWidget> {
         children: [
           Text(
             "Order Summary".tr,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3436)),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
           ),
           const SizedBox(height: 12),
 
@@ -852,18 +859,11 @@ class _BasketWidgetState extends State<BasketWidget> {
                   child: TextField(
                     controller: _promoController,
                     textCapitalization: TextCapitalization.characters,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: "Enter promo code".tr,
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                      prefixIcon: const Icon(Icons.local_offer_outlined, color: Color(0xFF6C5CE7), size: 16),
+                      prefixIcon: Icon(Icons.local_offer_outlined, color: colorScheme.primary, size: 16),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      filled: true,
-                      fillColor: const Color(0xFFFAF9FF),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
                       errorText: _promoErrorMsg,
                     ),
                   ),
@@ -871,7 +871,7 @@ class _BasketWidgetState extends State<BasketWidget> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C5CE7),
+                    backgroundColor: colorScheme.primary,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -892,18 +892,18 @@ class _BasketWidgetState extends State<BasketWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
+                color: colorScheme.secondary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                border: Border.all(color: colorScheme.secondary.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+                  Icon(Icons.check_circle_rounded, color: colorScheme.secondary, size: 18),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       "${"Promo code applied:".tr} $_appliedPromoCode (-$_discountPercentage%)",
-                      style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(color: colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
                   IconButton(
@@ -921,9 +921,9 @@ class _BasketWidgetState extends State<BasketWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Subtotal:".tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              Text("Subtotal:".tr, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13)),
               Text("${subtotal.toStringAsFixed(2)} ${"EGP".tr}",
-                  style: const TextStyle(color: Color(0xFF2D3436), fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           if (_discountPercentage > 0) ...[
@@ -931,9 +931,9 @@ class _BasketWidgetState extends State<BasketWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Discount:".tr, style: const TextStyle(color: Color(0xFF10B981), fontSize: 13)),
+                Text("Discount:".tr, style: TextStyle(color: colorScheme.secondary, fontSize: 13)),
                 Text("-${discountAmount.toStringAsFixed(2)} ${"EGP".tr}",
-                    style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: TextStyle(color: colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           ],
@@ -941,10 +941,10 @@ class _BasketWidgetState extends State<BasketWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Total:".tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF2D3436))),
+              Text("Total:".tr, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: colorScheme.onSurface)),
               Text(
                 "${finalTotalPrice.toStringAsFixed(2)} ${"EGP".tr}",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF6C5CE7)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.primary),
               ),
             ],
           ),
@@ -953,10 +953,10 @@ class _BasketWidgetState extends State<BasketWidget> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C5CE7),
+                backgroundColor: colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 3,
-                shadowColor: const Color(0xFF6C5CE7).withOpacity(0.3),
+                shadowColor: colorScheme.primary.withOpacity(0.3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _confirmOrder(items, subtotal),

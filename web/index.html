@@ -1,70 +1,155 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
+
   <base href="$FLUTTER_BASE_HREF">
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+  >
 
-  <!-- SEO الأساسي -->
+  <!-- SEO -->
+
   <title>DesignLand</title>
-  <meta name="description" content="A Happy Place for Customization Personalized Gifts & More">
-  <meta name="keywords" content="DesignLand, ديزاين لاند, هدايا حسب الطلب, ميداليات بالاسم, برواتير مخصصة, استيكرات بالاسم, labels, customize gifts">
-  <meta name="author" content="DesignLand">
-  <meta name="robots" content="index, follow">
 
-  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta
+          name="description"
+          content="A Happy Place for Customization Personalized Gifts & More"
+  >
+
+  <meta
+          name="keywords"
+          content="DesignLand, ديزاين لاند, هدايا حسب الطلب, ميداليات بالاسم, برواتير مخصصة, استيكرات بالاسم, labels, customize gifts"
+  >
+
+  <meta
+          name="author"
+          content="DesignLand"
+  >
+
+  <meta
+          name="robots"
+          content="index, follow"
+  >
+
+  <!-- Open Graph -->
+
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://designlandeg.com/">
-  <meta property="og:title" content="DesignLand">
-  <meta property="og:description" content="A Happy Place for Customization Personalized Gifts & More">
-  <meta property="og:image" content="https://designlandeg.com/favicon.png">
 
-  <!-- Twitter Meta Tags -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="DesignLand">
-  <meta name="twitter:description" content="A Happy Place for Customization Personalized Gifts & More">
-  <meta name="twitter:image" content="https://designlandeg.com/favicon.png">
+  <meta
+          property="og:url"
+          content="https://designlandeg.com/"
+  >
 
-  <!-- iOS & PWA Meta Tags -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="DesignLand">
-  <link rel="apple-touch-icon" href="favicon.png">
+  <meta
+          property="og:title"
+          content="DesignLand"
+  >
 
-  <!-- Favicon & Manifest -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-  <link rel="manifest" href="manifest.json">
+  <meta
+          property="og:description"
+          content="A Happy Place for Customization Personalized Gifts & More"
+  >
 
-  <!-- Firebase JS SDK (تم تحديث الإصدار ليتوافق مع الـ Service Worker) -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
+  <meta
+          property="og:image"
+          content="https://designlandeg.com/favicon.png"
+  >
 
-  <!-- كود إلغاء الكاش واكتشاف التحديثات تلقائياً -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        // تسجيل الـ Service Worker مع إضافة Timestamp للتحقق المباشر من التحديثات
-        navigator.serviceWorker.register('flutter_service_worker.js?v=' + Date.now()).then(function (reg) {
-          reg.onupdatefound = function () {
-            var installingWorker = reg.installing;
-            installingWorker.onstatechange = function () {
-              if (installingWorker.state === 'installed') {
-                if (navigator.serviceWorker.controller) {
-                  console.log('كود جديد تم اكتشافه، يتم الآن إعادة تحميل التطبيق...');
-                  window.location.reload();
-                }
-              }
-            };
-          };
-        });
-      });
-    }
+  <!-- Twitter -->
+
+  <meta
+          name="twitter:card"
+          content="summary_large_image"
+  >
+
+  <meta
+          name="twitter:title"
+          content="DesignLand"
+  >
+
+  <meta
+          name="twitter:description"
+          content="A Happy Place for Customization Personalized Gifts & More"
+  >
+
+  <meta
+          name="twitter:image"
+          content="https://designlandeg.com/favicon.png"
+  >
+
+  <!-- iOS / PWA -->
+
+  <meta
+          name="mobile-web-app-capable"
+          content="yes"
+  >
+
+  <meta
+          name="apple-mobile-web-app-capable"
+          content="yes"
+  >
+
+  <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black"
+  >
+
+  <meta
+          name="apple-mobile-web-app-title"
+          content="DesignLand"
+  >
+
+  <link
+          rel="apple-touch-icon"
+          href="favicon.png"
+  >
+
+  <!-- Favicon -->
+
+  <link
+          rel="icon"
+          type="image/png"
+          href="favicon.png"
+  >
+
+  <!-- Manifest -->
+
+  <link
+          rel="manifest"
+          href="manifest.json"
+  >
+
+  <!-- Firebase JS SDK -->
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js">
   </script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js">
+  </script>
+
 </head>
+
 <body>
-<!-- تحميل محرك فلاتر -->
-<script src="flutter_bootstrap.js" async></script>
+
+<!--
+  IMPORTANT:
+  Do NOT manually register flutter_service_worker.js.
+
+  Flutter handles its own web initialization through
+  flutter_bootstrap.js.
+-->
+
+<script
+        src="flutter_bootstrap.js"
+        async>
+</script>
+
 </body>
+
 </html>
+
