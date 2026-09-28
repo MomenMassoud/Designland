@@ -1,46 +1,51 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 
 class ProductModel {
-  String doc;
-  double price;
-  String title;
-  String description;
-  String categoryDoc;
-  String SubCategoryDoc;
-  double avgRate;
-  List<String> images;
-  final double discountPercentage; // نسبة الخصم مثلاً 15.0
-  final DateTime? discountUntil;   // تاريخ ووقت انتهاء الخصم
-  ProductModel({
-    required this.doc,required this.title,required this.price,required this.avgRate,required this.categoryDoc,
-    required this.description,required this.images,required this.SubCategoryDoc,
-    this.discountPercentage = 0.0,
-    this.discountUntil,
-});
-  bool get hasActiveDiscount {
-    if (discountPercentage <= 0 || discountUntil == null) return false;
-    return DateTime.now().isBefore(discountUntil!);
-  }
+  final String id;
+  final String title;
+  final String description;
+  final double originalPrice;
+  final double discountPercentage;
+  final double discountedPrice;
+  final double avgRate;
+  final bool isActive;
+  final List<String> images;
+  final Map<String, dynamic> rawData;
 
-  // حساب السعر النهائي بعد الخصم
-  double get discountedPrice {
-    if (!hasActiveDiscount) return price;
-    return price - (price * (discountPercentage / 100));
-  }
-  factory ProductModel.fromFirestore(Map<String, dynamic> json, String id) {
+  ProductModel({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.originalPrice,
+    required this.discountPercentage,
+    required this.discountedPrice,
+    required this.avgRate,
+    required this.isActive,
+    required this.images,
+    required this.rawData,
+  });
+
+  factory ProductModel.fromFirestore(String id, Map<String, dynamic> data) {
+    final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
+    final double discountPercentage = double.tryParse(
+        (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
+    ) ?? 0.0;
+
+    final double discountedPrice = discountPercentage > 0
+        ? originalPrice - (originalPrice * (discountPercentage / 100))
+        : originalPrice;
+
     return ProductModel(
-      doc: id,
-      title: json['title'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      avgRate: (json['avgRate'] ?? 0).toDouble(),
-      categoryDoc: json['categoryId'] ?? '',
-      description: json['description'] ?? '',
-      images: List<String>.from(json['images'] ?? []),
-      SubCategoryDoc: json['subcategoryId'] ?? '',
-      discountPercentage: (json['discountPercentage'] ?? 0.0).toDouble(),
-      discountUntil: json['discountUntil'] != null
-          ? (json['discountUntil'] as Timestamp).toDate()
-          : null,
+      id: id,
+      title: data['title'] ?? '',
+      description: data['description'] ?? '',
+      originalPrice: originalPrice,
+      discountPercentage: discountPercentage,
+      discountedPrice: discountedPrice,
+      avgRate: double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0,
+      isActive: data['IsActive'] ?? data['isActive'] ?? true,
+      images: List<String>.from(data['images'] ?? []),
+      rawData: data,
     );
   }
 }

@@ -1,61 +1,14 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:desginland/Core/server/email_server.dart';
 import 'package:desginland/Core/widgets/full_screen_image_widget.dart';
 import 'package:desginland/feature/Login/view/login_view.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:desginland/feature/Product/widget/product_description_widget.dart';
+import 'package:desginland/feature/Product/widget/product_reviews_section.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../Core/server/analytics_service.dart';
-import '../../../Core/services/guest_cart_service.dart';
-import '../../../Core/Utils/app.colors.dart';
+import '../../../controllers/product_controller.dart';
+import '../../../model/product_model.dart';
 import '../../Basket/view/basket_view.dart';
-import 'order_details_bottom_sheet.dart';
 
-// دالة normalizeAppFlowyJson لمعالجة وتحديد بناء مستند AppFlowy
-Map<String, dynamic>? _normalizeAppFlowyJson(dynamic value) {
-  if (value is! Map) {
-    return null;
-  }
-
-  dynamic current = value;
-  int safetyCounter = 0;
-
-  while (current is Map && safetyCounter < 20) {
-    safetyCounter++;
-    final map = Map<String, dynamic>.from(current);
-
-    if (map['type'] == 'page') {
-      return {
-        'document': map,
-      };
-    }
-
-    if (map.containsKey('document')) {
-      final nested = map['document'];
-
-      if (nested is Map) {
-        current = nested;
-        continue;
-      }
-
-      if (nested is String) {
-        try {
-          current = jsonDecode(nested);
-          continue;
-        } catch (_) {
-          return null;
-        }
-      }
-    }
-    return null;
-  }
-
-  return null;
-}
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -67,64 +20,12 @@ class ProductWidget extends StatefulWidget {
 }
 
 class _ProductWidgetState extends State<ProductWidget> {
-  final CollectionReference _productsRef =
-  FirebaseFirestore.instance.collection('products');
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  int _selectedImageIndex = 0;
-  bool _isAddingToCart = false;
-  bool _hasLoggedAnalytics = false;
+  late final ProductController controller;
 
-  // Stream مخصص للسلة حسب حالة المستخدم
-  Stream<int> _getCartCountStream() {
-    final user = _auth.currentUser;
-    if (user != null) {
-      return _db
-          .collection('users')
-          .doc(user.uid)
-          .collection('cart')
-          .snapshots()
-          .map((snapshot) => snapshot.docs.length);
-    } else {
-      return GuestCartService().cartCountStream;
-    }
-  }
-
-  Future<void> _handleAddToCart(
-      Map<String, dynamic> productData, double finalPrice, bool isActive) async {
-    if (!isActive) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("This product is currently unavailable.".tr),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-
-    final user = _auth.currentUser;
-
-    setState(() => _isAddingToCart = true);
-
-    try {
-      if (!mounted) return;
-      setState(() => _isAddingToCart = false);
-
-      await showOrderDetailsBottomSheet(
-        context: context,
-        uid: user?.uid,
-        productId: widget.productDoc,
-        productData: productData,
-        finalPrice: finalPrice,
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isAddingToCart = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
-        );
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(ProductController(productId: widget.productDoc), tag: widget.productDoc);
   }
 
   void _showLoginDialog() {
@@ -140,9 +41,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
-            onPressed: () {
-              Navigator.pushNamed(context, LoginView.id);
-            },
+            onPressed: () => Navigator.pushNamed(context, LoginView.id),
             child: Text("Log in".tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
@@ -179,7 +78,7 @@ class _ProductWidgetState extends State<ProductWidget> {
         ),
         actions: [
           StreamBuilder<int>(
-            stream: _getCartCountStream(),
+            stream: controller.cartCountStream,
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
               return Stack(
@@ -209,42 +108,18 @@ class _ProductWidgetState extends State<ProductWidget> {
         builder: (context, constraints) {
           final bool isDesktop = constraints.maxWidth >= 900;
 
-          return StreamBuilder<DocumentSnapshot>(
-            stream: _productsRef.doc(widget.productDoc).snapshots(),
+          return StreamBuilder<ProductModel?>(
+            stream: controller.productStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
               }
 
-              if (!snapshot.hasData || !snapshot.data!.exists) {
+              if (!snapshot.hasData || snapshot.data == null) {
                 return Center(child: Text("The product does not exist.".tr));
               }
 
-              final data = snapshot.data!.data() as Map<String, dynamic>;
-              final List<String> images = List<String>.from(data['images'] ?? []);
-
-              final double originalPrice = double.tryParse(data['price']?.toString() ?? '0') ?? 0.0;
-
-              final double discountPercentage = double.tryParse(
-                  (data['discount'] ?? data['discountPercentage'])?.toString() ?? '0'
-              ) ?? 0.0;
-
-              final double discountedPrice = discountPercentage > 0
-                  ? originalPrice - (originalPrice * (discountPercentage / 100))
-                  : originalPrice;
-
-              final double avgRate = double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0;
-              final String title = data['title'] ?? '';
-              final String description = data['description'] ?? '';
-              final bool isActive = data['IsActive'] ?? data['isActive'] ?? true;
-
-              if (!_hasLoggedAnalytics) {
-                _hasLoggedAnalytics = true;
-                AnalyticsService.logProductOpen(
-                  productId: widget.productDoc,
-                  productTitle: title,
-                );
-              }
+              final product = snapshot.data!;
 
               return SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
@@ -271,41 +146,17 @@ class _ProductWidgetState extends State<ProductWidget> {
                           ? Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            flex: 5,
-                            child: _buildImageGallery(images, isDarkMode),
-                          ),
+                          Expanded(flex: 5, child: _buildImageGallery(product.images, isDarkMode)),
                           const SizedBox(width: 32),
-                          Expanded(
-                            flex: 6,
-                            child: _buildMainProductHeader(
-                                title,
-                                avgRate,
-                                originalPrice,
-                                discountedPrice,
-                                discountPercentage,
-                                description,
-                                isActive,
-                                data,
-                                isDarkMode),
-                          ),
+                          Expanded(flex: 6, child: _buildMainProductHeader(product, isDarkMode)),
                         ],
                       )
                           : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildImageGallery(images, isDarkMode),
+                          _buildImageGallery(product.images, isDarkMode),
                           const SizedBox(height: 20),
-                          _buildMainProductHeader(
-                              title,
-                              avgRate,
-                              originalPrice,
-                              discountedPrice,
-                              discountPercentage,
-                              description,
-                              isActive,
-                              data,
-                              isDarkMode),
+                          _buildMainProductHeader(product, isDarkMode),
                         ],
                       ),
                     ),
@@ -314,22 +165,25 @@ class _ProductWidgetState extends State<ProductWidget> {
                         ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          flex: 5,
-                          child: _buildDetailsCard(description, data, isDarkMode, theme),
-                        ),
+                        Expanded(flex: 5, child: _buildDetailsCard(product.description, isDarkMode, theme)),
                         const SizedBox(width: 24),
                         Expanded(
                           flex: 7,
-                          child: _buildReviewsCard(avgRate, isDarkMode, theme),
+                          child: ProductReviewsSection(
+                            controller: controller,
+                            showLoginDialog: _showLoginDialog,
+                          ),
                         ),
                       ],
                     )
                         : Column(
                       children: [
-                        _buildDetailsCard(description, data, isDarkMode, theme),
+                        _buildDetailsCard(product.description, isDarkMode, theme),
                         const SizedBox(height: 20),
-                        _buildReviewsCard(avgRate, isDarkMode, theme),
+                        ProductReviewsSection(
+                          controller: controller,
+                          showLoginDialog: _showLoginDialog,
+                        ),
                       ],
                     ),
                   ],
@@ -343,82 +197,74 @@ class _ProductWidgetState extends State<ProductWidget> {
   }
 
   Widget _buildImageGallery(List<String> images, bool isDarkMode) {
-    final String currentImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
+    return Obx(() {
+      final selectedIndex = controller.selectedImageIndex.value;
+      final String currentImage = images.isNotEmpty ? images[selectedIndex] : '';
 
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            Get.to(FullScreenImageViewer(images: images, initialIndex: _selectedImageIndex));
-          },
-          child: Container(
-            height: 340,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(16),
-              image: currentImage.isNotEmpty
-                  ? DecorationImage(
-                image: CachedNetworkImageProvider(currentImage),
-                fit: BoxFit.contain,
+      return Column(
+        children: [
+          InkWell(
+            onTap: () => Get.to(FullScreenImageViewer(images: images, initialIndex: selectedIndex)),
+            child: Container(
+              height: 340,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16),
+                image: currentImage.isNotEmpty
+                    ? DecorationImage(
+                  image: CachedNetworkImageProvider(currentImage),
+                  fit: BoxFit.contain,
+                )
+                    : null,
+              ),
+              child: currentImage.isEmpty
+                  ? Icon(
+                Icons.image_not_supported_outlined,
+                size: 50,
+                color: isDarkMode ? Colors.grey.shade600 : Colors.grey,
               )
                   : null,
             ),
-            child: currentImage.isEmpty
-                ? Icon(
-              Icons.image_not_supported_outlined,
-              size: 50,
-              color: isDarkMode ? Colors.grey.shade600 : Colors.grey,
-            )
-                : null,
           ),
-        ),
-        const SizedBox(height: 12),
-        if (images.length > 1)
-          SizedBox(
-            height: 65,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              shrinkWrap: true,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                final isSelected = _selectedImageIndex == index;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedImageIndex = index),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 10),
-                    width: 65,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF6366F1) : Colors.transparent,
-                        width: 2,
-                      ),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(images[index]),
-                        fit: BoxFit.cover,
+          const SizedBox(height: 12),
+          if (images.length > 1)
+            SizedBox(
+              height: 65,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                shrinkWrap: true,
+                itemCount: images.length,
+                itemBuilder: (context, index) {
+                  final isSelected = selectedIndex == index;
+                  return GestureDetector(
+                    onTap: () => controller.setSelectedImage(index),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      width: 65,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF6366F1) : Colors.transparent,
+                          width: 2,
+                        ),
+                        image: DecorationImage(
+                          image: CachedNetworkImageProvider(images[index]),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
-  Widget _buildMainProductHeader(
-      String title,
-      double avgRate,
-      double originalPrice,
-      double discountedPrice,
-      double discountPercentage,
-      String description,
-      bool isActive,
-      Map<String, dynamic> data,
-      bool isDarkMode) {
-    final bool hasDiscount = discountPercentage > 0;
+  Widget _buildMainProductHeader(ProductModel product, bool isDarkMode) {
+    final bool hasDiscount = product.discountPercentage > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,7 +274,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           children: [
             Expanded(
               child: Text(
-                title,
+                product.title,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -439,15 +285,13 @@ class _ProductWidgetState extends State<ProductWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive
-                    ? Colors.green.withOpacity(0.15)
-                    : Colors.red.withOpacity(0.15),
+                color: product.isActive ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                isActive ? "In Stock".tr : "Out of stock".tr,
+                product.isActive ? "In Stock".tr : "Out of stock".tr,
                 style: TextStyle(
-                  color: isActive ? Colors.green : Colors.red,
+                  color: product.isActive ? Colors.green : Colors.red,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -469,7 +313,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                   const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    avgRate.toStringAsFixed(1),
+                    product.avgRate.toStringAsFixed(1),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: isDarkMode ? Colors.amber.shade300 : const Color(0xFFB45309),
@@ -487,7 +331,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              "${discountedPrice.toStringAsFixed(2)}${"EGP".tr}",
+              "${product.discountedPrice.toStringAsFixed(2)}${"EGP".tr}",
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -497,7 +341,7 @@ class _ProductWidgetState extends State<ProductWidget> {
             if (hasDiscount) ...[
               const SizedBox(width: 12),
               Text(
-                "${originalPrice.toStringAsFixed(2)}${"EGP".tr}",
+                "${product.originalPrice.toStringAsFixed(2)}${"EGP".tr}",
                 style: TextStyle(
                   fontSize: 18,
                   color: isDarkMode ? Colors.grey.shade500 : const Color(0xFF94A3B8),
@@ -513,7 +357,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  "-${discountPercentage.toStringAsFixed(0)}%",
+                  "-${product.discountPercentage.toStringAsFixed(0)}%",
                   style: const TextStyle(
                     color: Color(0xFFEF4444),
                     fontWeight: FontWeight.bold,
@@ -524,40 +368,35 @@ class _ProductWidgetState extends State<ProductWidget> {
             ],
           ],
         ),
-        const SizedBox(height: 16),
-        // عرض الوصف المنسق (ديناميكي الحجم)
-       // _ProductDescriptionWidget(description: description),
         const SizedBox(height: 24),
-        ElevatedButton.icon(
+        Obx(() => ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: isActive ? const Color(0xFF6366F1) : Colors.grey,
+            backgroundColor: product.isActive ? const Color(0xFF6366F1) : Colors.grey,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          onPressed: (_isAddingToCart || !isActive)
-              ? (isActive ? null : () => _handleAddToCart(data, discountedPrice, isActive))
-              : () => _handleAddToCart(data, discountedPrice, isActive),
-          icon: _isAddingToCart
+          onPressed: (controller.isAddingToCart.value || !product.isActive)
+              ? null
+              : () => controller.handleAddToCart(context, product),
+          icon: controller.isAddingToCart.value
               ? const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
           )
-              : Icon(isActive ? Icons.shopping_bag_outlined : Icons.block, size: 20),
+              : Icon(product.isActive ? Icons.shopping_bag_outlined : Icons.block, size: 20),
           label: Text(
-            isActive ? "Add to cart".tr : "This product is currently unavailable.".tr,
+            product.isActive ? "Add to cart".tr : "This product is currently unavailable.".tr,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
-        ),
+        )),
       ],
     );
   }
 
-  Widget _buildDetailsCard(String description, Map<String, dynamic> data, bool isDarkMode, ThemeData theme) {
+  Widget _buildDetailsCard(String description, bool isDarkMode, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -583,286 +422,7 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
           ),
           Divider(height: 24, color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
-          _ProductDescriptionWidget(description: description),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsCard(double avgRate, bool isDarkMode, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDarkMode ? theme.cardColor : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Customer Ratings and Reviews".tr,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 16),
-          AddReviewSection(
-            key: const PageStorageKey('add_review_section_key'),
-            productDoc: widget.productDoc,
-            productsRef: _productsRef,
-            showLoginDialog: _showLoginDialog,
-          ),
-          const SizedBox(height: 16),
-          StreamBuilder<QuerySnapshot>(
-            stream: _productsRef
-                .doc(widget.productDoc)
-                .collection('reviews')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final reviews = snapshot.data!.docs;
-
-              if (reviews.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: Text(
-                      "There are currently no ratings. Be the first to rate this product!".tr,
-                      style: TextStyle(
-                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: reviews.length,
-                separatorBuilder: (_, __) =>
-                    Divider(height: 20, color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
-                itemBuilder: (context, index) {
-                  final rev = reviews[index].data() as Map<String, dynamic>;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.15),
-                        child: Text(
-                          (rev['userName'] ?? 'U')[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Color(0xFF6366F1),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  rev['userName'] ?? 'client'.tr,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: isDarkMode ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                Row(
-                                  children: List.generate(5, (starIdx) {
-                                    return Icon(
-                                      Icons.star_rounded,
-                                      size: 14,
-                                      color: starIdx < (rev['rating'] ?? 0)
-                                          ? Colors.amber
-                                          : isDarkMode
-                                          ? Colors.grey.shade700
-                                          : Colors.grey.shade300,
-                                    );
-                                  }),
-                                )
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              rev['comment'] ?? '',
-                              style: TextStyle(
-                                color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF64748B),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AddReviewSection extends StatefulWidget {
-  final String productDoc;
-  final CollectionReference productsRef;
-  final VoidCallback showLoginDialog;
-
-  const AddReviewSection({
-    super.key,
-    required this.productDoc,
-    required this.productsRef,
-    required this.showLoginDialog,
-  });
-
-  @override
-  State<AddReviewSection> createState() => _AddReviewSectionState();
-}
-
-class _AddReviewSectionState extends State<AddReviewSection> {
-  final TextEditingController _commentController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  double _userRating = 5.0;
-  bool _isSubmitting = false;
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDarkMode ? Colors.white12 : const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Add your rating".tr,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
-              DropdownButton<double>(
-                value: _userRating,
-                dropdownColor: isDarkMode ? Colors.grey.shade800 : Colors.white,
-                underline: const SizedBox(),
-                items: [1.0, 2.0, 3.0, 4.0, 5.0].map((r) {
-                  return DropdownMenuItem(
-                    value: r,
-                    child: Text(
-                      "$r ★",
-                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _userRating = val);
-                },
-              ),
-            ],
-          ),
-          TapRegion(
-            onTapOutside: (_) {},
-            child: TextField(
-              key: const PageStorageKey('review_input_field'),
-              controller: _commentController,
-              focusNode: _focusNode,
-              keyboardType: TextInputType.multiline,
-              maxLines: null,
-              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 13),
-              decoration: InputDecoration(
-                hintText: "Write your opinion about the product here...".tr,
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey,
-                ),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: _isSubmitting
-                  ? null
-                  : () async {
-                if (currentUser == null) {
-                  widget.showLoginDialog();
-                  return;
-                }
-
-                if (_commentController.text.trim().isEmpty) return;
-                setState(() => _isSubmitting = true);
-
-                final ref = widget.productsRef.doc(widget.productDoc).collection('reviews');
-                await ref.add({
-                  'userName': currentUser.displayName ?? 'client'.tr,
-                  'userUid': currentUser.uid,
-                  'rating': _userRating,
-                  'comment': _commentController.text.trim(),
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
-
-                final docSnapshot = await widget.productsRef.doc(widget.productDoc).get();
-                final data = docSnapshot.data() as Map<String, dynamic>?;
-                final String productName = data?['title'] ?? '';
-
-                await EmailServer().sendCommentNotificationToAdmins(
-                  customerName: currentUser.displayName ?? 'client',
-                  productName: productName,
-                  commentText: _commentController.text.trim(),
-                );
-
-                _commentController.clear();
-                if (mounted) {
-                  setState(() => _isSubmitting = false);
-                  _focusNode.unfocus();
-                }
-              },
-              child: _isSubmitting
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text("Publish the review".tr),
-            ),
-          )
+          ProductDescriptionWidget(description: description),
         ],
       ),
     );
@@ -877,10 +437,7 @@ class _BadgeCounter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      constraints: const BoxConstraints(
-        minWidth: 16,
-        minHeight: 16,
-      ),
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       decoration: BoxDecoration(
         color: const Color(0xFFFF7675),
         borderRadius: BorderRadius.circular(10),
@@ -893,182 +450,6 @@ class _BadgeCounter extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.bold,
           height: 1.1,
-        ),
-      ),
-    );
-  }
-}
-
-// ==================== Product Description Viewer المطور والديناميكي ====================
-
-class _ProductDescriptionWidget extends StatefulWidget {
-  final String description;
-
-  const _ProductDescriptionWidget({
-    required this.description,
-  });
-
-  @override
-  State<_ProductDescriptionWidget> createState() =>
-      __ProductDescriptionWidgetState();
-}
-
-class __ProductDescriptionWidgetState
-    extends State<_ProductDescriptionWidget> {
-  EditorState? _editorState;
-  EditorScrollController? _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _parseDescription();
-  }
-
-  @override
-  void didUpdateWidget(
-      covariant _ProductDescriptionWidget oldWidget,
-      ) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.description != widget.description) {
-      _disposeEditor();
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-
-        _parseDescription();
-
-        if (mounted) {
-          setState(() {});
-        }
-      });
-    }
-  }
-
-  void _disposeEditor() {
-    _scrollController?.dispose();
-    _scrollController = null;
-    _editorState = null;
-  }
-
-  void _parseDescription() {
-    final text = widget.description.trim();
-
-    if (text.isEmpty) {
-      _editorState = null;
-      _scrollController = null;
-      return;
-    }
-
-    try {
-      dynamic parsed = jsonDecode(text);
-
-      while (parsed is String) {
-        final inner = parsed.trim();
-        if (inner.isEmpty) break;
-        parsed = jsonDecode(inner);
-      }
-
-      final normalized = _normalizeAppFlowyJson(parsed);
-
-      if (normalized != null) {
-        final document = Document.fromJson(normalized);
-        final editorState = EditorState(document: document);
-        final scrollController =
-        EditorScrollController(editorState: editorState);
-
-        _editorState = editorState;
-        _scrollController = scrollController;
-        return;
-      }
-    } catch (e, stackTrace) {
-      debugPrint("Error parsing product description JSON: $e");
-      debugPrint(stackTrace.toString());
-    }
-
-    _editorState = null;
-    _scrollController = null;
-  }
-
-  @override
-  void dispose() {
-    _scrollController?.dispose();
-    _scrollController = null;
-    _editorState = null;
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark ? Colors.grey.shade300 : AppColors.textDark;
-
-    final description = widget.description.trim();
-
-    if (description.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          "There is no additional description for the product.".tr,
-          style: TextStyle(
-            color: isDark ? Colors.grey.shade400 : AppColors.textMuted,
-            height: 1.4,
-            fontSize: 13,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      );
-    }
-
-    if (_editorState != null && _scrollController != null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B).withOpacity(0.5) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-          ),
-        ),
-        // استخدام BoxConstraints بحد أقصى مرن وفسيح لمنع قص النصوص الطويلة وتوسيع العرض ديناميكياً
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: 10,
-            maxHeight: 100, // سيتمدد ذاتياً حسب طول النص ولن يستغل 500 إلا إذا كان النص كبيراً جداً
-          ),
-          child: AppFlowyEditor(
-            editorState: _editorState!,
-            editorScrollController: _scrollController!,
-            editable: false,
-            autoFocus: false,
-            shrinkWrap: true,
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B).withOpacity(0.5) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: SelectableText(
-        widget.description,
-        style: TextStyle(
-          color: textSecondary,
-          height: 1.5,
-          fontSize: 14,
         ),
       ),
     );

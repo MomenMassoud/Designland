@@ -1,15 +1,14 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:desginland/Core/services/guest_cart_service.dart';
-import 'package:desginland/feature/Basket/view/basket_view.dart';
-import 'package:desginland/feature/Product/view/product_view.dart';
+import 'package:desginland/feature/Home/widget/special_offers_section.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../../Product/widget/product_list_widget.dart';
+import 'banners_carousel.dart';
+import 'categories_grid.dart';
 import 'category_section_widget.dart';
+import 'home_search_bar.dart';
+
 
 class HomeWidget extends StatefulWidget {
   const HomeWidget({super.key});
@@ -21,6 +20,7 @@ class HomeWidget extends StatefulWidget {
 class _HomeWidgetState extends State<HomeWidget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<String> _searchNotifier = ValueNotifier<String>('');
 
@@ -29,88 +29,10 @@ class _HomeWidgetState extends State<HomeWidget> {
   late final CollectionReference _bannersRef;
 
   String? _selectedCategoryId;
-  String? _selectedSubcategoryId;
-  RangeValues _priceRange = const RangeValues(0, 10000);
+  final String? _selectedSubcategoryId = null;
+  final RangeValues _priceRange = const RangeValues(0, 10000);
 
-  final PageController _bannerPageController = PageController();
-  Timer? _bannerTimer;
-  int _currentBannerPage = 0;
-  int _lastBannerCount = 0;
   Timer? _searchDebounceTimer;
-
-  // تم تبطيء الوقت إلى 5 ثوانٍ بدلاً من 3
-  void _startBannerAutoScroll(int totalBanners) {
-    if (_lastBannerCount == totalBanners && _bannerTimer != null && _bannerTimer!.isActive) {
-      return;
-    }
-    _lastBannerCount = totalBanners;
-    _bannerTimer?.cancel();
-    if (totalBanners <= 1) return;
-
-    _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_bannerPageController.hasClients) {
-        _currentBannerPage = (_currentBannerPage + 1) % totalBanners;
-        _bannerPageController.animateToPage(
-          _currentBannerPage,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  Duration _getRemainingDiscountTime() {
-    final now = DateTime.now();
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    return endOfDay.difference(now);
-  }
-
-  Future<void> _saveSearchToFirebase(String query) async {
-    final cleanQuery = query.trim();
-    if (cleanQuery.isEmpty || cleanQuery.length < 2) return;
-
-    if (_auth.currentUser == null) {
-      await FirebaseFirestore.instance.collection('search_history').doc().set({
-        'query': cleanQuery,
-        'createdAt': FieldValue.serverTimestamp(),
-        'userID': 'Gust',
-        'gust': true
-      });
-      return;
-    }
-    try {
-      await FirebaseFirestore.instance
-          .collection('user')
-          .doc(_auth.currentUser!.uid)
-          .collection('search_history')
-          .add({
-        'query': cleanQuery,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      await FirebaseFirestore.instance.collection('search_history').doc().set({
-        'query': cleanQuery,
-        'createdAt': FieldValue.serverTimestamp(),
-        'userID': _auth.currentUser!.uid,
-        'gust': false
-      });
-    } catch (e) {
-      debugPrint("Error saving search history: $e");
-    }
-  }
-
-  Stream<int> _getCartCountStream() {
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      return _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('cart')
-          .snapshots()
-          .map((snapshot) => snapshot.docs.length);
-    } else {
-      return GuestCartService().cartCountStream;
-    }
-  }
 
   @override
   void initState() {
@@ -119,25 +41,61 @@ class _HomeWidgetState extends State<HomeWidget> {
     _productsRef = _firestore.collection('products');
     _bannersRef = _firestore.collection('banners');
 
-    _searchController.addListener(() {
-      final query = _searchController.text.trim().toLowerCase();
-      _searchNotifier.value = query;
+    _searchController.addListener(_onSearchChanged);
+  }
 
-      if (_searchDebounceTimer?.isActive ?? false) _searchDebounceTimer!.cancel();
+  void _onSearchChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    _searchNotifier.value = query;
 
-      if (query.isNotEmpty && query.length >= 2) {
-        _searchDebounceTimer = Timer(const Duration(seconds: 1), () {
-          _saveSearchToFirebase(query);
+    if (_searchDebounceTimer?.isActive ?? false) _searchDebounceTimer!.cancel();
+
+    if (query.isNotEmpty && query.length >= 2) {
+      _searchDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+        _saveSearchToFirebase(query);
+      });
+    }
+  }
+
+  Future<void> _saveSearchToFirebase(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty || cleanQuery.length < 2) return;
+
+    final user = _auth.currentUser;
+    try {
+      if (user == null) {
+        await _firestore.collection('search_history').add({
+          'query': cleanQuery,
+          'createdAt': FieldValue.serverTimestamp(),
+          'userID': 'Gust',
+          'gust': true,
         });
+        return;
       }
-    });
+
+      await _firestore
+          .collection('user')
+          .doc(user.uid)
+          .collection('search_history')
+          .add({
+        'query': cleanQuery,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _firestore.collection('search_history').add({
+        'query': cleanQuery,
+        'createdAt': FieldValue.serverTimestamp(),
+        'userID': user.uid,
+        'gust': false,
+      });
+    } catch (e) {
+      debugPrint("Error saving search history: $e");
+    }
   }
 
   @override
   void dispose() {
-    _bannerTimer?.cancel();
     _searchDebounceTimer?.cancel();
-    _bannerPageController.dispose();
     _searchController.dispose();
     _searchNotifier.dispose();
     super.dispose();
@@ -145,400 +103,35 @@ class _HomeWidgetState extends State<HomeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isDesktop = screenWidth > 900;
-
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final primaryColor = theme.primaryColor;
-    final textColor = theme.colorScheme.onSurface;
+    final String lang = Get.locale?.languageCode ?? "ar";
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: ValueListenableBuilder<String>(
           valueListenable: _searchNotifier,
-          builder: (context, searchQuery, child) {
+          builder: (context, searchQuery, _) {
             final bool isSearching = searchQuery.isNotEmpty;
 
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // شريط البحث
                 SliverToBoxAdapter(
-                  child: Center(
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 1300),
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Container(
-                                width: isDesktop ? 450 : double.infinity,
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  color: theme.cardColor,
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: isDarkMode
-                                        ? Colors.white.withOpacity(0.12)
-                                        : Colors.grey.shade200,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: isDarkMode
-                                          ? Colors.black.withOpacity(0.3)
-                                          : primaryColor.withOpacity(0.08),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  style: TextStyle(color: textColor, fontSize: 14),
-                                  onSubmitted: (value) {
-                                    _saveSearchToFirebase(value);
-                                  },
-                                  decoration: InputDecoration(
-                                    hintText: 'Search custom gifts, bags, items...'.tr,
-                                    hintStyle: TextStyle(
-                                      color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
-                                      fontSize: 13,
-                                    ),
-                                    prefixIcon: Icon(Icons.search_rounded, color: primaryColor),
-                                    suffixIcon: isSearching
-                                        ? IconButton(
-                                      icon: Icon(
-                                        Icons.clear_rounded,
-                                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
-                                        size: 18,
-                                      ),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                      },
-                                    )
-                                        : null,
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                      ),
-                    ),
+                  child: HomeSearchBar(
+                    controller: _searchController,
+                    searchNotifier: _searchNotifier,
+                    onSubmitted: _saveSearchToFirebase,
                   ),
                 ),
-
                 if (!isSearching) ...[
-                  // 1. البانرات مع الترتيب وأسهم التنقل والتمرير البطيء
                   SliverToBoxAdapter(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: _bannersRef.orderBy('order').snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final bannerDocs = snapshot.data!.docs.toList()
-                          ..sort((a, b) {
-                            final dataA = a.data() as Map<String, dynamic>;
-                            final dataB = b.data() as Map<String, dynamic>;
-                            final num orderA = dataA['order'] ?? 0;
-                            final num orderB = dataB['order'] ?? 0;
-                            return orderA.compareTo(orderB);
-                          });
-
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) _startBannerAutoScroll(bannerDocs.length);
-                        });
-
-                        return Center(
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 1300),
-                            height: isDesktop ? 280 : 180,
-                            margin: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Stack(
-                              children: [
-                                PageView.builder(
-                                  controller: _bannerPageController,
-                                  physics: const BouncingScrollPhysics(),
-                                  itemCount: bannerDocs.length,
-                                  onPageChanged: (index) {
-                                    setState(() {
-                                      _currentBannerPage = index;
-                                    });
-                                  },
-                                  itemBuilder: (context, index) {
-                                    final bannerData = bannerDocs[index].data() as Map<String, dynamic>;
-
-                                    final String bannerUrl = bannerData['image'] ?? bannerData['imageUrl'] ?? '';
-                                    final bool onClickable = bannerData['onclick'] ?? false;
-                                    final String? categoryId = bannerData['category'];
-
-                                    if (bannerUrl.isEmpty) return const SizedBox.shrink();
-
-                                    return GestureDetector(
-                                      onTap: () {
-                                        if (onClickable && categoryId != null && categoryId.isNotEmpty) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ProductListWidget(
-                                                categoryDoc: categoryId,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(24),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: isDarkMode
-                                                  ? Colors.black.withOpacity(0.4)
-                                                  : Colors.black.withOpacity(0.08),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 6),
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(24),
-                                          child: CachedNetworkImage(
-                                            imageUrl: bannerUrl,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) => Container(
-                                              color: primaryColor.withOpacity(0.05),
-                                            ),
-                                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-
-                                // سهم التنقل الأيسر
-                                if (bannerDocs.length > 1 && _currentBannerPage > 0)
-                                  Positioned(
-                                    left: 32,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Center(
-                                      child: Material(
-                                        color: Colors.black.withOpacity(0.35),
-                                        shape: const CircleBorder(),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: IconButton(
-                                          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
-                                          onPressed: () {
-                                            _bannerPageController.previousPage(
-                                              duration: const Duration(milliseconds: 600),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                // سهم التنقل الأيمن
-                                if (bannerDocs.length > 1 && _currentBannerPage < bannerDocs.length - 1)
-                                  Positioned(
-                                    right: 32,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Center(
-                                      child: Material(
-                                        color: Colors.black.withOpacity(0.35),
-                                        shape: const CircleBorder(),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: IconButton(
-                                          icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
-                                          onPressed: () {
-                                            _bannerPageController.nextPage(
-                                              duration: const Duration(milliseconds: 600),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: BannersCarousel(bannersRef: _bannersRef),
                   ),
-
-                  // 2. العروض الخاصة
                   SliverToBoxAdapter(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: _productsRef.where('discountPercentage', isGreaterThan: 0).snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final discountProducts = snapshot.data!.docs;
-
-                        return Center(
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 1300),
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "Special Offers ⚡".tr,
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w800,
-                                            color: textColor,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        _DiscountTimerWidget(
-                                          duration: _getRemainingDiscountTime(),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 220,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemCount: discountProducts.length,
-                                    itemBuilder: (context, index) {
-                                      final productData = discountProducts[index].data() as Map<String, dynamic>;
-                                      final String productId = discountProducts[index].id;
-
-                                      return _FlashSaleCardWidget(
-                                        productData: productData,
-                                        productId: productId,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // 3. استكشاف الأقسام
-                  SliverToBoxAdapter(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: _categoriesRef.snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox.shrink();
-
-                        final categories = snapshot.data!.docs;
-
-                        return Center(
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 1300),
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Explore Categories ✨".tr,
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w800,
-                                            color: textColor,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "Find personalized items crafted just for you".tr,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (_selectedCategoryId != null)
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          setState(() {
-                                            _selectedCategoryId = null;
-                                          });
-                                        },
-                                        icon: const Icon(Icons.clear_all_rounded, size: 18),
-                                        label: const Text("Show All Categories"),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isDesktop ? 4 : 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    childAspectRatio: isDesktop ? 1.8 : 1.4,
-                                  ),
-                                  itemCount: categories.length,
-                                  itemBuilder: (context, index) {
-                                    final categoryData = categories[index].data() as Map<String, dynamic>;
-                                    final String categoryId = categories[index].id;
-                                    final String name = Get.locale?.languageCode == "en"
-                                        ? (categoryData['nameEn'] ?? '')
-                                        : (categoryData['nameAr'] ?? '');
-                                    final String? imageUrl = categoryData['imageUrl'] ?? categoryData['image'];
-
-                                    final bool isSelected = _selectedCategoryId == categoryId;
-
-                                    return _CategoryCardWidget(
-                                      name: name,
-                                      imageUrl: imageUrl,
-                                      isSelected: isSelected,
-                                      onTap: () {
-                                        Get.to(ProductListWidget(categoryDoc: categoryId));
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: SpecialOffersSection(productsRef: _productsRef),
                   ),
                 ],
-
-                // قائمة المنتجات
                 StreamBuilder<QuerySnapshot>(
                   stream: _categoriesRef.snapshots(),
                   builder: (context, snapshot) {
@@ -547,43 +140,64 @@ class _HomeWidgetState extends State<HomeWidget> {
                         child: Center(
                           child: Padding(
                             padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF6C5CE7),
+                            ),
                           ),
                         ),
                       );
                     }
 
-                    var categoryDocs = snapshot.data!.docs;
+                    final allCategories = snapshot.data!.docs;
 
-                    if (_selectedCategoryId != null) {
-                      categoryDocs = categoryDocs.where((doc) => doc.id == _selectedCategoryId).toList();
-                    }
+                    final filteredCategories = _selectedCategoryId != null
+                        ? allCategories
+                        .where((doc) => doc.id == _selectedCategoryId)
+                        .toList()
+                        : allCategories;
 
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                          final categoryDoc = categoryDocs[index];
-                          final categoryData = categoryDoc.data() as Map<String, dynamic>;
-                          final String categoryTitle = Get.locale?.languageCode == "en"
-                              ? (categoryData['nameEn'] ?? '')
-                              : (categoryData['nameAr'] ?? '');
-
-                          return Center(
-                            child: Container(
-                              constraints: const BoxConstraints(maxWidth: 1300),
-                              child: CategorySectionWidget(
-                                productsRef: _productsRef,
-                                categoryId: categoryDoc.id,
-                                categoryTitle: categoryTitle,
-                                selectedSubcategoryId: _selectedSubcategoryId,
-                                priceRange: _priceRange,
-                                searchQueryNotifier: _searchNotifier,
-                              ),
+                    return SliverMainAxisGroup(
+                      slivers: [
+                        if (!isSearching)
+                          SliverToBoxAdapter(
+                            child: CategoriesGrid(
+                              categories: allCategories,
+                              selectedCategoryId: _selectedCategoryId,
+                              onSelectCategory: (catId) {
+                                setState(() => _selectedCategoryId = catId);
+                              },
                             ),
-                          );
-                        },
-                        childCount: categoryDocs.length,
-                      ),
+                          ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                              final categoryDoc = filteredCategories[index];
+                              final data =
+                              categoryDoc.data() as Map<String, dynamic>;
+                              final String categoryTitle = lang == "en"
+                                  ? (data['nameEn'] ?? '')
+                                  : (data['nameAr'] ?? '');
+
+                              return Center(
+                                child: Container(
+                                  constraints:
+                                  const BoxConstraints(maxWidth: 1300),
+                                  child: CategorySectionWidget(
+                                    productsRef: _productsRef,
+                                    categoryId: categoryDoc.id,
+                                    categoryTitle: categoryTitle,
+                                    selectedSubcategoryId:
+                                    _selectedSubcategoryId,
+                                    priceRange: _priceRange,
+                                    searchQueryNotifier: _searchNotifier,
+                                  ),
+                                ),
+                              );
+                            },
+                            childCount: filteredCategories.length,
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -593,385 +207,6 @@ class _HomeWidgetState extends State<HomeWidget> {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _DiscountTimerWidget extends StatefulWidget {
-  final Duration duration;
-  const _DiscountTimerWidget({required this.duration});
-
-  @override
-  State<_DiscountTimerWidget> createState() => _DiscountTimerWidgetState();
-}
-
-class _DiscountTimerWidgetState extends State<_DiscountTimerWidget> {
-  late Timer _timer;
-  late Duration _remaining;
-
-  @override
-  void initState() {
-    super.initState();
-    _remaining = widget.duration;
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_remaining.inSeconds > 0) {
-        if (mounted) {
-          setState(() => _remaining -= const Duration(seconds: 1));
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String hours = _remaining.inHours.remainder(24).toString().padLeft(2, '0');
-    String minutes = _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
-    String seconds = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF4757).withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF4757).withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.timer_outlined, size: 14, color: Color(0xFFFF4757)),
-          const SizedBox(width: 4),
-          Text(
-            "$hours:$minutes:$seconds",
-            style: const TextStyle(
-              color: Color(0xFFFF4757),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FlashSaleCardWidget extends StatefulWidget {
-  final Map<String, dynamic> productData;
-  final String productId;
-
-  const _FlashSaleCardWidget({
-    required this.productData,
-    required this.productId,
-  });
-
-  @override
-  State<_FlashSaleCardWidget> createState() => _FlashSaleCardWidgetState();
-}
-
-class _FlashSaleCardWidgetState extends State<_FlashSaleCardWidget> {
-  bool isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final images = widget.productData['images'] as List<dynamic>?;
-    final String imageUrl = (images != null && images.isNotEmpty) ? images[0] : '';
-    final num originalPrice = widget.productData['price'] ?? 0;
-    final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
-    final num finalPrice = (originalPrice * (1 - (discountPercentage / 100))).round();
-
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final primaryColor = theme.primaryColor;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductView(ProductDoc: widget.productId),
-            ),
-          );
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 150,
-          margin: const EdgeInsets.only(right: 14),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isHovered
-                  ? primaryColor
-                  : (isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.shade200),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isHovered
-                    ? primaryColor.withOpacity(0.18)
-                    : (isDarkMode ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.04)),
-                blurRadius: isHovered ? 12 : 6,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-                      child: imageUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                          : Container(
-                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF4757),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          "-$discountPercentage%",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.productData['title'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          "$finalPrice ${"EGP".tr}",
-                          style: TextStyle(
-                            color: primaryColor,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "$originalPrice",
-                          style: TextStyle(
-                            color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
-                            fontSize: 10,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryCardWidget extends StatefulWidget {
-  final String name;
-  final String? imageUrl;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CategoryCardWidget({
-    required this.name,
-    this.imageUrl,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  State<_CategoryCardWidget> createState() => _CategoryCardWidgetState();
-}
-
-class _CategoryCardWidgetState extends State<_CategoryCardWidget> {
-  bool isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          transform: isHovered ? (Matrix4.identity()..scale(1.03)) : Matrix4.identity(),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: widget.isSelected ? primaryColor : Colors.transparent,
-              width: 2.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isHovered
-                    ? primaryColor.withOpacity(0.25)
-                    : Colors.black.withOpacity(0.08),
-                blurRadius: isHovered ? 15 : 8,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-                      ? CachedNetworkImage(
-                    imageUrl: widget.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: primaryColor.withOpacity(0.05),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: primaryColor.withOpacity(0.1),
-                      child: Icon(Icons.category, color: primaryColor),
-                    ),
-                  )
-                      : Container(
-                    color: primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.category, color: primaryColor),
-                  ),
-                ),
-                Positioned.fill(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(isHovered ? 0.8 : 0.6),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 14,
-                  left: 14,
-                  right: 14,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: widget.isSelected
-                              ? primaryColor
-                              : Colors.white.withOpacity(0.25),
-                        ),
-                        child: Icon(
-                          widget.isSelected ? Icons.check : Icons.arrow_forward_ios_rounded,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BadgeCounter extends StatelessWidget {
-  final int count;
-  const _BadgeCounter({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      constraints: const BoxConstraints(
-        minWidth: 16,
-        minHeight: 16,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF7675),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        "$count",
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          height: 1.1,
         ),
       ),
     );
