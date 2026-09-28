@@ -698,7 +698,7 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              isProductActive ? "Active".tr : "Out of stock".tr,
+                              isProductActive ? "In Stock".tr : "Out of stock".tr,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,

@@ -204,7 +204,7 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            isProductActive ? "Active".tr : "Out of stock".tr,
+                            isProductActive ? "In Stock".tr : "Out of stock".tr,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,

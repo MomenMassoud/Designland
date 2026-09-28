@@ -386,7 +386,7 @@ class _BrandingSide extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Image.asset(
-                  AppImages.logo,
+                  AppImages.splash,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -448,7 +448,7 @@ class _MobileHeader extends StatelessWidget {
             child: ClipOval(
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Image.asset(AppImages.logo, fit: BoxFit.contain),
+                child: Image.asset(AppImages.splash, fit: BoxFit.contain),
               ),
             ),
           ),

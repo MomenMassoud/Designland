@@ -13,9 +13,6 @@ class AboutWidget extends StatefulWidget {
 class _AboutWidgetState extends State<AboutWidget> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ============================================================
-  // Launch external links
-  // ============================================================
 
   Future<void> _launchAction(String urlString) async {
     if (urlString.trim().isEmpty) {
@@ -40,10 +37,6 @@ class _AboutWidgetState extends State<AboutWidget> {
       );
     }
   }
-
-  // ============================================================
-  // Snackbar
-  // ============================================================
 
   void _showSnackBar(String message) {
     final theme = Theme.of(context);
@@ -113,10 +106,6 @@ class _AboutWidgetState extends State<AboutWidget> {
       }).toList(),
     );
   }
-
-  // ============================================================
-  // Policy Dialog / Bottom Sheet
-  // ============================================================
 
   void _showPolicyDialogOrSheet(
       String title,
@@ -274,20 +263,29 @@ class _AboutWidgetState extends State<AboutWidget> {
                               _buildSectionTitle("Terms and Policies".tr),
                               const SizedBox(height: 12),
                               _buildLegalCard(
-                                title: "terms of use".tr,
+                                title: "Terms of Use".tr,
                                 icon: Icons.gavel_rounded,
                                 onTap: () => _showPolicyDialogOrSheet(
-                                  "terms of use".tr,
+                                  "Terms of use".tr,
                                   _termsOfUseText,
                                 ),
                               ),
                               const SizedBox(height: 10),
                               _buildLegalCard(
-                                title: "privacy policy".tr,
+                                title: "Privacy Policy".tr,
                                 icon: Icons.security_rounded,
                                 onTap: () => _showPolicyDialogOrSheet(
-                                  "privacy policy".tr,
+                                  "Privacy Policy".tr,
                                   _privacyPolicyText,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildLegalCard(
+                                title: "Refund & Cancellation Policy".tr,
+                                icon: Icons.assignment_return_rounded,
+                                onTap: () => _showPolicyDialogOrSheet(
+                                  "Refund & Cancellation Policy".tr,
+                                  _refundPolicyText,
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -363,6 +361,15 @@ class _AboutWidgetState extends State<AboutWidget> {
                         onTap: () => _showPolicyDialogOrSheet(
                           "privacy policy".tr,
                           _privacyPolicyText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildLegalCard(
+                        title: "Refund & Cancellation Policy".tr,
+                        icon: Icons.assignment_return_rounded,
+                        onTap: () => _showPolicyDialogOrSheet(
+                          "Refund & Cancellation Policy".tr,
+                          _refundPolicyText,
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -930,4 +937,16 @@ class _AboutWidgetState extends State<AboutWidget> {
       "**Personal Data:** We collect only the information required to process, customize, and deliver your order.\n\n"
       "**Data Protection:** Your personal data and content are kept confidential and protected against unauthorized access, use, disclosure, or sharing. We do not sell or rent customer data to third parties. Information is shared only when required to complete your order, such as with payment or delivery providers.\n\n"
       "**Contact:** For any privacy-related questions, contact us at info@designland.com.";
+
+  // ============================================================
+  // Refund & Cancellation Policy
+  // ============================================================
+
+  static const String _refundPolicyText =
+      "At DesignLand, your satisfaction is our priority. We put care into every item we create and want you to be happy with the quality of your order.\n\n"
+      "**Refunds & Exchanges:** If you are not satisfied with the quality of your item, please contact us. We are committed to making it right through a replacement, exchange, or refund, as appropriate.\n\n"
+      "**Order Cancellation:** Changed your mind? We understand that plans can change. You may request to cancel your order before production has started for a full refund.\n\n"
+      "As most DesignLand products are personalized and made especially for you, orders that have already entered production may not be eligible for cancellation. However, please contact us and we will always do our best to find a suitable solution.\n\n"
+      "**Contact Us:** For refunds, exchanges, or cancellation requests, contact us at info@designland.com with your order details.\n\n"
+      "Made with passion. Delivered with care.";
 }

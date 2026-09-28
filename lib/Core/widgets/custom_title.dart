@@ -68,9 +68,9 @@ class CustomRainbowAppBarTitle extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-
-          // الأيقونات بحجم متناسق مع الفونت الجديد
-          const Text("✨", style: TextStyle(fontSize: 20)),
+          //
+          // // الأيقونات بحجم متناسق مع الفونت الجديد
+          // const Text("✨", style: TextStyle(fontSize: 20)),
           const Text("🎨", style: TextStyle(fontSize: 20)),
         ],
       ),

@@ -445,7 +445,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                isActive ? "Active".tr : "Out of stock".tr,
+                isActive ? "In Stock".tr : "Out of stock".tr,
                 style: TextStyle(
                   color: isActive ? Colors.green : Colors.red,
                   fontWeight: FontWeight.bold,
@@ -526,7 +526,7 @@ class _ProductWidgetState extends State<ProductWidget> {
         ),
         const SizedBox(height: 16),
         // عرض الوصف المنسق (ديناميكي الحجم)
-        _ProductDescriptionWidget(description: description),
+       // _ProductDescriptionWidget(description: description),
         const SizedBox(height: 24),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
