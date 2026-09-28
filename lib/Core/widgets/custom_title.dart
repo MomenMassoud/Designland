@@ -1,87 +1,77 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 class CustomRainbowAppBarTitle extends StatelessWidget {
-  const CustomRainbowAppBarTitle({super.key});
+  final String fontFamilyName = "Waltograph";
 
   @override
   Widget build(BuildContext context) {
-    // جلب الثيم الحالي للتحكم بلون كلمة Design
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+
+    // نمط الخط الأساسي بحجم أكبر ومعالجة الأحرف الصغيرة
+    final TextStyle baseStyle = TextStyle(
+      fontSize: 32, // تكبير الفونت ليصبح واضحاً وبارزاً
+      fontWeight: FontWeight.normal,
+      fontFamily: fontFamilyName,
+      fontFeatures: const [
+        FontFeature.enable('smcp'),
+      ],
+    );
 
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // كلمة Design بتنسيق متكيف مع الثيم (Light & Dark)
+          // كلمة Design (حرف D كابيتال وباقي الكلمة سمول)
           Text(
             "Design",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
+            style: baseStyle.copyWith(
               color: isDarkMode
-                  ? const Color(0xFFF1F2F6) // لون فاتح مريح للعين في الـ Dark Mode
-                  : const Color(0xFF1E232A), // كحلي/أسود داكن شيك للـ Light Mode
+                  ? const Color(0xFFF1F2F6)
+                  : const Color(0xFF1E232A),
               letterSpacing: -0.5,
-              fontFamily: "Lilitaone",
             ),
           ),
 
-          // كلمة Land بألوان مبهجة ومطابقة للهوية (بارزة في الوضعين)
+          // كلمة Land (حرف L كابيتال وباقي الكلمة سمول ملون)
           RichText(
-            text: const TextSpan(
-              children: [
+            text: TextSpan(
+              style: baseStyle,
+              children: const [
                 TextSpan(
-                  text: 'l',
+                  text: 'L', // حرف L كابيتال
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFFF4880), // وردي القلعة
-                    fontFamily: "Lilitaone",
+                    color: Color(0xFFFF4880), // وردي
                   ),
                 ),
                 TextSpan(
-                  text: 'a',
+                  text: 'a', // سمول
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFFFB800), // أصفر دافئ
-                    fontFamily: "Lilitaone",
+                    color: Color(0xFFFFB800), // أصفر
                   ),
                 ),
                 TextSpan(
-                  text: 'n',
+                  text: 'n', // سمول
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
                     color: Color(0xFF00C4CC), // تركواز
-                    fontFamily: "Lilitaone",
                   ),
                 ),
                 TextSpan(
-                  text: 'd',
+                  text: 'd', // سمول
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
                     color: Color(0xFF9B51E0), // بنفسجي
-                    fontFamily: "Lilitaone",
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
 
-          // لمسة شرارة وأيقونة سحرية تعكس روح القلعة
-          const Text(
-            "✨",
-            style: TextStyle(fontSize: 16),
-          ),
-          const Text(
-            "🎨",
-            style: TextStyle(fontSize: 16),
-          ),
+          // الأيقونات بحجم متناسق مع الفونت الجديد
+          const Text("✨", style: TextStyle(fontSize: 20)),
+          const Text("🎨", style: TextStyle(fontSize: 20)),
         ],
       ),
     );

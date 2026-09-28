@@ -95,189 +95,237 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
     final primaryColor = theme.primaryColor;
     final textColor = theme.colorScheme.onSurface;
 
-    final num originalPrice = widget.productData['price'] ?? 0;
-    final num discountPercentage = widget.productData['discountPercentage'] ?? 0;
-    final Timestamp? discountUntil = widget.productData['discountUntil'] as Timestamp?;
-    final bool isExpired = discountUntil != null && discountUntil.toDate().isBefore(DateTime.now());
-    final bool hasDiscount = discountPercentage > 0 && !isExpired;
+    final num originalPrice = widget.productData['price'] ?? 0; //[cite: 7]
+    final num discountPercentage = widget.productData['discountPercentage'] ?? 0; //[cite: 7]
+    final Timestamp? discountUntil = widget.productData['discountUntil'] as Timestamp?; //[cite: 7]
+    final bool isExpired = discountUntil != null && discountUntil.toDate().isBefore(DateTime.now()); //[cite: 7]
+    final bool hasDiscount = discountPercentage > 0 && !isExpired; //[cite: 7]
 
-    final num finalPrice = hasDiscount
-        ? (originalPrice * (1 - (discountPercentage / 100))).round()
-        : originalPrice;
+    final num finalPrice = hasDiscount //[cite: 7]
+        ? (originalPrice * (1 - (discountPercentage / 100))).round() //[cite: 7]
+        : originalPrice; //[cite: 7]
+
+    // فحص حالة التفعيل الخاصة بالمنتج
+    final bool isProductActive =
+        widget.productData['IsActive'] ?? widget.productData['isActive'] ?? true;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isHovered = true),
-      onTapUp: (_) => setState(() => _isHovered = false),
-      onTapCancel: () => setState(() => _isHovered = false),
+      onTapDown: (_) => setState(() => _isHovered = true), //[cite: 7]
+      onTapUp: (_) => setState(() => _isHovered = false), //[cite: 7]
+      onTapCancel: () => setState(() => _isHovered = false), //[cite: 7]
       onTap: () {
-        AnalyticsService.logProductOpen(
-          productId: widget.productId,
-          productTitle: widget.productData['title'],
+        AnalyticsService.logProductOpen( //[cite: 7]
+          productId: widget.productId, //[cite: 7]
+          productTitle: widget.productData['title'], //[cite: 7]
         );
-        Navigator.push(
+        Navigator.push( //[cite: 7]
           context,
           MaterialPageRoute(
-            builder: (context) => ProductWidget(productDoc: widget.productId),
+            builder: (context) => ProductWidget(productDoc: widget.productId), //[cite: 7]
           ),
         );
       },
       child: AnimatedScale(
-        scale: _isHovered ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
+        scale: _isHovered ? 0.95 : 1.0, //[cite: 7]
+        duration: const Duration(milliseconds: 160), //[cite: 7]
+        curve: Curves.easeOutCubic, //[cite: 7]
         child: Container(
-          width: 160,
-          margin: const EdgeInsets.only(right: 14, bottom: 8, top: 4),
+          width: 160, //[cite: 7]
+          margin: const EdgeInsets.only(right: 14, bottom: 8, top: 4), //[cite: 7]
           decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(20),
+            color: theme.cardColor, //[cite: 7]
+            borderRadius: BorderRadius.circular(20), //[cite: 7]
             border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.grey.shade200,
+              color: isDarkMode //[cite: 7]
+                  ? Colors.white.withOpacity(0.1) //[cite: 7]
+                  : Colors.grey.shade200, //[cite: 7]
             ),
             boxShadow: [
               BoxShadow(
-                color: isDarkMode
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.black.withOpacity(_isHovered ? 0.08 : 0.04),
-                blurRadius: _isHovered ? 14 : 8,
-                offset: const Offset(0, 5),
+                color: isDarkMode //[cite: 7]
+                    ? Colors.black.withOpacity(0.3) //[cite: 7]
+                    : Colors.black.withOpacity(_isHovered ? 0.08 : 0.04), //[cite: 7]
+                blurRadius: _isHovered ? 14 : 8, //[cite: 7]
+                offset: const Offset(0, 5), //[cite: 7]
               )
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start, //[cite: 7]
             children: [
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: widget.imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                      imageUrl: widget.imageUrl,
-                      height: 130,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        height: 130,
-                        color: primaryColor.withOpacity(0.05),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)), //[cite: 7]
+                    child: widget.imageUrl.isNotEmpty //[cite: 7]
+                        ? CachedNetworkImage( //[cite: 7]
+                      imageUrl: widget.imageUrl, //[cite: 7]
+                      height: 130, //[cite: 7]
+                      width: double.infinity, //[cite: 7]
+                      fit: BoxFit.cover, //[cite: 7]
+                      placeholder: (context, url) => Container( //[cite: 7]
+                        height: 130, //[cite: 7]
+                        color: primaryColor.withOpacity(0.05), //[cite: 7]
                       ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 130,
-                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                        child: const Icon(Icons.broken_image_outlined),
+                      errorWidget: (context, url, error) => Container( //[cite: 7]
+                        height: 130, //[cite: 7]
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100, //[cite: 7]
+                        child: const Icon(Icons.broken_image_outlined), //[cite: 7]
                       ),
                     )
-                        : Container(
-                      height: 130,
-                      color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                      child: const Icon(Icons.image, color: Colors.grey),
+                        : Container( //[cite: 7]
+                      height: 130, //[cite: 7]
+                      color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100, //[cite: 7]
+                      child: const Icon(Icons.image, color: Colors.grey), //[cite: 7]
                     ),
                   ),
-                  if (hasDiscount)
+
+                  // شارة حالة التفعيل (Active / Inactive)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isProductActive
+                            ? const Color(0xFF2ED573).withOpacity(0.9)
+                            : Colors.red.shade600.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isProductActive
+                                ? Icons.check_circle_rounded
+                                : Icons.cancel_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            isProductActive ? "Active".tr : "Out of stock".tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // شارة الخصم (تظهر بأسفل شارة التفعيل إذا كان الخصم متوفراً)
+                  if (hasDiscount) //[cite: 7]
                     Positioned(
-                      top: 8,
+                      top: 32,
                       left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), //[cite: 7]
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF4757),
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFFF4757), //[cite: 7]
+                          borderRadius: BorderRadius.circular(8), //[cite: 7]
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF4757).withOpacity(0.4),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: const Color(0xFFFF4757).withOpacity(0.4), //[cite: 7]
+                              blurRadius: 4, //[cite: 7]
+                              offset: const Offset(0, 2), //[cite: 7]
                             ),
                           ],
                         ),
                         child: Text(
-                          "-$discountPercentage%",
+                          "-$discountPercentage%", //[cite: 7]
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
+                            color: Colors.white, //[cite: 7]
+                            fontSize: 10, //[cite: 7]
+                            fontWeight: FontWeight.w900, //[cite: 7]
                           ),
                         ),
                       ),
                     ),
+
+                  // زر المفضلة
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 8, //[cite: 7]
+                    right: 8, //[cite: 7]
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.black.withOpacity(0.5)
-                            : Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
+                        color: isDarkMode //[cite: 7]
+                            ? Colors.black.withOpacity(0.5) //[cite: 7]
+                            : Colors.white.withOpacity(0.9), //[cite: 7]
+                        shape: BoxShape.circle, //[cite: 7]
                       ),
                       child: IconButton(
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(), //[cite: 7]
+                        padding: const EdgeInsets.all(6), //[cite: 7]
                         icon: Icon(
-                          _isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
-                          size: 16,
-                          color: _isFavorite ? Colors.red : primaryColor,
+                          _isFavorite ? Icons.favorite : Icons.favorite_border_rounded, //[cite: 7]
+                          size: 16, //[cite: 7]
+                          color: _isFavorite ? Colors.red : primaryColor, //[cite: 7]
                         ),
-                        onPressed: _toggleFavorite,
+                        onPressed: _toggleFavorite, //[cite: 7]
                       ),
                     ),
                   ),
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(12.0), //[cite: 7]
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start, //[cite: 7]
                   children: [
                     Text(
-                      widget.productData['title'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      widget.productData['title'] ?? '', //[cite: 7]
+                      maxLines: 1, //[cite: 7]
+                      overflow: TextOverflow.ellipsis, //[cite: 7]
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: textColor,
+                        fontWeight: FontWeight.bold, //[cite: 7]
+                        fontSize: 13, //[cite: 7]
+                        color: textColor, //[cite: 7]
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 6), //[cite: 7]
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween, //[cite: 7]
+                      crossAxisAlignment: CrossAxisAlignment.end, //[cite: 7]
                       children: [
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start, //[cite: 7]
                           children: [
                             Text(
-                              "$finalPrice ${"EGP".tr}",
+                              "$finalPrice ${"EGP".tr}", //[cite: 7]
                               style: TextStyle(
-                                color: primaryColor,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
+                                color: isProductActive ? primaryColor : Colors.grey,
+                                fontWeight: FontWeight.w800, //[cite: 7]
+                                fontSize: 14, //[cite: 7]
                               ),
                             ),
-                            if (hasDiscount)
+                            if (hasDiscount) //[cite: 7]
                               Text(
-                                "$originalPrice ${"EGP".tr}",
+                                "$originalPrice ${"EGP".tr}", //[cite: 7]
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
-                                  fontSize: 11,
-                                  decoration: TextDecoration.lineThrough,
+                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400, //[cite: 7]
+                                  fontSize: 11, //[cite: 7]
+                                  decoration: TextDecoration.lineThrough, //[cite: 7]
                                 ),
                               ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(4), //[cite: 7]
                           decoration: BoxDecoration(
-                            color: primaryColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
+                            color: isProductActive
+                                ? primaryColor.withOpacity(0.12)
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(8), //[cite: 7]
                           ),
                           child: Icon(
-                            Icons.add_rounded,
-                            size: 16,
-                            color: primaryColor,
+                            Icons.add_rounded, //[cite: 7]
+                            size: 16, //[cite: 7]
+                            color: isProductActive
+                                ? primaryColor
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ],

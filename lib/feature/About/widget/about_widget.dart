@@ -63,6 +63,58 @@ class _AboutWidgetState extends State<AboutWidget> {
   }
 
   // ============================================================
+  // Formatted Text Viewer (Bold Headings Support)
+  // ============================================================
+
+  Widget _buildFormattedText(String content) {
+    final theme = Theme.of(context);
+    final paragraphs = content.split('\n\n');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: paragraphs.map((paragraph) {
+        if (paragraph.contains('**')) {
+          final parts = paragraph.split('**');
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
+                      theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+                children: [
+                  TextSpan(text: parts[0]),
+                  TextSpan(
+                    text: parts[1],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: parts.sublist(2).join('**')),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            paragraph,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
+                  theme.colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ============================================================
   // Policy Dialog / Bottom Sheet
   // ============================================================
 
@@ -124,15 +176,7 @@ class _AboutWidgetState extends State<AboutWidget> {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      child: Text(
-                        content,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.6,
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
-                              theme.colorScheme.onSurface.withOpacity(0.8),
-                        ),
-                      ),
+                      child: _buildFormattedText(content),
                     ),
                   ),
                 ],
@@ -182,15 +226,7 @@ class _AboutWidgetState extends State<AboutWidget> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    child: Text(
-                      content,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8) ??
-                            theme.colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
+                    child: _buildFormattedText(content),
                   ),
                 ),
               ],
@@ -868,29 +904,30 @@ class _AboutWidgetState extends State<AboutWidget> {
   }
 
   // ============================================================
-  // Terms
+  // Terms of Use
   // ============================================================
 
   static const String _termsOfUseText =
-      "أهلاً بك في تطبيقنا. باستخدامك لهذا التطبيق، فإنك توافق "
-      "على الالتزام بالشروط والأحكام التالية:\n\n"
-      "1. الاستخدام المقبول: يُمنع استخدام التطبيق لأي أغراض "
-      "غير قانونية أو انتهاك حقوق الملكية الفكرية.\n"
-      "2. الحسابات والطلبات: المستخدم مسؤول عن صحة البيانات "
-      "المدخلة في طلبات التصاميم والهدايا.\n"
-      "3. التعديلات: يحق للقيمين على التطبيق تعديل الخدمات "
-      "أو الأسعار في أي وقت دون إشعار مسبق.";
+      "By using DesignLand and placing an order, you agree to the following terms:\n\n"
+      "**Order Information:** Customers are responsible for providing accurate names, spelling, photos, sizes, colors, delivery details, and other customization information. Please review all details carefully before confirming your order.\n\n"
+      "**Customized Products:** Most DesignLand products are made especially for you. Once production has started, changes or cancellations may not always be possible.\n\n"
+      "**Customer Content:** By submitting photos, names, text, logos, or designs, you confirm that you have the right or permission to use this content for your order.\n\n"
+      "**Design & Colors:** We make every effort to ensure the final product reflects the approved design. However, slight differences in color, positioning, size, or appearance may occur due to materials, printing methods, screens, or production requirements.\n\n"
+      "**Pricing & Availability:** Prices, products, materials, and availability may be updated when necessary. Any changes will not affect an order already confirmed and paid for, unless agreed with the customer.\n\n"
+      "**Delivery:** Delivery times are estimates and may be affected by courier schedules or circumstances outside DesignLand’s control. Customers are responsible for providing correct delivery information.\n\n"
+      "**Cancellations & Refunds:** Cancellations, replacements, and refunds are handled according to our Cancellation & Refund Policy.\n\n"
+      "**Privacy:** Personal information and photos are handled according to our Privacy Policy, with strict protection for photos provided for customized products.\n\n"
+      "**Responsible Use:** DesignLand reserves the right to decline content or orders that are unlawful, infringe intellectual property rights, or are inappropriate for production.";
 
   // ============================================================
   // Privacy Policy
   // ============================================================
 
   static const String _privacyPolicyText =
-      "نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية:\n\n"
-      "1. جمع البيانات: نجمع البيانات الأساسية مثل الاسم، "
-      "رقم الهاتف، والبريد الإلكتروني لإتمام طلباتك بنجاح.\n"
-      "2. حماية البيانات: نستخدم تقنيات تشفير عالية الجودة "
-      "لضمان عدم تسريب أي من بياناتك أو مشاركتها مع أطراف ثالثة.\n"
-      "3. التحكم بالبيانات: يمكنك طلب حذف بياناتك أو تعديلها "
-      "في أي وقت من خلال التواصل معنا.";
+      "At DesignLand, protecting your personal data and photos is a strict commitment. Any personal information, photos, or content shared with us is kept confidential and used only for the purpose for which it was provided.\n\n"
+      "**Personal Photos:** Photos shared for photobooks, personalized gifts, or other customized products are used strictly to create and fulfill your order. They will never be used for advertising, social media, website content, or any promotional purpose without your explicit permission.\n\n"
+      "**Name-Personalized Products:** Products customized with names or text only may be photographed and used on DesignLand’s website, social media, or advertising. You may request that your product is not used.\n\n"
+      "**Personal Data:** We collect only the information required to process, customize, and deliver your order.\n\n"
+      "**Data Protection:** Your personal data and content are kept confidential and protected against unauthorized access, use, disclosure, or sharing. We do not sell or rent customer data to third parties. Information is shared only when required to complete your order, such as with payment or delivery providers.\n\n"
+      "**Contact:** For any privacy-related questions, contact us at info@designland.com.";
 }

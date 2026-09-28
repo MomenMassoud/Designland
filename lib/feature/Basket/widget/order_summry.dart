@@ -208,7 +208,6 @@ class _OrderSummryState extends State<OrderSummry> {
         'targetUser': uid,
       });
 
-
       // تفريغ السلة بعد نجاح الطلب
       final cartSnap = await _db.collection('users').doc(uid).collection('cart').get();
       final batch = _db.batch();
@@ -301,7 +300,15 @@ class _OrderSummryState extends State<OrderSummry> {
                     const SizedBox(width: 24),
                     Expanded(
                       flex: 2,
-                      child: _buildPaymentBreakdownCard(addresses),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _buildPaymentBreakdownCard(addresses),
+                            const SizedBox(height: 16),
+                            _buildImportantInfoCard(isDarkMode),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 )
@@ -315,6 +322,8 @@ class _OrderSummryState extends State<OrderSummry> {
                       _buildPaymentMethodSection(isDarkMode),
                       const SizedBox(height: 16),
                       _buildPaymentBreakdownCard(addresses),
+                      const SizedBox(height: 16),
+                      _buildImportantInfoCard(isDarkMode),
                     ],
                   ),
                 ),
@@ -734,6 +743,84 @@ class _OrderSummryState extends State<OrderSummry> {
           ),
         ],
       ),
+    );
+  }
+
+  // بطاقة معلومات الطلب المهمة (Note)
+  Widget _buildImportantInfoCard(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.amber.shade900.withOpacity(0.15) : const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDarkMode ? Colors.amber.shade700.withOpacity(0.4) : const Color(0xFFFDE68A),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: isDarkMode ? Colors.amber.shade300 : const Color(0xFFD97706), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                "Important Order Information".tr,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.amber.shade300 : const Color(0xFF92400E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildInfoBulletPoint(
+            "Delivery Time: Orders typically take 6–8 days to be prepared and delivered.".tr,
+            isDarkMode,
+          ),
+          const SizedBox(height: 8),
+          _buildInfoBulletPoint(
+            "Order Confirmation: We may contact you to confirm or clarify your order details before processing.".tr,
+            isDarkMode,
+          ),
+          const SizedBox(height: 8),
+          _buildInfoBulletPoint(
+            "InstaPay Payments: If you select InstaPay, you will receive a payment link via email or WhatsApp. Payment must be completed before your order is delivered.".tr,
+            isDarkMode,
+          ),
+          const SizedBox(height: 8),
+          _buildInfoBulletPoint(
+            "Refund & Cancellations: For details regarding refunds or order cancellations, please refer to our Refund & Cancellation Policy.".tr,
+            isDarkMode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBulletPoint(String text, bool isDarkMode) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "• ",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.amber.shade300 : const Color(0xFFD97706),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: isDarkMode ? Colors.grey.shade300 : const Color(0xFF78350F),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

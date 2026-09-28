@@ -65,6 +65,10 @@ dependencies:
   universal_html: ^2.3.0
   get_storage: ^2.1.1
   shared_preferences: ^2.5.5
+  appflowy_editor: ^6.2.0
+
+dependency_overrides:
+  keyboard_height_plugin: ^0.3.0
 
 flutter_icons:
   image_path: "lib/core/Utils/assets/Images/applogo.jpeg"
@@ -110,6 +114,9 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+    - family: Chewy
+      fonts:
+        - asset: lib/core/Utils/assets/font/Chewy-Regular.ttf
     - family: Lilitaone
       fonts:
         - asset: lib/core/Utils/assets/font/LilitaOne-Regular.ttf

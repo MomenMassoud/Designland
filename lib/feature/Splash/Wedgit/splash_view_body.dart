@@ -131,7 +131,7 @@ class _SplashViewBodyState extends State<SplashViewBody>
                               child: CircleAvatar(
                                 radius: 85,
                                 backgroundColor: Colors.transparent,
-                                backgroundImage: AssetImage(AppImages.logo),
+                                backgroundImage: AssetImage(AppImages.splash),
                               ),
                             ),
                             const SizedBox(height: 24),

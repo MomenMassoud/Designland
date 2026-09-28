@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/Core/server/email_server.dart';
@@ -9,8 +11,51 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Core/server/analytics_service.dart';
 import '../../../Core/services/guest_cart_service.dart';
+import '../../../Core/Utils/app.colors.dart';
 import '../../Basket/view/basket_view.dart';
 import 'order_details_bottom_sheet.dart';
+
+// دالة normalizeAppFlowyJson لمعالجة وتحديد بناء مستند AppFlowy
+Map<String, dynamic>? _normalizeAppFlowyJson(dynamic value) {
+  if (value is! Map) {
+    return null;
+  }
+
+  dynamic current = value;
+  int safetyCounter = 0;
+
+  while (current is Map && safetyCounter < 20) {
+    safetyCounter++;
+    final map = Map<String, dynamic>.from(current);
+
+    if (map['type'] == 'page') {
+      return {
+        'document': map,
+      };
+    }
+
+    if (map.containsKey('document')) {
+      final nested = map['document'];
+
+      if (nested is Map) {
+        current = nested;
+        continue;
+      }
+
+      if (nested is String) {
+        try {
+          current = jsonDecode(nested);
+          continue;
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  return null;
+}
 
 class ProductWidget extends StatefulWidget {
   final String productDoc;
@@ -30,11 +75,10 @@ class _ProductWidgetState extends State<ProductWidget> {
   bool _isAddingToCart = false;
   bool _hasLoggedAnalytics = false;
 
-  // 👈 Stream مخصص للسلة حسب حالة المستخدم
+  // Stream مخصص للسلة حسب حالة المستخدم
   Stream<int> _getCartCountStream() {
     final user = _auth.currentUser;
     if (user != null) {
-      // للمستخدم المسجل: Stream من Firestore
       return _db
           .collection('users')
           .doc(user.uid)
@@ -42,13 +86,22 @@ class _ProductWidgetState extends State<ProductWidget> {
           .snapshots()
           .map((snapshot) => snapshot.docs.length);
     } else {
-      // للزائر: Stream الخاص بـ GuestCartService
       return GuestCartService().cartCountStream;
     }
   }
 
   Future<void> _handleAddToCart(
-      Map<String, dynamic> productData, double finalPrice) async {
+      Map<String, dynamic> productData, double finalPrice, bool isActive) async {
+    if (!isActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("This product is currently unavailable.".tr),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final user = _auth.currentUser;
 
     setState(() => _isAddingToCart = true);
@@ -97,8 +150,6 @@ class _ProductWidgetState extends State<ProductWidget> {
     );
   }
 
-  // ==================== BUILD UI ====================
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -127,7 +178,6 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
         ),
         actions: [
-          // 👈 استخدام StreamBuilder لاستهلاك الـ Stream الجديد مباشرة
           StreamBuilder<int>(
             stream: _getCartCountStream(),
             builder: (context, snapshot) {
@@ -186,6 +236,7 @@ class _ProductWidgetState extends State<ProductWidget> {
               final double avgRate = double.tryParse(data['avgRate']?.toString() ?? '0') ?? 0.0;
               final String title = data['title'] ?? '';
               final String description = data['description'] ?? '';
+              final bool isActive = data['IsActive'] ?? data['isActive'] ?? true;
 
               if (!_hasLoggedAnalytics) {
                 _hasLoggedAnalytics = true;
@@ -234,6 +285,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                                 discountedPrice,
                                 discountPercentage,
                                 description,
+                                isActive,
                                 data,
                                 isDarkMode),
                           ),
@@ -251,6 +303,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                               discountedPrice,
                               discountPercentage,
                               description,
+                              isActive,
                               data,
                               isDarkMode),
                         ],
@@ -362,6 +415,7 @@ class _ProductWidgetState extends State<ProductWidget> {
       double discountedPrice,
       double discountPercentage,
       String description,
+      bool isActive,
       Map<String, dynamic> data,
       bool isDarkMode) {
     final bool hasDiscount = discountPercentage > 0;
@@ -369,13 +423,37 @@ class _ProductWidgetState extends State<ProductWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Colors.green.withOpacity(0.15)
+                    : Colors.red.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                isActive ? "Active".tr : "Out of stock".tr,
+                style: TextStyle(
+                  color: isActive ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         Row(
@@ -447,20 +525,12 @@ class _ProductWidgetState extends State<ProductWidget> {
           ],
         ),
         const SizedBox(height: 16),
-        Text(
-          description,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF64748B),
-            height: 1.5,
-            fontSize: 14,
-          ),
-        ),
+        // عرض الوصف المنسق (ديناميكي الحجم)
+        _ProductDescriptionWidget(description: description),
         const SizedBox(height: 24),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: isActive ? const Color(0xFF6366F1) : Colors.grey,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
@@ -468,16 +538,18 @@ class _ProductWidgetState extends State<ProductWidget> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          onPressed: _isAddingToCart ? null : () => _handleAddToCart(data, discountedPrice),
+          onPressed: (_isAddingToCart || !isActive)
+              ? (isActive ? null : () => _handleAddToCart(data, discountedPrice, isActive))
+              : () => _handleAddToCart(data, discountedPrice, isActive),
           icon: _isAddingToCart
               ? const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
           )
-              : const Icon(Icons.shopping_bag_outlined, size: 20),
+              : Icon(isActive ? Icons.shopping_bag_outlined : Icons.block, size: 20),
           label: Text(
-            "Add to cart".tr,
+            isActive ? "Add to cart".tr : "This product is currently unavailable.".tr,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
@@ -511,16 +583,7 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
           ),
           Divider(height: 24, color: isDarkMode ? Colors.white12 : Colors.grey.shade200),
-          Text(
-            description.isNotEmpty
-                ? description
-                : "There is no additional description for the product.".tr,
-            style: TextStyle(
-              color: isDarkMode ? Colors.grey.shade300 : const Color(0xFF475569),
-              height: 1.6,
-              fontSize: 14,
-            ),
-          ),
+          _ProductDescriptionWidget(description: description),
         ],
       ),
     );
@@ -830,6 +893,182 @@ class _BadgeCounter extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.bold,
           height: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== Product Description Viewer المطور والديناميكي ====================
+
+class _ProductDescriptionWidget extends StatefulWidget {
+  final String description;
+
+  const _ProductDescriptionWidget({
+    required this.description,
+  });
+
+  @override
+  State<_ProductDescriptionWidget> createState() =>
+      __ProductDescriptionWidgetState();
+}
+
+class __ProductDescriptionWidgetState
+    extends State<_ProductDescriptionWidget> {
+  EditorState? _editorState;
+  EditorScrollController? _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _parseDescription();
+  }
+
+  @override
+  void didUpdateWidget(
+      covariant _ProductDescriptionWidget oldWidget,
+      ) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.description != widget.description) {
+      _disposeEditor();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        _parseDescription();
+
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  void _disposeEditor() {
+    _scrollController?.dispose();
+    _scrollController = null;
+    _editorState = null;
+  }
+
+  void _parseDescription() {
+    final text = widget.description.trim();
+
+    if (text.isEmpty) {
+      _editorState = null;
+      _scrollController = null;
+      return;
+    }
+
+    try {
+      dynamic parsed = jsonDecode(text);
+
+      while (parsed is String) {
+        final inner = parsed.trim();
+        if (inner.isEmpty) break;
+        parsed = jsonDecode(inner);
+      }
+
+      final normalized = _normalizeAppFlowyJson(parsed);
+
+      if (normalized != null) {
+        final document = Document.fromJson(normalized);
+        final editorState = EditorState(document: document);
+        final scrollController =
+        EditorScrollController(editorState: editorState);
+
+        _editorState = editorState;
+        _scrollController = scrollController;
+        return;
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Error parsing product description JSON: $e");
+      debugPrint(stackTrace.toString());
+    }
+
+    _editorState = null;
+    _scrollController = null;
+  }
+
+  @override
+  void dispose() {
+    _scrollController?.dispose();
+    _scrollController = null;
+    _editorState = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? Colors.grey.shade300 : AppColors.textDark;
+
+    final description = widget.description.trim();
+
+    if (description.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          "There is no additional description for the product.".tr,
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : AppColors.textMuted,
+            height: 1.4,
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    if (_editorState != null && _scrollController != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B).withOpacity(0.5) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+          ),
+        ),
+        // استخدام BoxConstraints بحد أقصى مرن وفسيح لمنع قص النصوص الطويلة وتوسيع العرض ديناميكياً
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: 10,
+            maxHeight: 100, // سيتمدد ذاتياً حسب طول النص ولن يستغل 500 إلا إذا كان النص كبيراً جداً
+          ),
+          child: AppFlowyEditor(
+            editorState: _editorState!,
+            editorScrollController: _scrollController!,
+            editable: false,
+            autoFocus: false,
+            shrinkWrap: true,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B).withOpacity(0.5) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: SelectableText(
+        widget.description,
+        style: TextStyle(
+          color: textSecondary,
+          height: 1.5,
+          fontSize: 14,
         ),
       ),
     );

@@ -38,6 +38,7 @@ class _HomeWidgetState extends State<HomeWidget> {
   int _lastBannerCount = 0;
   Timer? _searchDebounceTimer;
 
+  // تم تبطيء الوقت إلى 5 ثوانٍ بدلاً من 3
   void _startBannerAutoScroll(int totalBanners) {
     if (_lastBannerCount == totalBanners && _bannerTimer != null && _bannerTimer!.isActive) {
       return;
@@ -46,12 +47,12 @@ class _HomeWidgetState extends State<HomeWidget> {
     _bannerTimer?.cancel();
     if (totalBanners <= 1) return;
 
-    _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_bannerPageController.hasClients) {
         _currentBannerPage = (_currentBannerPage + 1) % totalBanners;
         _bannerPageController.animateToPage(
           _currentBannerPage,
-          duration: const Duration(milliseconds: 600),
+          duration: const Duration(milliseconds: 800),
           curve: Curves.easeInOut,
         );
       }
@@ -97,11 +98,9 @@ class _HomeWidgetState extends State<HomeWidget> {
     }
   }
 
-  // 👈 Stream مخصص للسلة حسب حالة المستخدم
   Stream<int> _getCartCountStream() {
     final currentUser = _auth.currentUser;
     if (currentUser != null) {
-      // للمستخدم المسجل: Stream من Firestore
       return _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -109,7 +108,6 @@ class _HomeWidgetState extends State<HomeWidget> {
           .snapshots()
           .map((snapshot) => snapshot.docs.length);
     } else {
-      // للزائر: استخدام Stream الجديد الخاص بـ GuestCartService
       return GuestCartService().cartCountStream;
     }
   }
@@ -166,7 +164,7 @@ class _HomeWidgetState extends State<HomeWidget> {
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // شريط البحث وأيقونة السلة
+                // شريط البحث
                 SliverToBoxAdapter(
                   child: Center(
                     child: Container(
@@ -238,16 +236,23 @@ class _HomeWidgetState extends State<HomeWidget> {
                 ),
 
                 if (!isSearching) ...[
-                  // 1. البانرات
+                  // 1. البانرات مع الترتيب وأسهم التنقل والتمرير البطيء
                   SliverToBoxAdapter(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: _bannersRef.snapshots(),
+                      stream: _bannersRef.orderBy('order').snapshots(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return const SizedBox.shrink();
                         }
 
-                        final bannerDocs = snapshot.data!.docs;
+                        final bannerDocs = snapshot.data!.docs.toList()
+                          ..sort((a, b) {
+                            final dataA = a.data() as Map<String, dynamic>;
+                            final dataB = b.data() as Map<String, dynamic>;
+                            final num orderA = dataA['order'] ?? 0;
+                            final num orderB = dataB['order'] ?? 0;
+                            return orderA.compareTo(orderB);
+                          });
 
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (mounted) _startBannerAutoScroll(bannerDocs.length);
@@ -258,63 +263,117 @@ class _HomeWidgetState extends State<HomeWidget> {
                             constraints: const BoxConstraints(maxWidth: 1300),
                             height: isDesktop ? 280 : 180,
                             margin: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: PageView.builder(
-                              controller: _bannerPageController,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: bannerDocs.length,
-                              onPageChanged: (index) {
-                                _currentBannerPage = index;
-                              },
-                              itemBuilder: (context, index) {
-                                final bannerData = bannerDocs[index].data() as Map<String, dynamic>;
+                            child: Stack(
+                              children: [
+                                PageView.builder(
+                                  controller: _bannerPageController,
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: bannerDocs.length,
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentBannerPage = index;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final bannerData = bannerDocs[index].data() as Map<String, dynamic>;
 
-                                final String bannerUrl = bannerData['image'] ?? bannerData['imageUrl'] ?? '';
-                                final bool onClickable = bannerData['onclick'] ?? false;
-                                final String? categoryId = bannerData['category'];
+                                    final String bannerUrl = bannerData['image'] ?? bannerData['imageUrl'] ?? '';
+                                    final bool onClickable = bannerData['onclick'] ?? false;
+                                    final String? categoryId = bannerData['category'];
 
-                                if (bannerUrl.isEmpty) return const SizedBox.shrink();
+                                    if (bannerUrl.isEmpty) return const SizedBox.shrink();
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (onClickable && categoryId != null && categoryId.isNotEmpty) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ProductListWidget(
-                                            categoryDoc: categoryId,
+                                    return GestureDetector(
+                                      onTap: () {
+                                        if (onClickable && categoryId != null && categoryId.isNotEmpty) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ProductListWidget(
+                                                categoryDoc: categoryId,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(24),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: isDarkMode
+                                                  ? Colors.black.withOpacity(0.4)
+                                                  : Colors.black.withOpacity(0.08),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(24),
+                                          child: CachedNetworkImage(
+                                            imageUrl: bannerUrl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Container(
+                                              color: primaryColor.withOpacity(0.05),
+                                            ),
+                                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
                                           ),
                                         ),
-                                      );
-                                    }
+                                      ),
+                                    );
                                   },
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(24),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: isDarkMode
-                                              ? Colors.black.withOpacity(0.4)
-                                              : Colors.black.withOpacity(0.08),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 6),
+                                ),
+
+                                // سهم التنقل الأيسر
+                                if (bannerDocs.length > 1 && _currentBannerPage > 0)
+                                  Positioned(
+                                    left: 32,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Center(
+                                      child: Material(
+                                        color: Colors.black.withOpacity(0.35),
+                                        shape: const CircleBorder(),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: IconButton(
+                                          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+                                          onPressed: () {
+                                            _bannerPageController.previousPage(
+                                              duration: const Duration(milliseconds: 600),
+                                              curve: Curves.easeInOut,
+                                            );
+                                          },
                                         ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: CachedNetworkImage(
-                                        imageUrl: bannerUrl,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: primaryColor.withOpacity(0.05),
-                                        ),
-                                        errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
                                       ),
                                     ),
                                   ),
-                                );
-                              },
+
+                                // سهم التنقل الأيمن
+                                if (bannerDocs.length > 1 && _currentBannerPage < bannerDocs.length - 1)
+                                  Positioned(
+                                    right: 32,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Center(
+                                      child: Material(
+                                        color: Colors.black.withOpacity(0.35),
+                                        shape: const CircleBorder(),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: IconButton(
+                                          icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
+                                          onPressed: () {
+                                            _bannerPageController.nextPage(
+                                              duration: const Duration(milliseconds: 600),
+                                              curve: Curves.easeInOut,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         );

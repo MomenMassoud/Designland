@@ -198,7 +198,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
               backgroundColor: theme.cardColor,
               elevation: isDarkMode ? 0 : 0.5,
               titleSpacing: isDesktop ? 24 : 16,
-              title: const CustomRainbowAppBarTitle(),
+              title: CustomRainbowAppBarTitle(),
               actions: [
                 // عداد الإشعارات
                 ValueListenableBuilder<int>(

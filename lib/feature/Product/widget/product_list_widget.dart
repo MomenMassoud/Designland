@@ -5,12 +5,9 @@ import 'package:desginland/feature/Product/view/product_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../../Login/view/login_view.dart';
 import 'order_details_bottom_sheet.dart'; // استيراد الـ Bottom Sheet الموحد
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
-final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class ProductListWidget extends StatefulWidget {
   final String categoryDoc;
@@ -554,6 +551,10 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
         ? (originalPrice * (1 - (discountPercentage / 100))).round()
         : originalPrice;
 
+    // فحص حالة التفعيل
+    final bool isProductActive =
+        widget.productData['IsActive'] ?? widget.productData['isActive'] ?? true;
+
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
@@ -671,6 +672,43 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           ),
                         ),
                       ),
+
+                    // Active / Inactive Badge
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isProductActive
+                              ? const Color(0xFF2ED573).withOpacity(0.9)
+                              : Colors.red.shade600.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isProductActive
+                                  ? Icons.check_circle_rounded
+                                  : Icons.cancel_rounded,
+                              size: 11,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isProductActive ? "Active".tr : "Out of stock".tr,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -704,8 +742,10 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                             children: [
                               Text(
                                 "$finalPrice ${"EGP".tr}",
-                                style: const TextStyle(
-                                  color: Color(0xFF6C5CE7),
+                                style: TextStyle(
+                                  color: isProductActive
+                                      ? const Color(0xFF6C5CE7)
+                                      : Colors.grey,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
                                 ),
@@ -746,17 +786,21 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isHovered
+                              color: isProductActive
+                                  ? (isHovered
                                   ? const Color(0xFF6C5CE7)
-                                  : const Color(0xFF6C5CE7).withOpacity(0.1),
+                                  : const Color(0xFF6C5CE7).withOpacity(0.1))
+                                  : Colors.grey.shade300,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.add_shopping_cart_rounded,
                               size: 16,
-                              color: isHovered
+                              color: isProductActive
+                                  ? (isHovered
                                   ? Colors.white
-                                  : const Color(0xFF6C5CE7),
+                                  : const Color(0xFF6C5CE7))
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -779,6 +823,20 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
     try {
       if (!mounted) return;
 
+      // فحص حالة التفعيل الخاصة بالمنتج نفسه
+      final bool isProductActive =
+          productData['IsActive'] ?? productData['isActive'] ?? true;
+
+      if (!isProductActive) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("This product is currently unavailable.".tr),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       await showOrderDetailsBottomSheet(
         context: context,
         uid: user?.uid,
@@ -787,9 +845,10 @@ class _InteractiveProductCardState extends State<_InteractiveProductCard> {
         finalPrice: finalPrice,
       );
     } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${"An error occurred during processing:".tr}$e")),
+      );
     }
   }
+}
