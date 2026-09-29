@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'Core/Utils/app_routes.dart';
 import 'Core/Utils/app_themes.dart';
 import 'Core/server/firebase massaging server.dart';
+import 'Core/services/user_presence_service.dart';
 import 'Core/widgets/App_localization.dart';
 import 'feature/Splash/View/splash_view.dart';
 import 'firebase_options.dart';
@@ -42,8 +43,27 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // تفعيل متابعة حالة التواجد (Presence) للحيّز الكامل للتطبيق
+    UserPresenceService().init();
+  }
+
+  @override
+  void dispose() {
+    // إزالة مراقب دورة حياة التطبيق
+    UserPresenceService().dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

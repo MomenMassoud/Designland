@@ -346,75 +346,71 @@ class _BasketWidgetState extends State<BasketWidget> {
           ),
         ),
       ),
-      body: GestureDetector(
-        // إغلاق الكيبورد عند الضغط على أي مكان فارغ في الشاشة
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 1300),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // الفصل بين الويب والتطبيق عبر kIsWeb أو العرض الإجمالي
-                final bool isDesktopView = kIsWeb || constraints.maxWidth > 900;
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1300),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // التعديل الأساسي: الاعتماد على عرض الشاشة فقط وليس kIsWeb بالكامل
+              final bool isDesktopView = constraints.maxWidth > 900;
 
-                if (isDesktopView) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: ListView.builder(
-                          itemCount: cartItems.length,
-                          itemBuilder: (context, index) => _buildCartItemCard(
-                            cartItems[index],
-                            index,
-                            constraints.maxWidth,
-                          ),
+              if (isDesktopView) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: ListView.builder(
+                        itemCount: cartItems.length,
+                        itemBuilder: (context, index) => _buildCartItemCard(
+                          cartItems[index],
+                          index,
+                          constraints.maxWidth,
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: SingleChildScrollView(
-                          child: _buildSummaryCard(
-                            cartItems,
-                            subtotal,
-                            discountAmount,
-                            finalTotalPrice,
-                            isGuest,
-                          ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 2,
+                      child: SingleChildScrollView(
+                        child: _buildSummaryCard(
+                          cartItems,
+                          subtotal,
+                          discountAmount,
+                          finalTotalPrice,
+                          isGuest,
                         ),
                       ),
-                    ],
-                  );
-                } else {
-                  // تصميم الموبايل مع حماية الكيبورد من تغطية الحقول
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: cartItems.length,
-                          itemBuilder: (context, index) => _buildCartItemCard(
-                            cartItems[index],
-                            index,
-                            constraints.maxWidth,
-                          ),
+                    ),
+                  ],
+                );
+              } else {
+                // تصميم الموبايل الاصلي تماما
+                return Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: cartItems.length,
+                        itemBuilder: (context, index) => _buildCartItemCard(
+                          cartItems[index],
+                          index,
+                          constraints.maxWidth,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _buildSummaryCard(
-                        cartItems,
-                        subtotal,
-                        discountAmount,
-                        finalTotalPrice,
-                        isGuest,
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSummaryCard(
+                      cartItems,
+                      subtotal,
+                      discountAmount,
+                      finalTotalPrice,
+                      isGuest,
+                    ),
+                  ],
+                );
+              }
+            },
           ),
         ),
       ),

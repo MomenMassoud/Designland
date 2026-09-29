@@ -66,6 +66,7 @@ dependencies:
   get_storage: ^2.1.1
   shared_preferences: ^2.5.5
   appflowy_editor: ^6.2.0
+  firebase_database: ^12.6.0
 
 dependency_overrides:
   keyboard_height_plugin: ^0.3.0
