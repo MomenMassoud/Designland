@@ -56,9 +56,7 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     AnalyticsService.startSession();
 
-    // 👈 إعداد الاستماع لعدد عناصر السلة (للزائر والمستخدم المسجل)
     _setupCartListener();
-
     _fetchInitialUserData();
     _getToken();
   }
@@ -125,7 +123,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     _guestCartSubscription?.cancel();
 
     if (user != null) {
-      // 1. للمستخدم المسجل: الاستماع من Firestore
       _cartSubscription = _firestore
           .collection('users')
           .doc(user.uid)
@@ -140,7 +137,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
         },
       );
     } else {
-      // 2. للزائر (Guest): الاستماع من GuestCartService
       _guestCartSubscription = GuestCartService().cartCountStream.listen(
             (count) {
           _cartCount.value = count;
@@ -181,15 +177,16 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
     final isDarkMode = theme.brightness == Brightness.dark;
     final iconColor = theme.colorScheme.onSurface;
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth >= 850;
-            return AppBar(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isDesktop = constraints.maxWidth >= 850;
+
+        return Scaffold(
+          extendBody: true,
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: AppBar(
               systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
@@ -221,27 +218,28 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                     );
                   },
                 ),
-                // عداد السلة (شغال تلقائياً للـ Guest والـ User)
-                ValueListenableBuilder<int>(
-                  valueListenable: _cartCount,
-                  builder: (context, count, _) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.shopping_cart_outlined, color: iconColor),
-                          onPressed: () => Navigator.pushNamed(context, BasketView.id),
-                        ),
-                        if (count > 0)
-                          Positioned(
-                            right: 6,
-                            top: 6,
-                            child: _BadgeCounter(count: count),
+                // عداد السلة (يظهر في الـ AppBar للموبايل فقط)
+                if (!isDesktop)
+                  ValueListenableBuilder<int>(
+                    valueListenable: _cartCount,
+                    builder: (context, count, _) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.shopping_cart_outlined, color: iconColor),
+                            onPressed: () => Navigator.pushNamed(context, BasketView.id),
                           ),
-                      ],
-                    );
-                  },
-                ),
+                          if (count > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: _BadgeCounter(count: count),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 // زر التبديل بين الـ Light والـ Dark Theme
                 IconButton(
                   icon: AnimatedSwitcher(
@@ -260,27 +258,147 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
                   },
                   tooltip: isDarkMode ? 'Light Mode' : 'Dark Mode',
                 ),
-                if (isDesktop) ...[
-                  const SizedBox(width: 8),
-                  _buildNavTextButton("Home".tr, Icons.home_outlined, 0),
-                  _buildNavTextButton("Profile".tr, Icons.person_outline, 1),
-                  _buildNavTextButton("About".tr, Icons.info_outline, 2),
-                ],
                 const SizedBox(width: 8),
               ],
-            );
-          },
+            ),
+          ),
+          body: Row(
+            children: [
+              if (isDesktop) _buildSideNavigationBar(theme, isDarkMode),
+              Expanded(
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: _screens,
+                ),
+              ),
+            ],
+          ),
+          bottomNavigationBar: isDesktop ? null : _buildLiquidGlassNavBar(context),
+        );
+      },
+    );
+  }
+
+  /// شريط التنقل الجانبي (Side Toolbar) للشاشات الكبيرة
+  Widget _buildSideNavigationBar(ThemeData theme, bool isDarkMode) {
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(
+          right: BorderSide(
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06),
+            width: 1,
+          ),
         ),
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          _buildSideNavItem(Icons.home_outlined, Icons.home, "Home".tr, 0),
+          _buildSideNavItem(Icons.person_outline, Icons.person, "Profile".tr, 1),
+          _buildSideNavItem(Icons.info_outline, Icons.info, "About".tr, 2),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Divider(height: 1),
+          ),
+          // زر السلة داخل الـ Side Toolbar مع العداد الخاص بها
+          ValueListenableBuilder<int>(
+            valueListenable: _cartCount,
+            builder: (context, count, _) {
+              return _buildSideCartItem(count);
+            },
+          ),
+        ],
       ),
-      bottomNavigationBar: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth >= 850) return const SizedBox.shrink();
-          return _buildLiquidGlassNavBar(context);
-        },
+    );
+  }
+
+  Widget _buildSideNavItem(IconData unselectedIcon, IconData selectedIcon, String label, int index) {
+    final bool isSelected = _selectedIndex == index;
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final unselectedColor = theme.colorScheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: () => _onTabSelected(index),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor.withOpacity(0.12) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? selectedIcon : unselectedIcon,
+                color: isSelected ? primaryColor : unselectedColor,
+                size: 22,
+              ),
+              const SizedBox(width: 14),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? primaryColor : unselectedColor,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// عنصر السلة الخاص بالشريط الجانبي
+  Widget _buildSideCartItem(int cartCount) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, BasketView.id),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    color: color,
+                    size: 22,
+                  ),
+                  if (cartCount > 0)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: _BadgeCounter(count: cartCount),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Text(
+                "Cart".tr,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -371,29 +489,6 @@ class _MainScreenWidgetState extends State<MainScreenWidget> with WidgetsBinding
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavTextButton(String title, IconData icon, int index) {
-    final bool isSelected = _selectedIndex == index;
-    final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
-    final textColor = theme.colorScheme.onSurfaceVariant;
-
-    return TextButton.icon(
-      onPressed: () => _onTabSelected(index),
-      icon: Icon(
-        icon,
-        size: 18,
-        color: isSelected ? primaryColor : textColor,
-      ),
-      label: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? primaryColor : textColor,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );

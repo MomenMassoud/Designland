@@ -347,19 +347,19 @@ class _AboutWidgetState extends State<AboutWidget> {
                       _buildSectionTitle("Terms and Policies".tr),
                       const SizedBox(height: 12),
                       _buildLegalCard(
-                        title: "terms of use".tr,
+                        title: "Terms of use".tr,
                         icon: Icons.gavel_rounded,
                         onTap: () => _showPolicyDialogOrSheet(
-                          "terms of use".tr,
+                          "Terms of use".tr,
                           _termsOfUseText,
                         ),
                       ),
                       const SizedBox(height: 8),
                       _buildLegalCard(
-                        title: "privacy policy".tr,
+                        title: "Privacy Policy".tr,
                         icon: Icons.security_rounded,
                         onTap: () => _showPolicyDialogOrSheet(
-                          "privacy policy".tr,
+                          "Privacy Policy".tr,
                           _privacyPolicyText,
                         ),
                       ),

@@ -9,7 +9,6 @@ import '../../../controllers/product_controller.dart';
 import '../../../model/product_model.dart';
 import '../../Basket/view/basket_view.dart';
 
-
 class ProductWidget extends StatefulWidget {
   final String productDoc;
 
@@ -106,7 +105,7 @@ class _ProductWidgetState extends State<ProductWidget> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final bool isDesktop = constraints.maxWidth >= 900;
+          final bool isDesktop = constraints.maxWidth >= 950;
 
           return StreamBuilder<ProductModel?>(
             stream: controller.productStream,
@@ -121,12 +120,69 @@ class _ProductWidgetState extends State<ProductWidget> {
 
               final product = snapshot.data!;
 
+              if (isDesktop) {
+                // 💻 تقسيم الشاشة لعمودين (اليسار للصور والسعر، واليمين للـ Description والـ Reviews)
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: constraints.maxWidth * 0.05,
+                    vertical: 24,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. العمود الأول (اليسار): معرض الصور + كارت العنوان والسعر وزر السلة
+                      Expanded(
+                        flex: 5,
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? theme.cardColor : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildImageGallery(product.images, isDarkMode),
+                              const SizedBox(height: 20),
+                              _buildMainProductHeader(product, isDarkMode),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // 2. العمود الثاني (اليمين): يحتوي على Description و Reviews في نفس العمود بنفس الترتيب
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          children: [
+                            // كارت الوصف (Product Description)
+                            _buildDetailsCard(product.description, isDarkMode, theme),
+                            const SizedBox(height: 20),
+                            // كارت التقييمات والآراء (Product Reviews)
+                            ProductReviewsSection(
+                              controller: controller,
+                              showLoginDialog: _showLoginDialog,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // 📱 تصميم الموبايل (عرض رأسي متسلسل)
               return SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? constraints.maxWidth * 0.08 : 16,
-                  vertical: 24,
-                ),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     Container(
@@ -142,16 +198,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                           )
                         ],
                       ),
-                      child: isDesktop
-                          ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 5, child: _buildImageGallery(product.images, isDarkMode)),
-                          const SizedBox(width: 32),
-                          Expanded(flex: 6, child: _buildMainProductHeader(product, isDarkMode)),
-                        ],
-                      )
-                          : Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildImageGallery(product.images, isDarkMode),
@@ -160,31 +207,12 @@ class _ProductWidgetState extends State<ProductWidget> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    isDesktop
-                        ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 5, child: _buildDetailsCard(product.description, isDarkMode, theme)),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          flex: 7,
-                          child: ProductReviewsSection(
-                            controller: controller,
-                            showLoginDialog: _showLoginDialog,
-                          ),
-                        ),
-                      ],
-                    )
-                        : Column(
-                      children: [
-                        _buildDetailsCard(product.description, isDarkMode, theme),
-                        const SizedBox(height: 20),
-                        ProductReviewsSection(
-                          controller: controller,
-                          showLoginDialog: _showLoginDialog,
-                        ),
-                      ],
+                    const SizedBox(height: 20),
+                    _buildDetailsCard(product.description, isDarkMode, theme),
+                    const SizedBox(height: 20),
+                    ProductReviewsSection(
+                      controller: controller,
+                      showLoginDialog: _showLoginDialog,
                     ),
                   ],
                 ),
@@ -206,7 +234,7 @@ class _ProductWidgetState extends State<ProductWidget> {
           InkWell(
             onTap: () => Get.to(FullScreenImageViewer(images: images, initialIndex: selectedIndex)),
             child: Container(
-              height: 340,
+              height: 350,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: isDarkMode ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
@@ -369,35 +397,39 @@ class _ProductWidgetState extends State<ProductWidget> {
           ],
         ),
         const SizedBox(height: 24),
-        Obx(() => ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: product.isActive ? const Color(0xFF6366F1) : Colors.grey,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: (controller.isAddingToCart.value || !product.isActive)
-              ? null
-              : () => controller.handleAddToCart(context, product),
-          icon: controller.isAddingToCart.value
-              ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-          )
-              : Icon(product.isActive ? Icons.shopping_bag_outlined : Icons.block, size: 20),
-          label: Text(
-            product.isActive ? "Add to cart".tr : "This product is currently unavailable.".tr,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-        )),
+        SizedBox(
+          width: double.infinity,
+          child: Obx(() => ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: product.isActive ? const Color(0xFF6366F1) : Colors.grey,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: (controller.isAddingToCart.value || !product.isActive)
+                ? null
+                : () => controller.handleAddToCart(context, product),
+            icon: controller.isAddingToCart.value
+                ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            )
+                : Icon(product.isActive ? Icons.shopping_bag_outlined : Icons.block, size: 20),
+            label: Text(
+              product.isActive ? "Add to cart".tr : "This product is currently unavailable.".tr,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          )),
+        ),
       ],
     );
   }
 
   Widget _buildDetailsCard(String description, bool isDarkMode, ThemeData theme) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDarkMode ? theme.cardColor : Colors.white,
