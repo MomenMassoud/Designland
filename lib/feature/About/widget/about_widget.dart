@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:desginland/Core/Utils/app.images.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -432,15 +433,18 @@ class _AboutWidgetState extends State<AboutWidget> {
               color: Colors.white.withOpacity(0.18),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.white,
-              size: 34,
+            // child: const Icon(
+            //   Icons.auto_awesome_rounded,
+            //   color: Colors.white,
+            //   size: 34,
+            // ),
+            child: CircleAvatar(
+              backgroundImage: AssetImage(AppImages.splash),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            "Welcome to our platform.".tr,
+            "Welcome to Designland".tr,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
@@ -448,16 +452,16 @@ class _AboutWidgetState extends State<AboutWidget> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            "Specially designed to provide the best experience for custom designs and gifts.".tr,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.4,
-              color: Colors.white.withOpacity(0.88),
-            ),
-          ),
+          // const SizedBox(height: 6),
+          // Text(
+          //   "Specially designed to provide the best experience for custom designs and gifts.".tr,
+          //   textAlign: TextAlign.center,
+          //   style: TextStyle(
+          //     fontSize: 12,
+          //     height: 1.4,
+          //     color: Colors.white.withOpacity(0.88),
+          //   ),
+          // ),
         ],
       ),
     );

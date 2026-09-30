@@ -9,17 +9,16 @@ import 'Core/Utils/app_themes.dart';
 import 'Core/server/firebase massaging server.dart';
 import 'Core/services/user_presence_service.dart';
 import 'Core/widgets/App_localization.dart';
+import 'feature/Product/widget/product_widget.dart';
 import 'feature/Splash/View/splash_view.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  // ضمان تهيئة أطر عمل الفلاتر
   WidgetsFlutterBinding.ensureInitialized();
 
   // تفعيل مسار الروابط المباشر بدون (#) للـ Web
   usePathUrlStrategy();
 
-  // تهيئة شريط النظام والشفافية (تخص الهاتف فقط دون الـ Web)
   if (!kIsWeb) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(
@@ -30,12 +29,10 @@ Future<void> main() async {
     );
   }
 
-  // تهيئة الفايربيز وإشعارات FCM
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // تشغيل خدمة الإشعارات دون إعاقة التحميل الأول للـ UI
   FirebaseMessagingService.initialize().catchError((e) {
     debugPrint('Error initializing Firebase Messaging: $e');
   });
@@ -54,20 +51,17 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // تفعيل متابعة حالة التواجد (Presence) للحيّز الكامل للتطبيق
     UserPresenceService().init();
   }
 
   @override
   void dispose() {
-    // إزالة مراقب دورة حياة التطبيق
     UserPresenceService().dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // تحديد اللغة الافتراضية
     final Locale deviceLocale = Get.deviceLocale ?? const Locale('en');
 
     return GetMaterialApp(
@@ -77,13 +71,24 @@ class _MyAppState extends State<MyApp> {
       locale: deviceLocale,
       fallbackLocale: const Locale('en', 'US'),
 
-      // 🎨 إعدادات الثيمات (Light & Dark)
       theme: AppThemes.lightTheme,
       darkTheme: AppThemes.darkTheme,
-      themeMode: ThemeMode.system, // يتغير تلقائياً حسب إعدادات النظام
+      themeMode: ThemeMode.system,
 
       initialRoute: SplashView.id,
-      routes: appRoutes,
+      getPages: appPages, // 👈 استبدال routes بـ getPages
+
+      // معالجة فتح روابط المنتج المباشرة على الويب / الموبايل
+      onGenerateRoute: (settings) {
+        if (settings.name != null && settings.name!.startsWith('/product/')) {
+          final productId = settings.name!.replaceFirst('/product/', '');
+          return MaterialPageRoute(
+            builder: (context) => ProductWidget(productDoc: productId),
+            settings: settings,
+          );
+        }
+        return null;
+      },
 
       builder: (context, child) => child ?? const SizedBox.shrink(),
     );

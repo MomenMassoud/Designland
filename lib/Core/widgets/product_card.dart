@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../feature/Product/widget/order_details_bottom_sheet.dart';
+import '../../feature/Product/widget/product_widget.dart';
 
 class InteractiveProductCard extends StatefulWidget {
   final Map<String, dynamic> productData;
@@ -89,9 +90,8 @@ class _InteractiveProductCardState extends State<InteractiveProductCard> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductView(
-                ProductDoc: widget.productId,
-              ),
+              builder: (context) => ProductWidget(productDoc: widget.productId),
+              settings: RouteSettings(name: '/product/${widget.productId}'), // 👈 يغير الـ URL في الـ Web
             ),
           );
         },

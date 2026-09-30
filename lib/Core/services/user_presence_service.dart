@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html;
 
 class UserPresenceService with WidgetsBindingObserver {
   static final UserPresenceService _instance = UserPresenceService._internal();
@@ -32,13 +31,13 @@ class UserPresenceService with WidgetsBindingObserver {
 
   /// الاستماع لإغلاق التبويب أو إعادة تحميل الصفحة في الـ Web
   void _setupWebUnloadListener() {
-    html.window.onBeforeUnload.listen((event) {
-      final user = _auth.currentUser;
-      if (user == null || user.isAnonymous) return;
-
-      // تحديث متزامن ومباشر قبل إغلاق الصفحة
-      _updateStatus(isOnline: false);
-    });
+    // html.window.onBeforeUnload.listen((event) {
+    //   final user = _auth.currentUser;
+    //   if (user == null || user.isAnonymous) return;
+    //
+    //   // تحديث متزامن ومباشر قبل إغلاق الصفحة
+    //   _updateStatus(isOnline: false);
+    // });
   }
 
   @override

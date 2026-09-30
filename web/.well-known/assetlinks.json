@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.desginland",
+      "sha256_cert_fingerprints": [
+        "16:83:A9:24:1F:43:08:60:74:7D:16:D6:B7:48:CC:B7:B3:87:5B:12:80:CA:56:F5:93:D1:FE:70:D1:E5:FD:0D"
+      ]
+    }
+  }
+]

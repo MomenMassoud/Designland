@@ -118,10 +118,11 @@ class _AnimatedProductCardState extends State<AnimatedProductCard> {
           productId: widget.productId, //[cite: 7]
           productTitle: widget.productData['title'], //[cite: 7]
         );
-        Navigator.push( //[cite: 7]
+        Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductWidget(productDoc: widget.productId), //[cite: 7]
+            builder: (context) => ProductWidget(productDoc: widget.productId),
+            settings: RouteSettings(name: '/product/${widget.productId}'), // 👈 يغير الـ URL في الـ Web
           ),
         );
       },

@@ -4,15 +4,16 @@ import 'package:desginland/feature/Login/view/login_view.dart';
 import 'package:desginland/feature/Product/widget/product_description_widget.dart';
 import 'package:desginland/feature/Product/widget/product_reviews_section.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../controllers/product_controller.dart';
 import '../../../model/product_model.dart';
 import '../../Basket/view/basket_view.dart';
 
 class ProductWidget extends StatefulWidget {
-  final String productDoc;
+  final String? productDoc;
 
-  const ProductWidget({super.key, required this.productDoc});
+  const ProductWidget({super.key, this.productDoc});
 
   @override
   State<ProductWidget> createState() => _ProductWidgetState();
@@ -20,11 +21,41 @@ class ProductWidget extends StatefulWidget {
 
 class _ProductWidgetState extends State<ProductWidget> {
   late final ProductController controller;
+  late final String effectiveProductId;
 
   @override
   void initState() {
     super.initState();
-    controller = Get.put(ProductController(productId: widget.productDoc), tag: widget.productDoc);
+
+    // 🔍 الحصول على معرف المنتج: إما الممرر من الـ Widget أو المجلوب مباشرة من مسار الـ URL
+    final urlParamId = Get.parameters['id'];
+    effectiveProductId = (widget.productDoc != null && widget.productDoc!.isNotEmpty)
+        ? widget.productDoc!
+        : (urlParamId ?? '');
+
+    if (effectiveProductId.isNotEmpty) {
+      controller = Get.put(
+        ProductController(productId: effectiveProductId),
+        tag: effectiveProductId,
+      );
+    }
+  }
+
+  // 🔗 دالة مشاركة رابط المنتج
+  void _shareProduct() {
+    final String shareUrl = "https://designlandeg.com/product/$effectiveProductId";
+
+    // نسخ الرابط لإلحاقه بالحافظة مع عرض إشعار للمستخدم
+    Clipboard.setData(ClipboardData(text: shareUrl));
+    Get.snackbar(
+      "Link copied".tr,
+      "The product link has been copied to your clipboard.".tr,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF6366F1),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(12),
+      duration: const Duration(seconds: 3),
+    );
   }
 
   void _showLoginDialog() {
@@ -50,6 +81,13 @@ class _ProductWidgetState extends State<ProductWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (effectiveProductId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text("The product does not exist.".tr)),
+      );
+    }
+
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
@@ -65,7 +103,13 @@ class _ProductWidgetState extends State<ProductWidget> {
             color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
             size: 18,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Get.offAllNamed('/mainscreen');
+            }
+          },
         ),
         title: Text(
           "Product Details".tr,
@@ -76,6 +120,14 @@ class _ProductWidgetState extends State<ProductWidget> {
           ),
         ),
         actions: [
+          // 📲 زر مشاركة رابط المنتج
+          IconButton(
+            icon: Icon(
+              Icons.share_outlined,
+              color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+            ),
+            onPressed: _shareProduct,
+          ),
           StreamBuilder<int>(
             stream: controller.cartCountStream,
             builder: (context, snapshot) {
@@ -121,7 +173,6 @@ class _ProductWidgetState extends State<ProductWidget> {
               final product = snapshot.data!;
 
               if (isDesktop) {
-                // 💻 تقسيم الشاشة لعمودين (اليسار للصور والسعر، واليمين للـ Description والـ Reviews)
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: EdgeInsets.symmetric(
@@ -131,7 +182,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. العمود الأول (اليسار): معرض الصور + كارت العنوان والسعر وزر السلة
                       Expanded(
                         flex: 5,
                         child: Container(
@@ -158,15 +208,12 @@ class _ProductWidgetState extends State<ProductWidget> {
                         ),
                       ),
                       const SizedBox(width: 24),
-                      // 2. العمود الثاني (اليمين): يحتوي على Description و Reviews في نفس العمود بنفس الترتيب
                       Expanded(
                         flex: 6,
                         child: Column(
                           children: [
-                            // كارت الوصف (Product Description)
                             _buildDetailsCard(product.description, isDarkMode, theme),
                             const SizedBox(height: 20),
-                            // كارت التقييمات والآراء (Product Reviews)
                             ProductReviewsSection(
                               controller: controller,
                               showLoginDialog: _showLoginDialog,
@@ -179,7 +226,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                 );
               }
 
-              // 📱 تصميم الموبايل (عرض رأسي متسلسل)
               return SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.all(16),
