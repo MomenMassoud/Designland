@@ -35,7 +35,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         .get();
   }
 
-  // تحديد لون حالة الطلب
+  // تحديد لون حالة الطلب العامة
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -43,12 +43,36 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         return Colors.green;
       case 'pending':
       case 'processing':
-        return Colors.orange;
+      case 'customizing':
+        return const Color(0xFF6C5CE7);
       case 'cancelled':
       case 'canceled':
         return Colors.red;
       default:
         return const Color(0xFF6C5CE7);
+    }
+  }
+
+  // تحديد مرحلة الطلب الحالية كـ Index (0 إلى 3)
+  int _getCurrentStepIndex(String status) {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+      case 'order confirmed':
+      case 'pending':
+        return 0;
+      case 'customizing':
+      case 'processing':
+      case 'in progress':
+        return 1;
+      case 'ready for shipping':
+      case 'shipped':
+      case 'on the way':
+        return 2;
+      case 'delivered':
+      case 'completed':
+        return 3;
+      default:
+        return 0;
     }
   }
 
@@ -96,11 +120,11 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
           final Timestamp? createdAt = orderData['createdAt'] as Timestamp?;
           final String formattedDate = createdAt != null
-              ? DateFormat('yyyy-MM-dd - hh:mm a').format(createdAt.toDate())
+              ? DateFormat('MMM dd, yyyy - hh:mm a').format(createdAt.toDate())
               : '';
 
           final int orderNumber = orderData['orderNumber'] ?? 0;
-          final String status = orderData['status'] ?? 'Pending';
+          final String status = orderData['status'] ?? 'Order Confirmed';
           final num subtotal = orderData['subtotal'] ?? 0;
           final num totalPrice = orderData['totalPrice'] ?? 0;
           final num discountAmount = orderData['discountAmount'] ?? 0;
@@ -108,6 +132,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           final List<dynamic> items = orderData['items'] ?? [];
           final Map<String, dynamic> selectedAddress =
           Map<String, dynamic>.from(orderData['selectedAddress'] ?? {});
+
+          final currentStep = _getCurrentStepIndex(status);
 
           return SafeArea(
             child: Center(
@@ -124,7 +150,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // جانب المنتجات
+                            // الجانب الأيسر: رقم الطلب + تتبع حالة الطلب
                             Expanded(
                               flex: 3,
                               child: Column(
@@ -139,8 +165,9 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                                     subTextColor: subTextColor,
                                   ),
                                   const SizedBox(height: 16),
-                                  _buildItemsCard(
-                                    items: items,
+                                  _buildTrackingCard(
+                                    currentStep: currentStep,
+                                    formattedDate: formattedDate,
                                     isDarkMode: isDarkMode,
                                     cardBgColor: cardBgColor,
                                     textColor: textColor,
@@ -151,11 +178,20 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                               ),
                             ),
                             const SizedBox(width: 20),
-                            // جانب معلومات الشحن والملخص المالي
+                            // الجانب الأيمن: تفاصيل المنتجات + عنوان التوصيل + الملخص المالي
                             Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: Column(
                                 children: [
+                                  _buildItemsCard(
+                                    items: items,
+                                    isDarkMode: isDarkMode,
+                                    cardBgColor: cardBgColor,
+                                    textColor: textColor,
+                                    subTextColor: subTextColor,
+                                    primaryColor: primaryColor,
+                                  ),
+                                  const SizedBox(height: 16),
                                   _buildAddressCard(
                                     address: selectedAddress,
                                     isDarkMode: isDarkMode,
@@ -193,6 +229,16 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                             cardBgColor: cardBgColor,
                             textColor: textColor,
                             subTextColor: subTextColor,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTrackingCard(
+                            currentStep: currentStep,
+                            formattedDate: formattedDate,
+                            isDarkMode: isDarkMode,
+                            cardBgColor: cardBgColor,
+                            textColor: textColor,
+                            subTextColor: subTextColor,
+                            primaryColor: primaryColor,
                           ),
                           const SizedBox(height: 16),
                           _buildItemsCard(
@@ -236,7 +282,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     );
   }
 
-  // 1. كارت رأس الطلب (رقم الطلب والحالة والتاريخ)
+  // 1. كارت رأس الطلب (رقم الطلب والحالة)
   Widget _buildHeaderCard({
     required int orderNumber,
     required String formattedDate,
@@ -303,7 +349,200 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     );
   }
 
-  // 2. كارت منتجات الطلب
+  // 2. كارت تتبع حالة الطلب (Order Tracking Timeline)
+  Widget _buildTrackingCard({
+    required int currentStep,
+    required String formattedDate,
+    required bool isDarkMode,
+    required Color cardBgColor,
+    required Color textColor,
+    required Color subTextColor,
+    required Color primaryColor,
+  }) {
+    final steps = [
+      {
+        'title': 'Order Confirmed'.tr,
+        'info': 'We have received your order'.tr,
+      },
+      {
+        'title': 'Customizing'.tr,
+        'info': 'Your order is being customized'.tr,
+      },
+      {
+        'title': 'Ready for Shipping'.tr,
+        'info': 'Item packed & ready for courier'.tr,
+      },
+      {
+        'title': 'Delivered'.tr,
+        'info': 'Order delivered to you'.tr,
+      },
+    ];
+
+    String getNoticeMessage(int step) {
+      switch (step) {
+        case 0:
+          return 'Your order has been confirmed and is waiting to be processed.'.tr;
+        case 1:
+          return 'Your order is being customized. We\'ll notify you when it\'s ready to ship.'.tr;
+        case 2:
+          return 'Your order is packed and ready to be delivered to your address.'.tr;
+        case 3:
+          return 'Your order has been successfully delivered. Enjoy your product!'.tr;
+        default:
+          return 'Your order is currently processing.'.tr;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Status Tracking'.tr,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: steps.length,
+            itemBuilder: (context, index) {
+              final isCompleted = index < currentStep;
+              final isCurrent = index == currentStep;
+              final isLast = index == steps.length - 1;
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // عمود الأيقونة والخط الزمني العمودي
+                  Column(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? Colors.green
+                              : isCurrent
+                              ? primaryColor
+                              : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200),
+                        ),
+                        child: Icon(
+                          isCompleted
+                              ? Icons.check_rounded
+                              : isCurrent
+                              ? Icons.check_rounded
+                              : Icons.circle_outlined,
+                          size: 16,
+                          color: (isCompleted || isCurrent)
+                              ? Colors.white
+                              : Colors.grey.shade400,
+                        ),
+                      ),
+                      if (!isLast)
+                        Container(
+                          width: 2,
+                          height: 42,
+                          color: isCompleted
+                              ? Colors.green
+                              : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  // تفاصيل النص للحالة
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            steps[index]['title']!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: (isCompleted || isCurrent)
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: (isCompleted || isCurrent)
+                                  ? textColor
+                                  : subTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isCurrent && formattedDate.isNotEmpty
+                                ? formattedDate
+                                : steps[index]['info']!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: subTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          // كارت التنويه السفلي ذو الخفية البنفسجية الخفيفة
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(isDarkMode ? 0.15 : 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: primaryColor.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: primaryColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    getNoticeMessage(currentStep),
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode ? Colors.white70 : const Color(0xFF4A4B65),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. كارت منتجات الطلب
   Widget _buildItemsCard({
     required List<dynamic> items,
     required bool isDarkMode,
@@ -456,7 +695,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     );
   }
 
-  // 3. كارت عنوان التوصيل والمعلومات الشخصية
+  // 4. كارت عنوان التوصيل
   Widget _buildAddressCard({
     required Map<String, dynamic> address,
     required bool isDarkMode,
@@ -542,7 +781,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     );
   }
 
-  // 4. كارت ملخص الدفع (Subtotal, Discount, Total)
+  // 5. كارت ملخص الدفع
   Widget _buildSummaryCard({
     required num subtotal,
     required num discountAmount,

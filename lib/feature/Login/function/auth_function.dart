@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:desginland/feature/MainScreen/view/main_screen_view.dart';
 import 'package:desginland/feature/Splash/View/splash_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -74,6 +76,54 @@ Future<void>LogoutMethod(BuildContext context)async{
     });
   }
   catch(e){
+    showErrorDialog(context, "Failed to log out".tr, e.toString());
+  }
+}
+
+
+Future<void>RemoveAccountMethod(BuildContext context)async{
+  final user = FirebaseAuth.instance.currentUser;
+
+  // التأكد من وجود مستخدم مسجل الدخول
+  if (user == null) {
+    showErrorDialog(context, "Failed to log out".tr, "No user is currently logged in.");
+    return;
+  }
+
+  // 1. رابط الـ API الخاص بك (استبدل Domain باسم الدومين الخاص بك)
+  final Uri apiUrl = Uri.parse('https://designland-backend.vercel.app/api/delete-account');
+  try {
+    final response = await http.post(
+      apiUrl,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'uid': user.uid,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      if (responseData['success'] == true) {
+        await FirebaseAuth.instance.signOut();
+        Get.offAll(() => const SplashView(), routeName: SplashView.id);
+      } else {
+        showErrorDialog(
+          context,
+          "Failed to log out".tr,
+          responseData['error'] ?? "Failed to delete account.",
+        );
+      }
+    } else {
+      final errorData = jsonDecode(response.body);
+      showErrorDialog(
+        context,
+        "Failed to log out".tr,
+        errorData['error'] ?? "Server error with status code: ${response.statusCode}",
+      );
+    }
+  } catch (e) {
     showErrorDialog(context, "Failed to log out".tr, e.toString());
   }
 }

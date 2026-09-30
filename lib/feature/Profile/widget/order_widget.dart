@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:desginland/feature/Order/view/order_details_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import '../../../Core/Utils/app.colors.dart';
 import '../../../Core/server/email_server.dart';
 
@@ -98,7 +96,7 @@ class OrdersListWidget extends StatelessWidget {
       case 'pending':
         return "pending".tr;
       case 'cancelled':
-        return "ملغي";
+        return "cancelled";
       default:
         return status;
     }

@@ -763,6 +763,133 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
+  // 5. حوار تأكيد تسجيل الخروج
+  void _showLogoutConfirmDialog() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              "Log out".tr,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          "Are you sure you want to log out?".tr,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+            fontSize: 14,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "cancellation".tr,
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              LogoutMethod(context);
+            },
+            child: Text(
+              "Log out".tr,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 6. حوار تأكيد حذف الحساب
+  void _showRemoveAccountConfirmDialog() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? theme.cardColor : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              "Remove Account".tr,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: isDarkMode ? Colors.white : const Color(0xFF2D3436),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          "Are you sure you want to delete your account? This action is permanent and cannot be undone.".tr,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "cancellation".tr,
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              RemoveAccountMethod(context);
+            },
+            child: Text(
+              "Remove Account".tr,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
@@ -818,6 +945,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                     const Spacer(),
                                     const SizedBox(height: 20),
                                     _buildLogoutButton(isDarkMode),
+                                    const Spacer(),
+                                    const SizedBox(height: 10),
+                                    _buildRemoveAccountButton(isDarkMode),
                                   ],
                                 ),
                               ),
@@ -841,6 +971,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           _buildSettingsCard(isDarkMode, theme),
                           const SizedBox(height: 24),
                           _buildLogoutButton(isDarkMode),
+                          const SizedBox(height: 12),
+                          _buildRemoveAccountButton(isDarkMode),
                         ],
                       );
                     },
@@ -1163,11 +1295,30 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(
               16)),
         ),
-        onPressed: () async {
-          LogoutMethod(context);
-        },
+        onPressed: _showLogoutConfirmDialog,
         icon: const Icon(Icons.logout_rounded, size: 20),
         label: Text("Log out".tr,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+      ),
+    );
+  }
+
+  Widget _buildRemoveAccountButton(bool isDarkMode) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isDarkMode ? const Color(0xFF3A1C1C) : const Color(
+              0xFFFFF0F0),
+          foregroundColor: Colors.redAccent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(
+              16)),
+        ),
+        onPressed: _showRemoveAccountConfirmDialog,
+        icon: const Icon(Icons.remove_circle_outline, size: 20),
+        label: Text("Remove Account".tr,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
       ),
     );
@@ -1218,4 +1369,4 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       ),
     );
   }
-  }
+}
