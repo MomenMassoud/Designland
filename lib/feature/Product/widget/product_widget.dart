@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import '../../../controllers/product_controller.dart';
 import '../../../model/product_model.dart';
 import '../../Basket/view/basket_view.dart';
+import 'package:seo/seo.dart';
 
 class ProductWidget extends StatefulWidget {
   final String? productDoc;
@@ -173,94 +174,156 @@ class _ProductWidgetState extends State<ProductWidget> {
               final product = snapshot.data!;
 
               if (isDesktop) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: constraints.maxWidth * 0.05,
-                    vertical: 24,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: isDarkMode ? theme.cardColor : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildImageGallery(product.images, isDarkMode),
-                              const SizedBox(height: 20),
-                              _buildMainProductHeader(product, isDarkMode),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 6,
-                        child: Column(
-                          children: [
-                            _buildDetailsCard(product.description, isDarkMode, theme),
-                            const SizedBox(height: 20),
-                            ProductReviewsSection(
-                              controller: controller,
-                              showLoginDialog: _showLoginDialog,
+                return Seo.head(
+                  tags: [
+                    // 1. وسوم SEO العادية
+                    MetaTag(
+                      name: 'description',
+                      content: product.description.length > 150
+                          ? '${product.description.substring(0, 147)}...'
+                          : product.description,
+                    ),
+                    MetaTag(
+                      name: 'keywords',
+                      content: '${product.title}, DesignLand',
+                    ),
+                    MetaTag(
+                      name: 'title', // بتترجم تلقائياً لـ og:title
+                      content: '${product.title} | DesignLand',
+                    ),
+                    MetaTag(
+                      name: 'description', // بتترجم تلقائياً لـ og:description
+                      content: product.description,
+                    ),
+                    MetaTag(
+                      name: 'image', // بتترجم تلقائياً لـ og:image
+                      content: product.images.isNotEmpty ? product.images.first : '',
+                    ),
+                    MetaTag(
+                      name: 'url', // بتترجم تلقائياً لـ og:url
+                      content: 'https://designlandeg.com/product/$effectiveProductId',
+                    ),
+                  ],
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: constraints.maxWidth * 0.05,
+                      vertical: 24,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? theme.cardColor : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
                             ),
-                          ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildImageGallery(product.images, isDarkMode),
+                                const SizedBox(height: 20),
+                                _buildMainProductHeader(product, isDarkMode),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            children: [
+                              _buildDetailsCard(product.description, isDarkMode, theme),
+                              const SizedBox(height: 20),
+                              ProductReviewsSection(
+                                controller: controller,
+                                showLoginDialog: _showLoginDialog,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
 
-              return SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? theme.cardColor : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
+              return Seo.head(
+                tags: [
+                  // 1. وسوم SEO العادية
+                  MetaTag(
+                    name: 'description',
+                    content: product.description.length > 150
+                        ? '${product.description.substring(0, 147)}...'
+                        : product.description,
+                  ),
+                  MetaTag(
+                    name: 'keywords',
+                    content: '${product.title}, DesignLand',
+                  ),
+                  MetaTag(
+                    name: 'title', // بتترجم تلقائياً لـ og:title
+                    content: '${product.title} | DesignLand',
+                  ),
+                  MetaTag(
+                    name: 'description', // بتترجم تلقائياً لـ og:description
+                    content: product.description,
+                  ),
+                  MetaTag(
+                    name: 'image', // بتترجم تلقائياً لـ og:image
+                    content: product.images.isNotEmpty ? product.images.first : '',
+                  ),
+                  MetaTag(
+                    name: 'url', // بتترجم تلقائياً لـ og:url
+                    content: 'https://designlandeg.com/product/$effectiveProductId',
+                  ),
+                ],
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? theme.cardColor : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildImageGallery(product.images, isDarkMode),
+                            const SizedBox(height: 20),
+                            _buildMainProductHeader(product, isDarkMode),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildImageGallery(product.images, isDarkMode),
-                          const SizedBox(height: 20),
-                          _buildMainProductHeader(product, isDarkMode),
-                        ],
+                      const SizedBox(height: 20),
+                      _buildDetailsCard(product.description, isDarkMode, theme),
+                      const SizedBox(height: 20),
+                      ProductReviewsSection(
+                        controller: controller,
+                        showLoginDialog: _showLoginDialog,
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildDetailsCard(product.description, isDarkMode, theme),
-                    const SizedBox(height: 20),
-                    ProductReviewsSection(
-                      controller: controller,
-                      showLoginDialog: _showLoginDialog,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

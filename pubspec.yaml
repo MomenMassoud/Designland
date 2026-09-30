@@ -67,6 +67,8 @@ dependencies:
   shared_preferences: ^2.5.5
   appflowy_editor: ^6.2.0
   firebase_database: ^12.6.0
+  app_links: ^7.2.1
+  seo: ^0.0.10
 
 dependency_overrides:
   keyboard_height_plugin: ^0.3.0
